@@ -1,0 +1,86 @@
+import { create } from 'zustand';
+import { FrameworkRow, ViewSettings, Goal, JournalEntry, FilterState, Activity } from '../types/framework';
+
+interface AppState {
+    // Data
+    frameworkData: FrameworkRow[];
+    activities: Activity[]; // Processed activities for easier consumption
+    goals: Goal[];
+    journal: JournalEntry[];
+
+    // UI State
+    viewSettings: ViewSettings;
+
+    // Actions
+    setFrameworkData: (data: FrameworkRow[], activities: Activity[]) => void;
+    setGoals: (goals: Goal[]) => void;
+    addJournalEntry: (entry: JournalEntry) => void;
+    updateJournalEntry: (id: string, entry: Partial<JournalEntry>) => void;
+
+    // Filter Actions
+    setGlobalFilters: (filters: Partial<FilterState>) => void;
+    resetFilters: () => void;
+
+    // Navigation Actions
+    setTab: (tab: ViewSettings['abaAtual']) => void;
+    setPeriodo: (inicio: string, fim: string) => void;
+}
+
+const INITIAL_FILTERS: FilterState = {
+    bu: [],
+    canais: [],
+    segmentos: [],
+    parceiros: [],
+    ofertas: [],
+    disparado: 'Todos',
+    dataInicio: '',
+    dataFim: ''
+};
+
+export const useAppStore = create<AppState>((set) => ({
+    frameworkData: [],
+    activities: [],
+    goals: [],
+    journal: [],
+
+    viewSettings: {
+        periodo: { inicio: '', fim: '' }, // Should be initialized with current month
+        abaAtual: 'launch',
+        filtrosGlobais: INITIAL_FILTERS,
+        modoTempoJornada: 'diario'
+    },
+
+    setFrameworkData: (data, activities) => set({ frameworkData: data, activities }),
+
+    setGoals: (goals) => set({ goals }),
+
+    addJournalEntry: (entry) => set((state) => ({
+        journal: [...state.journal, entry]
+    })),
+
+    updateJournalEntry: (id, entry) => set((state) => ({
+        journal: state.journal.map(j => j.id === id ? { ...j, ...entry } : j)
+    })),
+
+    setGlobalFilters: (filters) => set((state) => ({
+        viewSettings: {
+            ...state.viewSettings,
+            filtrosGlobais: { ...state.viewSettings.filtrosGlobais, ...filters }
+        }
+    })),
+
+    resetFilters: () => set((state) => ({
+        viewSettings: {
+            ...state.viewSettings,
+            filtrosGlobais: INITIAL_FILTERS
+        }
+    })),
+
+    setTab: (tab) => set((state) => ({
+        viewSettings: { ...state.viewSettings, abaAtual: tab }
+    })),
+
+    setPeriodo: (inicio, fim) => set((state) => ({
+        viewSettings: { ...state.viewSettings, periodo: { inicio, fim } }
+    }))
+}));
