@@ -117,3 +117,5 @@ out
 
 # Vite
 dist
+.vercel
+.env*.local

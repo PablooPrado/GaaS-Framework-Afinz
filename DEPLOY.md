@@ -60,3 +60,22 @@ Após o deploy, o Vercel fornecerá uma URL (ex: `calendar-estrategico.vercel.ap
 ---
 
 **Nota**: Se você encontrar erros de build no Vercel, verifique os logs no dashboard do Vercel e compare com o build local (`npm run build`).
+
+## Compartilhando Acesso
+
+### 1. Para Usuários (Acesso à Aplicação)
+A URL gerada pelo Vercel (ex: `https://calendar-estrategico-pyfzvywkq-pablooos-projects.vercel.app/`) é pública. Você pode enviá-la para qualquer pessoa e elas poderão acessar a aplicação.
+
+### 2. Para Desenvolvedores (Acesso ao Código)
+Se você quer que outra pessoa ajude a desenvolver ou manter o código, você precisa usar o GitHub:
+
+1.  Siga o **Passo 2** acima para colocar seu código no GitHub.
+2.  No seu repositório do GitHub, vá em **Settings** > **Collaborators**.
+3.  Clique em **Add people** e digite o e-mail ou usuário do GitHub da pessoa.
+4.  Ela receberá um convite e poderá clonar o repositório e enviar alterações.
+
+### 3. Para Gerentes (Acesso ao Vercel)
+Se você quer que outra pessoa possa ver os logs de deploy ou alterar configurações no Vercel:
+
+1.  No dashboard do Vercel, vá em **Settings** > **Members**.
+2.  Convide a pessoa por e-mail (note que dependendo do plano, pode haver custos ou limites para membros da equipe).
