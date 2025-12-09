@@ -8,6 +8,7 @@ import { JornadaDisparosView } from './components/JornadaDisparosView';
 import { DiarioBordo } from './components/DiarioBordo';
 import { FrameworkView } from './components/FrameworkView';
 import { OrientadorView } from './components/OrientadorView';
+import { ConfiguracoesView } from './components/ConfiguracoesView';
 import { useFrameworkData } from './hooks/useFrameworkData';
 import { useAdvancedFilters } from './hooks/useAdvancedFilters';
 import { useCalendarFilter } from './hooks/useCalendarFilter';
@@ -90,6 +91,7 @@ function App() {
       case 'orientador': return 'Orientador';
       case 'framework': return 'Framework';
       case 'diario': return 'Diário de Bordo';
+      case 'configuracoes': return 'Configurações';
       default: return 'Dashboard';
     }
   };
@@ -201,7 +203,10 @@ function App() {
                 {activeTab === 'orientador' && (
                   <OrientadorView />
                 )}
-                {!['launch', 'resultados', 'jornada', 'diario', 'framework', 'orientador'].includes(activeTab) && (
+                {activeTab === 'configuracoes' && (
+                  <ConfiguracoesView />
+                )}
+                {!['launch', 'resultados', 'jornada', 'diario', 'framework', 'orientador', 'configuracoes'].includes(activeTab) && (
                   <div className="flex items-center justify-center h-full text-slate-400">
                     <p>Aba desconhecida: {activeTab}. Redirecionando...</p>
                   </div>

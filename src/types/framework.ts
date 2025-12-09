@@ -102,7 +102,7 @@ export interface JournalEntry {
 
 export interface ViewSettings {
   periodo: { inicio: string; fim: string };
-  abaAtual: "launch" | "resultados" | "jornada" | "framework" | "diario" | "orientador";
+  abaAtual: "launch" | "resultados" | "jornada" | "framework" | "diario" | "orientador" | "configuracoes";
   filtrosGlobais: FilterState;
   modoTempoJornada: "diario" | "semanal";
 }

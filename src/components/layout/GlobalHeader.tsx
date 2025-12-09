@@ -1,7 +1,10 @@
 import React from 'react';
 import { Bell, User, Search, Settings } from 'lucide-react';
+import { useAppStore } from '../../store/useAppStore';
 
 export const GlobalHeader: React.FC = () => {
+    const { setTab } = useAppStore();
+
     return (
         <header className="h-16 bg-[#0B0F19]/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-6 sticky top-0 z-50">
             {/* Left: Search */}
@@ -28,7 +31,11 @@ export const GlobalHeader: React.FC = () => {
 
             {/* Right: Actions */}
             <div className="flex items-center justify-end gap-4 w-1/3">
-                <button className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition relative" title="Configurações">
+                <button
+                    onClick={() => setTab('configuracoes')}
+                    className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition relative"
+                    title="Configurações"
+                >
                     {/* Placeholder for Settings Icon interaction if needed, for now just visual */}
                     <Settings size={20} />
                 </button>
