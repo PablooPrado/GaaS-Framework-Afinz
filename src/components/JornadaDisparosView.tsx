@@ -9,6 +9,7 @@ import { Tooltip } from './Tooltip';
 
 interface JornadaDisparosViewProps {
   data: CalendarData;
+  previousData?: CalendarData;
   selectedBU?: string;
   selectedCanais?: string[];
   selectedSegmentos?: string[];
@@ -17,6 +18,7 @@ interface JornadaDisparosViewProps {
 
 export const JornadaDisparosView: React.FC<JornadaDisparosViewProps> = ({
   data,
+  previousData,
   selectedBU,
   selectedCanais = [],
   selectedSegmentos = [],
@@ -81,11 +83,10 @@ export const JornadaDisparosView: React.FC<JornadaDisparosViewProps> = ({
                   <button
                     key={filter.id}
                     onClick={() => toggleAnomalyFilter(filter.id as AnomalyType)}
-                    className={`px-3 py-1 text-xs font-medium rounded transition ${
-                      selectedAnomalyFilters.includes(filter.id as AnomalyType)
-                        ? 'bg-amber-600 text-white'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                    }`}
+                    className={`px-3 py-1 text-xs font-medium rounded transition ${selectedAnomalyFilters.includes(filter.id as AnomalyType)
+                      ? 'bg-amber-600 text-white'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                      }`}
                   >
                     {filter.label}
                   </button>
@@ -107,22 +108,20 @@ export const JornadaDisparosView: React.FC<JornadaDisparosViewProps> = ({
             <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-700">
               <button
                 onClick={() => setChartMode('performance')}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition ${
-                  chartMode === 'performance'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition ${chartMode === 'performance'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
               >
                 <BarChart2 size={16} />
                 Performance
               </button>
               <button
                 onClick={() => setChartMode('anomalies')}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition ${
-                  chartMode === 'anomalies'
-                    ? 'bg-red-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition ${chartMode === 'anomalies'
+                  ? 'bg-red-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
               >
                 <AlertTriangle size={16} />
                 Anomalias
@@ -153,7 +152,8 @@ export const JornadaDisparosView: React.FC<JornadaDisparosViewProps> = ({
       />
 
       <BottleneckAnalysis
-        data={data}
+        data={selectedActivities.length > 0 ? { [selectedDate?.toISOString().split('T')[0] || '']: selectedActivities } : data}
+        previousData={previousData}
         selectedBU={selectedBU}
         selectedCanais={selectedCanais}
         selectedSegmentos={selectedSegmentos}
@@ -162,3 +162,4 @@ export const JornadaDisparosView: React.FC<JornadaDisparosViewProps> = ({
     </div>
   );
 };
+

@@ -4,6 +4,7 @@ import { Activity, CalendarData, FrameworkRow } from '../types/framework';
 import { parseDate, parseSafraToKey, formatDateKey, parseNumber, parseCurrency, parsePercentage } from '../utils/formatters';
 import { useAppStore } from '../store/useAppStore';
 import { FrameworkRowSchema } from '../schemas/frameworkSchema';
+import { generateSimulatedData } from '../utils/simulatedData';
 
 const normalizeColumnName = (col: string): string => {
   return col
@@ -25,6 +26,7 @@ export const useFrameworkData = (): {
   error: string | null;
   totalActivities: number;
   processCSV: (file: File) => void;
+  loadSimulatedData: () => void;
   debugHeaders: string[];
 } => {
   const { setFrameworkData, activities: storeActivities } = useAppStore();
@@ -34,9 +36,6 @@ export const useFrameworkData = (): {
 
   // Calculate totalActivities from store instead of state
   const totalActivities = storeActivities.length;
-
-  // Force usage to debug linter
-  console.log('Store activities count:', storeActivities.length);
 
   // Derive CalendarData from store activities
   const data = useMemo(() => {
@@ -61,8 +60,6 @@ export const useFrameworkData = (): {
       header: true,
       skipEmptyLines: true,
       complete: (results: any) => {
-        console.log('✅ Papa.parse completou. Linhas encontradas:', results.data?.length);
-        console.log('📊 Delimitador detectado:', results.meta?.delimiter);
         try {
           const rawRows = results.data as any[];
 
@@ -262,27 +259,48 @@ export const useFrameworkData = (): {
           // Update Store
           setFrameworkData(processedRows, newActivities);
           console.log(`✅ Carregadas ${validCount} atividades, ${skipCount} linhas puladas`);
-
-          // Auto-select all BUs found in the data to prevent empty filter state
-          const uniqueBUs = [...new Set(newActivities.map(a => a.bu))];
-          if (uniqueBUs.length > 0) {
-            console.log('🔧 Auto-selecionando BUs:', uniqueBUs);
-            // Update global filters to include all BUs
-            useAppStore.getState().setGlobalFilters({ bu: uniqueBUs as any[] });
-          }
+          setLoading(false);
 
         } catch (err) {
-          setError(`Erro ao processar CSV: ${err instanceof Error ? err.message : 'Desconhecido'}`);
-        } finally {
+          console.error('❌ Erro no processamento:', err);
+          setError('Erro ao processar arquivo: ' + (err as Error).message);
           setLoading(false);
         }
       },
-      error: (error: any) => {
-        setError(`Erro ao ler arquivo: ${error.message}`);
+      error: (err: Error) => {
+        console.error('❌ Erro no Papa.parse:', err);
+        setError('Erro ao ler arquivo CSV: ' + err.message);
         setLoading(false);
       }
     });
   }, [setFrameworkData]);
 
-  return { data, loading, error, totalActivities, processCSV, debugHeaders };
+  const loadSimulatedData = useCallback(() => {
+    console.log('🧪 loadSimulatedData CALLED');
+    try {
+      console.log('🔧 Gerando dados simulados (síncrono)...');
+      const start = performance.now();
+      const { rows, activities } = generateSimulatedData();
+      const duration = performance.now() - start;
+      console.log(`✅ Dados gerados em ${duration.toFixed(2)}ms: ${activities.length} atividades`);
+      
+      console.log('📝 Atualizando store com setFrameworkData...');
+      setFrameworkData(rows, activities);
+      
+      console.log('🎉 Dados carregados com sucesso!');
+    } catch (err) {
+      console.error('❌ Erro:', err);
+      setError('Erro ao gerar dados: ' + (err as Error).message);
+    }
+  }, [setFrameworkData]);
+
+  return {
+    data,
+    loading,
+    error,
+    totalActivities,
+    processCSV,
+    loadSimulatedData,
+    debugHeaders
+  };
 };

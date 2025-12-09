@@ -25,6 +25,10 @@ export interface DiaryEntry {
     statusExperimento?: 'hipotese' | 'rodando' | 'concluido' | 'aprendizado';
     hipotese?: string;
     conclusao?: string;
+    metrics?: {
+        controle: { disparos: number; conversoes: number };
+        variante: { disparos: number; conversoes: number };
+    };
 }
 
 interface DiaryStore {

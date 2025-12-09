@@ -62,6 +62,17 @@ export interface ComparationData {
   isGrowth: boolean; // true se cresceu
 }
 
+export interface MetaMensal {
+  id: string;
+  mes: string;           // "2025-11"
+  bu: 'B2C' | 'B2B2C' | 'Plurix';
+  cartoes_meta: number;
+  pedidos_meta: number;
+  cac_max: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Goal {
   mes: string;           // "2025-11"
   cartoes_meta?: number;

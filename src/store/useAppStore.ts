@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { FrameworkRow, ViewSettings, Goal, JournalEntry, FilterState, Activity } from '../types/framework';
 
@@ -16,6 +17,7 @@ interface AppState {
     setGoals: (goals: Goal[]) => void;
     addJournalEntry: (entry: JournalEntry) => void;
     updateJournalEntry: (id: string, entry: Partial<JournalEntry>) => void;
+    updateActivity: (id: string, updates: Partial<Activity>) => void;
 
     // Filter Actions
     setGlobalFilters: (filters: Partial<FilterState>) => void;
@@ -60,6 +62,10 @@ export const useAppStore = create<AppState>((set) => ({
 
     updateJournalEntry: (id, entry) => set((state) => ({
         journal: state.journal.map(j => j.id === id ? { ...j, ...entry } : j)
+    })),
+
+    updateActivity: (id, updates) => set((state) => ({
+        activities: state.activities.map((a) => (a.id === id ? { ...a, ...updates } : a))
     })),
 
     setGlobalFilters: (filters) => set((state) => ({

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save, Target } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Save, Target, Calculator } from 'lucide-react';
 import { Goal } from '../types/framework';
 
 interface GoalsModalProps {
@@ -17,12 +17,7 @@ export const GoalsModal: React.FC<GoalsModalProps> = ({
     initialGoal,
     currentMonthLabel
 }) => {
-    const [activeTab, setActiveTab] = useState<'Global' | 'B2C' | 'B2B2C' | 'Plurix'>('Global');
-
-    // Global State
-    const [cartoes, setCartoes] = useState(initialGoal.cartoes_meta?.toString() || '');
-    const [aprovacoes, setAprovacoes] = useState(initialGoal.aprovacoes_meta?.toString() || '');
-    const [cacMax, setCacMax] = useState(initialGoal.cac_max?.toString() || '');
+    const [activeTab, setActiveTab] = useState<'B2C' | 'B2B2C' | 'Plurix'>('B2C');
 
     // BU States
     const [buGoals, setBuGoals] = useState<{ [key: string]: { cartoes: string; aprovacoes: string; cac: string } }>({
@@ -33,10 +28,6 @@ export const GoalsModal: React.FC<GoalsModalProps> = ({
 
     useEffect(() => {
         if (isOpen) {
-            setCartoes(initialGoal.cartoes_meta?.toString() || '');
-            setAprovacoes(initialGoal.aprovacoes_meta?.toString() || '');
-            setCacMax(initialGoal.cac_max?.toString() || '');
-
             const newBuGoals = {
                 B2C: { cartoes: '', aprovacoes: '', cac: '' },
                 B2B2C: { cartoes: '', aprovacoes: '', cac: '' },
@@ -58,6 +49,29 @@ export const GoalsModal: React.FC<GoalsModalProps> = ({
         }
     }, [isOpen, initialGoal]);
 
+    // Computed totals for summary
+    const totals = useMemo(() => {
+        let totalCartoes = 0;
+        let totalAprovacoes = 0;
+        let totalCacSum = 0;
+        let count = 0;
+
+        Object.values(buGoals).forEach(g => {
+            totalCartoes += Number(g.cartoes) || 0;
+            totalAprovacoes += Number(g.aprovacoes) || 0;
+            if (Number(g.cac) > 0) {
+                totalCacSum += Number(g.cac);
+                count++;
+            }
+        });
+
+        return {
+            cartoes: totalCartoes,
+            aprovacoes: totalAprovacoes,
+            cacMedio: count > 0 ? totalCacSum / count : 0
+        };
+    }, [buGoals]);
+
     if (!isOpen) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -71,152 +85,143 @@ export const GoalsModal: React.FC<GoalsModalProps> = ({
             };
         });
 
+        // The saveGoal adapter will handle distributing these to the store
         onSave({
             mes: initialGoal.mes,
-            cartoes_meta: Number(cartoes) || 0,
-            aprovacoes_meta: Number(aprovacoes) || 0,
-            cac_max: Number(cacMax) || 0,
+            cartoes_meta: totals.cartoes,
+            aprovacoes_meta: totals.aprovacoes,
+            cac_max: totals.cacMedio,
             bus: busData
         });
         onClose();
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md border border-slate-700">
-                <div className="flex items-center justify-between p-4 border-b border-slate-700">
-                    <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl border border-slate-700 flex flex-col md:flex-row overflow-hidden">
+
+                {/* Sidebar / Tabs */}
+                <div className="w-full md:w-1/3 bg-slate-900/50 border-r border-slate-700 p-4 flex flex-col">
+                    <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2 mb-6">
                         <Target className="text-blue-400" size={20} />
-                        Definir Metas: {currentMonthLabel}
+                        Metas
                     </h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-200 transition">
-                        <X size={20} />
-                    </button>
+
+                    <div className="space-y-2 flex-1">
+                        {['B2C', 'B2B2C', 'Plurix'].map((tab) => (
+                            <button
+                                key={tab}
+                                type="button"
+                                onClick={() => setActiveTab(tab as any)}
+                                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition flex items-center justify-between group ${activeTab === tab
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
+                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                                    }`}
+                            >
+                                {tab}
+                                {activeTab === tab && <div className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Summary Card in Sidebar */}
+                    <div className="mt-6 bg-slate-800 rounded-lg p-4 border border-slate-700">
+                        <div className="flex items-center gap-2 text-slate-400 mb-3">
+                            <Calculator size={16} />
+                            <span className="text-xs font-bold uppercase tracking-wider">Consolidado</span>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-500">Cartões</span>
+                                <span className="text-slate-200 font-mono">{totals.cartoes.toLocaleString('pt-BR')}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-500">Aprovações</span>
+                                <span className="text-slate-200 font-mono">{totals.aprovacoes.toLocaleString('pt-BR')}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-500">CAC Médio</span>
+                                <span className="text-emerald-400 font-mono">R$ {totals.cacMedio.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="flex border-b border-slate-700">
-                    {['Global', 'B2C', 'B2B2C', 'Plurix'].map((tab) => (
-                        <button
-                            key={tab}
-                            type="button"
-                            onClick={() => setActiveTab(tab as any)}
-                            className={`flex-1 py-3 text-sm font-medium transition ${activeTab === tab
-                                ? 'text-blue-400 border-b-2 border-blue-400 bg-slate-800'
-                                : 'text-slate-400 hover:text-slate-200 bg-slate-900/50'
-                                }`}
-                        >
-                            {tab}
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col">
+                    <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800">
+                        <div>
+                            <h3 className="text-slate-100 font-bold">Configuração: {activeTab}</h3>
+                            <p className="text-xs text-slate-400">Defina as metas para o mês de {currentMonthLabel}</p>
+                        </div>
+                        <button onClick={onClose} className="text-slate-400 hover:text-slate-200 transition">
+                            <X size={20} />
                         </button>
-                    ))}
-                </div>
+                    </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {activeTab === 'Global' ? (
-                        <>
-                            <div className="bg-blue-900/20 p-3 rounded border border-blue-900/50 mb-4">
-                                <p className="text-xs text-blue-300">
-                                    Defina as metas consolidadas da empresa. As metas por BU podem ser definidas nas outras abas.
-                                </p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    Meta de Cartões Gerados (Global)
+                    <form onSubmit={handleSubmit} className="p-6 space-y-6 flex-1">
+                        <div className="grid grid-cols-1 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                                    Meta de Cartões Gerados
                                 </label>
-                                <input
-                                    type="number"
-                                    value={cartoes}
-                                    onChange={(e) => setCartoes(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Ex: 5000"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    Meta de Aprovações (Global)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={aprovacoes}
-                                    onChange={(e) => setAprovacoes(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Ex: 12000"
-                                />
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={buGoals[activeTab].cartoes}
+                                        onChange={(e) => setBuGoals({
+                                            ...buGoals,
+                                            [activeTab]: { ...buGoals[activeTab], cartoes: e.target.value }
+                                        })}
+                                        className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                        placeholder="0"
+                                    />
+                                    <div className="absolute right-3 top-3 text-slate-500 text-xs">unidades</div>
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    CAC Máximo Aceitável (Global)
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                                    Meta de Aprovações
                                 </label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={cacMax}
-                                    onChange={(e) => setCacMax(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Ex: 45.00"
-                                />
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div className="bg-slate-900/50 p-3 rounded border border-slate-700 mb-4">
-                                <p className="text-xs text-slate-400">
-                                    Definindo metas específicas para <span className="font-bold text-white">{activeTab}</span>.
-                                </p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    Meta de Cartões ({activeTab})
-                                </label>
-                                <input
-                                    type="number"
-                                    value={buGoals[activeTab].cartoes}
-                                    onChange={(e) => setBuGoals({
-                                        ...buGoals,
-                                        [activeTab]: { ...buGoals[activeTab], cartoes: e.target.value }
-                                    })}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Ex: 1000"
-                                />
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={buGoals[activeTab].aprovacoes}
+                                        onChange={(e) => setBuGoals({
+                                            ...buGoals,
+                                            [activeTab]: { ...buGoals[activeTab], aprovacoes: e.target.value }
+                                        })}
+                                        className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                        placeholder="0"
+                                    />
+                                    <div className="absolute right-3 top-3 text-slate-500 text-xs">unidades</div>
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    Meta de Aprovações ({activeTab})
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                                    CAC Máximo Aceitável
                                 </label>
-                                <input
-                                    type="number"
-                                    value={buGoals[activeTab].aprovacoes}
-                                    onChange={(e) => setBuGoals({
-                                        ...buGoals,
-                                        [activeTab]: { ...buGoals[activeTab], aprovacoes: e.target.value }
-                                    })}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Ex: 3000"
-                                />
+                                <div className="relative">
+                                    <span className="absolute left-3 top-3 text-slate-500">R$</span>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={buGoals[activeTab].cac}
+                                        onChange={(e) => setBuGoals({
+                                            ...buGoals,
+                                            [activeTab]: { ...buGoals[activeTab], cac: e.target.value }
+                                        })}
+                                        className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 pl-10 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                        placeholder="0.00"
+                                    />
+                                </div>
                             </div>
+                        </div>
+                    </form>
 
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-1">
-                                    CAC Máximo ({activeTab})
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={buGoals[activeTab].cac}
-                                    onChange={(e) => setBuGoals({
-                                        ...buGoals,
-                                        [activeTab]: { ...buGoals[activeTab], cac: e.target.value }
-                                    })}
-                                    className="w-full bg-slate-900 border border-slate-600 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    placeholder="Ex: 50.00"
-                                />
-                            </div>
-                        </>
-                    )}
-
-                    <div className="pt-4 flex justify-end gap-3">
+                    <div className="p-4 border-t border-slate-700 bg-slate-900/30 flex justify-end gap-3">
                         <button
                             type="button"
                             onClick={onClose}
@@ -225,14 +230,14 @@ export const GoalsModal: React.FC<GoalsModalProps> = ({
                             Cancelar
                         </button>
                         <button
-                            type="submit"
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg flex items-center gap-2 transition shadow-lg shadow-blue-900/20"
+                            onClick={handleSubmit}
+                            className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg flex items-center gap-2 transition shadow-lg shadow-blue-900/20 font-medium"
                         >
                             <Save size={18} />
-                            Salvar Metas
+                            Salvar Todas as Metas
                         </button>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     );

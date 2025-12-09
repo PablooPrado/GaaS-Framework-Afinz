@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
-import { AlertCircle, TrendingDown } from 'lucide-react';
+import { AlertCircle, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { CalendarData } from '../../types/framework';
 import { Tooltip } from '../Tooltip';
+import { useBottleneckTrend, FunnelMetrics } from '../../hooks/useBottleneckTrend';
 
 interface BottleneckAnalysisProps {
     data: CalendarData;
+    previousData?: CalendarData; // New prop for trend analysis
     selectedBU?: string;
     selectedCanais?: string[];
     selectedSegmentos?: string[];
@@ -21,30 +23,30 @@ interface StageData {
     drop: number;
     isBottleneck: boolean;
     severity: 'critical' | 'warning' | 'ok';
+    trend?: {
+        value: number | null;
+        direction: 'up' | 'down' | 'stable' | 'none';
+    };
 }
 
 export const BottleneckAnalysis: React.FC<BottleneckAnalysisProps> = ({
     data,
+    previousData,
     selectedBU,
     selectedCanais = [],
     selectedSegmentos = [],
     selectedParceiros = []
 }) => {
-    const analysis = useMemo(() => {
-        const stagesDef = [
-            { name: 'Envio → Entrega', key: 'baseEntregue', prevKey: 'baseEnviada' },
-            { name: 'Entrega → Abertura', key: 'propostas', prevKey: 'baseEntregue' }, // Using Propostas as proxy for Abertura/Interest
-            { name: 'Abertura → Proposta', key: 'aprovados', prevKey: 'propostas' },
-            { name: 'Proposta → Emissão', key: 'emissoes', prevKey: 'aprovados' },
-        ];
+    const { calcularTendencia } = useBottleneckTrend();
 
+    const calculateMetrics = (dataset: CalendarData): FunnelMetrics => {
         let totalBaseEnviada = 0;
         let totalBaseEntregue = 0;
         let totalPropostas = 0;
         let totalAprovados = 0;
         let totalEmissoes = 0;
 
-        Object.values(data).forEach((activities) => {
+        Object.values(dataset).forEach((activities) => {
             activities.forEach((activity) => {
                 if (selectedBU && activity.bu !== selectedBU) return;
                 if (selectedCanais.length > 0 && !selectedCanais.includes(activity.canal)) return;
@@ -59,18 +61,40 @@ export const BottleneckAnalysis: React.FC<BottleneckAnalysisProps> = ({
             });
         });
 
+        return {
+            baseEnviada: totalBaseEnviada,
+            baseEntregue: totalBaseEntregue,
+            propostas: totalPropostas,
+            aprovados: totalAprovados,
+            emissoes: totalEmissoes
+        };
+    };
+
+    const analysis = useMemo(() => {
+        const currentMetrics = calculateMetrics(data);
+        const previousMetrics = previousData ? calculateMetrics(previousData) : null;
+
+        const trends = calcularTendencia(currentMetrics, previousMetrics);
+
+        const stagesDef = [
+            { name: 'Envio → Entrega', key: 'baseEntregue', prevKey: 'baseEnviada' },
+            { name: 'Entrega → Abertura', key: 'propostas', prevKey: 'baseEntregue' }, // Using Propostas as proxy for Abertura/Interest
+            { name: 'Abertura → Proposta', key: 'aprovados', prevKey: 'propostas' },
+            { name: 'Proposta → Emissão', key: 'emissoes', prevKey: 'aprovados' },
+        ];
+
         const result: StageData[] = stagesDef.map((stage) => {
             let prev = 0;
-            if (stage.prevKey === 'baseEnviada') prev = totalBaseEnviada;
-            else if (stage.prevKey === 'baseEntregue') prev = totalBaseEntregue;
-            else if (stage.prevKey === 'propostas') prev = totalPropostas;
-            else if (stage.prevKey === 'aprovados') prev = totalAprovados;
+            if (stage.prevKey === 'baseEnviada') prev = currentMetrics.baseEnviada;
+            else if (stage.prevKey === 'baseEntregue') prev = currentMetrics.baseEntregue;
+            else if (stage.prevKey === 'propostas') prev = currentMetrics.propostas;
+            else if (stage.prevKey === 'aprovados') prev = currentMetrics.aprovados;
 
             let current = 0;
-            if (stage.key === 'baseEntregue') current = totalBaseEntregue;
-            else if (stage.key === 'propostas') current = totalPropostas;
-            else if (stage.key === 'aprovados') current = totalAprovados;
-            else if (stage.key === 'emissoes') current = totalEmissoes;
+            if (stage.key === 'baseEntregue') current = currentMetrics.baseEntregue;
+            else if (stage.key === 'propostas') current = currentMetrics.propostas;
+            else if (stage.key === 'aprovados') current = currentMetrics.aprovados;
+            else if (stage.key === 'emissoes') current = currentMetrics.emissoes;
 
             const conversionRate = prev > 0 ? (current / prev) * 100 : 0;
             const drop = prev - current;
@@ -78,6 +102,8 @@ export const BottleneckAnalysis: React.FC<BottleneckAnalysisProps> = ({
             let severity: 'critical' | 'warning' | 'ok' = 'ok';
             if (conversionRate < 10) severity = 'critical';
             else if (conversionRate < 50) severity = 'warning';
+
+            const trendData = trends.find(t => t.etapa === stage.name);
 
             return {
                 name: stage.name,
@@ -88,16 +114,15 @@ export const BottleneckAnalysis: React.FC<BottleneckAnalysisProps> = ({
                 conversionRate,
                 drop,
                 isBottleneck: severity !== 'ok',
-                severity
+                severity,
+                trend: trendData ? { value: trendData.tendencia, direction: trendData.direcao } : undefined
             };
         });
 
         return result;
-    }, [data, selectedBU, selectedCanais, selectedSegmentos, selectedParceiros]);
+    }, [data, previousData, selectedBU, selectedCanais, selectedSegmentos, selectedParceiros]);
 
-    // Find the biggest bottleneck (lowest conversion rate among warnings/criticals, or just critical)
-    // Actually, biggest bottleneck is usually where we lose the MOST volume or have the lowest rate.
-    // Let's prioritize lowest rate.
+    // Find the biggest bottleneck
     const biggestBottleneck = useMemo(() => {
         const bottlenecks = analysis.filter(s => s.isBottleneck);
         if (bottlenecks.length === 0) return null;
@@ -131,12 +156,30 @@ export const BottleneckAnalysis: React.FC<BottleneckAnalysisProps> = ({
         }
     };
 
+    const renderTrend = (trend?: { value: number | null, direction: 'up' | 'down' | 'stable' | 'none' }) => {
+        if (!trend || trend.value === null || trend.direction === 'none') return <span className="text-slate-500">-</span>;
+
+        const { value, direction } = trend;
+        if (direction === 'stable') return <span className="text-slate-500 flex items-center"><Minus size={14} className="mr-1" /> {Math.abs(value).toFixed(1)}%</span>;
+
+        const isPositive = direction === 'up';
+        const color = isPositive ? 'text-emerald-400' : 'text-red-400';
+        const Icon = isPositive ? TrendingUp : TrendingDown;
+
+        return (
+            <span className={`${color} flex items-center`}>
+                <Icon size={14} className="mr-1" />
+                {Math.abs(value).toFixed(1)}%
+            </span>
+        );
+    };
+
     return (
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
             <h2 className="text-lg font-bold text-slate-100 mb-6 flex items-center gap-2">
                 <AlertCircle size={20} className="text-amber-400" />
                 Análise de Gargalos
-                <Tooltip content="Identifica a etapa do funil onde você mais perde volume. O maior gargalo é destacado com causas prováveis e ação." />
+                <Tooltip content="Identifica a etapa do funil onde você mais perde volume. O maior gargalo é destacado com causas prováveis e ação. Cores: Verde (>50%), Amarelo (10-50%), Vermelho (<10%)." />
             </h2>
 
             {biggestBottleneck ? (
@@ -161,7 +204,7 @@ export const BottleneckAnalysis: React.FC<BottleneckAnalysisProps> = ({
                                 <div className="flex flex-col">
                                     <span className="text-slate-400 text-xs">Tendência</span>
                                     <span className="text-lg font-bold text-slate-400 flex items-center">
-                                        <TrendingDown size={16} className="mr-1" /> -
+                                        {renderTrend(biggestBottleneck.trend)}
                                     </span>
                                 </div>
                             </div>
@@ -203,23 +246,25 @@ export const BottleneckAnalysis: React.FC<BottleneckAnalysisProps> = ({
                 {analysis.map((stage, idx) => (
                     <div
                         key={idx}
-                        className={`p-4 rounded-lg border transition ${stage.isBottleneck
-                            ? 'bg-slate-800 border-slate-600'
-                            : 'bg-slate-800/50 border-slate-700/50 opacity-75 hover:opacity-100'
+                        className={`p-4 rounded-lg border-l-4 transition ${stage.severity === 'critical' ? 'border-red-500 bg-red-500/10' :
+                            stage.severity === 'warning' ? 'border-yellow-500 bg-yellow-500/10' :
+                                'border-green-500 bg-green-500/10'
                             }`}
                     >
                         <div className="flex justify-between items-start mb-2">
                             <span className="text-xs font-medium text-slate-400">{stage.name}</span>
-                            {stage.severity === 'critical' && <div className="w-2 h-2 rounded-full bg-red-500" />}
-                            {stage.severity === 'warning' && <div className="w-2 h-2 rounded-full bg-yellow-500" />}
-                            {stage.severity === 'ok' && <div className="w-2 h-2 rounded-full bg-emerald-500" />}
                         </div>
                         <div className="text-xl font-bold text-slate-200 mb-1">
                             {stage.conversionRate.toFixed(1)}%
                         </div>
-                        <div className="text-xs text-red-400 flex items-center gap-1">
-                            <TrendingDown size={12} />
-                            -{stage.drop.toLocaleString('pt-BR')}
+                        <div className="flex justify-between items-center">
+                            <div className="text-xs text-red-400 flex items-center gap-1">
+                                <TrendingDown size={12} />
+                                -{stage.drop.toLocaleString('pt-BR')}
+                            </div>
+                            <div className="text-xs">
+                                {renderTrend(stage.trend)}
+                            </div>
                         </div>
                     </div>
                 ))}

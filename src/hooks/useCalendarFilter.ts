@@ -3,16 +3,17 @@ import { CalendarData, FilterState } from '../types/framework';
 
 export const useCalendarFilter = (data: CalendarData, filters: FilterState) => {
   const filteredData = useMemo(() => {
-    // If no BU selected, show nothing? Or show all? 
-    // Usually if nothing selected, show nothing.
-    // But if filters.bu is empty, maybe we should treat as "all"?
-    // The previous logic was: if (selectedBUs.length === 0) return {};
-    if (filters.bu.length === 0) return {};
+    // If no BU selected, show all data (don't filter out)
+    // This prevents the calendar from appearing empty
+    const busToFilter = filters.bu.length === 0 ? undefined : filters.bu;
 
     const filtered: CalendarData = {};
 
     Object.entries(data).forEach(([dateKey, activities]) => {
-      const filtered_activities = activities.filter(activity => filters.bu.includes(activity.bu));
+      const filtered_activities = busToFilter 
+        ? activities.filter(activity => busToFilter.includes(activity.bu))
+        : activities; // Show all if no BU filter selected
+      
       if (filtered_activities.length > 0) {
         filtered[dateKey] = filtered_activities;
       }

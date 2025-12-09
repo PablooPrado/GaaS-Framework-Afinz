@@ -2,11 +2,12 @@ import { useState, useMemo } from 'react';
 import { StrategyMetrics } from '../types/strategy';
 import { DistributionAnalysis } from './DistributionAnalysis';
 import { ChannelComparisonChart } from './ChannelComparisonChart';
-import { GoalsProgress } from './GoalsProgress';
+import { GoalsVisualization } from './GoalsVisualization';
 import { GoalsModal } from './GoalsModal';
 import { ProjectionsSection } from './resultados/ProjectionsSection';
 import { useGoals } from '../hooks/useGoals';
 import { CalendarData } from '../types/framework';
+import { Target } from 'lucide-react';
 
 interface ResultadosViewProps {
   resultados: StrategyMetrics;
@@ -37,7 +38,7 @@ export const ResultadosView: React.FC<ResultadosViewProps> = ({ resultados, data
 
   const sortedResultados = Object.values(resultados).sort((a, b) => b.totalCartoes - a.totalCartoes);
 
-  // Calcular totais para o GoalsProgress
+  // Calcular totais para o GoalsVisualization
   const totalCartoes = sortedResultados.reduce((acc, curr) => acc + curr.totalCartoes, 0);
   let totalAprovacoes = 0;
   let totalCusto = 0;
@@ -69,18 +70,31 @@ export const ResultadosView: React.FC<ResultadosViewProps> = ({ resultados, data
       />
 
       {/* 3. Meta vs Realizado | Comparativo de Canais */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <GoalsProgress
+      <div className="grid grid-cols-1 gap-6">
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+              <Target size={20} className="text-blue-400" />
+              Meta vs. Realizado <span className="text-slate-500 text-sm font-normal">({selectedBU || 'Global'})</span>
+            </h2>
+            <button
+              onClick={() => setIsGoalsModalOpen(true)}
+              className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
+            >
+              Definir Metas
+            </button>
+          </div>
+
+          <GoalsVisualization
             goal={currentGoal}
             currentCartoes={totalCartoes}
             currentAprovacoes={totalAprovacoes}
             currentCAC={currentCAC}
-            onEditGoals={() => setIsGoalsModalOpen(true)}
             scope={selectedBU || 'Global'}
           />
         </div>
-        <div className="lg:col-span-2">
+
+        <div>
           <ChannelComparisonChart data={data} />
         </div>
       </div>
