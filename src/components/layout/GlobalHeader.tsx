@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, User, Search } from 'lucide-react';
+import { Bell, User, Search, Settings } from 'lucide-react';
 
 export const GlobalHeader: React.FC = () => {
     return (
@@ -19,7 +19,7 @@ export const GlobalHeader: React.FC = () => {
             {/* Center: Logo/Brand */}
             <div className="flex flex-col items-center justify-center w-1/3">
                 <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 font-bold text-xl tracking-tight">
-                    Growth Brain
+                    Dashboard Growth CRM
                 </h1>
                 <span className="text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">
                     Afinz v3.0
@@ -28,6 +28,10 @@ export const GlobalHeader: React.FC = () => {
 
             {/* Right: Actions */}
             <div className="flex items-center justify-end gap-4 w-1/3">
+                <button className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition relative" title="Configurações">
+                    {/* Placeholder for Settings Icon interaction if needed, for now just visual */}
+                    <Settings size={20} />
+                </button>
                 <button className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition relative">
                     <Bell size={20} />
                     <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-[#0B0F19]"></span>

@@ -5,7 +5,6 @@ import {
     BarChart3,
     Lightbulb,
     BookOpen,
-    Settings,
     Calendar,
     ChevronRight
 } from 'lucide-react';
@@ -109,12 +108,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                 </div>
             </nav>
 
-            {/* Footer / Settings */}
+            {/* Footer / Settings - Settings moved to Header */}
             <div className="p-4 border-t border-slate-800 pb-8">
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition text-sm font-medium">
-                    <Settings size={18} />
-                    Configurações
-                </button>
+                {/* Empty for now or future footer items */}
             </div>
         </aside>
     );

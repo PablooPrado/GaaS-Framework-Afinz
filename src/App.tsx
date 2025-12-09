@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Filter } from 'lucide-react';
 import { CSVUpload } from './components/CSVUpload';
 import { FilterSidebar } from './components/FilterSidebar';
 
@@ -101,8 +101,33 @@ function App() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
+        {/* Filters Sidebar - Push Panel */}
+        <div
+          className={`bg-slate-900 border-r border-slate-700 transition-all duration-300 ease-in-out overflow-hidden flex flex-col ${showFiltersDrawer ? 'w-80 opacity-100' : 'w-0 opacity-0'}`}
+        >
+          <div className="w-80 h-full flex flex-col"> {/* Fixed width wrapper for content */}
+            <div className="p-4 flex justify-between items-center border-b border-slate-800">
+              <h3 className="font-bold text-slate-100">Filtros Avançados</h3>
+              <button onClick={() => setShowFiltersDrawer(false)} className="text-slate-400 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              <FilterSidebar
+                availableCanais={availableCanais}
+                availableSegmentos={availableSegmentos}
+                availableParceiros={availableParceiros}
+                countByCanal={countByCanal}
+                countBySegmento={countBySegmento}
+                countByParceiro={countByParceiro}
+              />
+              {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
+            </div>
+          </div>
+        </div>
+
         {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-[#0F172A] relative">
+        <main className="flex-1 flex flex-col overflow-hidden bg-[#0F172A] relative min-w-0">
 
           {hasData && (
             <PageHeader title={getPageTitle(activeTab)}>
@@ -112,34 +137,9 @@ function App() {
                 className={`p-2 rounded-lg transition ${showFiltersDrawer ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
                 title="Filtros Avançados"
               >
-                <Menu size={20} />
+                <Filter size={20} />
               </button>
             </PageHeader>
-          )}
-
-          {/* Filters Sidebar - Fixed (Legacy support for now) */}
-          {showFiltersDrawer && (
-            <div className="absolute inset-y-0 right-0 z-40 w-80 bg-slate-900 border-l border-slate-700 shadow-2xl transform transition-transform duration-300 top-16">
-              <div className="h-full overflow-y-auto">
-                <div className="p-4 flex justify-between items-center border-b border-slate-800">
-                  <h3 className="font-bold text-slate-100">Filtros Avançados</h3>
-                  <button onClick={() => setShowFiltersDrawer(false)} className="text-slate-400 hover:text-white">
-                    <X size={20} />
-                  </button>
-                </div>
-                <div className="p-4">
-                  <FilterSidebar
-                    availableCanais={availableCanais}
-                    availableSegmentos={availableSegmentos}
-                    availableParceiros={availableParceiros}
-                    countByCanal={countByCanal}
-                    countBySegmento={countBySegmento}
-                    countByParceiro={countByParceiro}
-                  />
-                  {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
-                </div>
-              </div>
-            </div>
           )}
 
           <div className="flex-1 overflow-auto p-6">
