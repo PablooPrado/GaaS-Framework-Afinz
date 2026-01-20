@@ -2,12 +2,15 @@
   "name": "calendar-estrategico",
   "version": "1.0.0",
   "description": "Dashboard calendário estratégico de disparos Salesforce",
+  "homepage": "https://PablooPrado.github.io/GaaS-Framework-Afinz",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "date-fns": "^2.30.0",
@@ -27,6 +30,7 @@
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
+    "gh-pages": "^6.3.0",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",
     "typescript": "^5.2.2",
