@@ -108,7 +108,7 @@ export const OriginacaoKPIsComparison: React.FC<OriginacaoKPIsComparisonProps> =
                 />
                 <KPICard
                     label="Conv % B2C"
-                    value={`${summary.taxa_conversao_b2c_media.toFixed(2)}%`}
+                    value={`${summary.taxa_conversao_b2c_media.toFixed(2).replace('.', ',')}%`}
                     subtitle="Cartões / Propostas"
                     icon={<TrendingUp size={18} />}
                     colorClass="text-blue-400"
@@ -139,7 +139,7 @@ export const OriginacaoKPIsComparison: React.FC<OriginacaoKPIsComparisonProps> =
                 />
                 <KPICard
                     label="Conv % CRM"
-                    value={`${summary.taxa_conversao_crm_media.toFixed(2)}%`}
+                    value={`${summary.taxa_conversao_crm_media.toFixed(2).replace('.', ',')}%`}
                     subtitle="Conversão CRM"
                     icon={<TrendingUp size={18} />}
                     colorClass="text-emerald-400"
