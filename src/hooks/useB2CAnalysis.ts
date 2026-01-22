@@ -7,6 +7,7 @@ import { DailyAnalysis, MetricsSummary } from '../types/b2c';
 import { usePeriod } from '../contexts/PeriodContext';
 import { startOfWeek, startOfMonth, format, subDays, differenceInDays } from 'date-fns';
 import { useBU } from '../contexts/BUContext';
+import { parseDate } from '../utils/formatters';
 
 export type ViewMode = 'daily' | 'weekly' | 'monthly';
 
@@ -44,39 +45,22 @@ const calculateMetrics = (
     // 2. Merge B2C & CRM (Daily Base)
     const allDates = new Set<string>();
     Object.keys(crmByDate).forEach(d => allDates.add(d));
-    // Helper to normalize date
-    const toISODate = (dateStr: string): string => {
-        if (!dateStr) return '';
-        let clean = dateStr.trim();
-        // Handle DD/MM/YYYY
-        if (clean.includes('/')) {
-            const parts = clean.split('/');
-            if (parts.length === 3) {
-                let [d, m, y] = parts;
-                if (y.length === 2) y = '20' + y;
-                return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-            }
-        }
-        // Handle YYYY-MM-DD
-        if (clean.includes('-')) {
-            const parts = clean.split('-');
-            if (parts.length === 3) {
-                // Ensure yyyy-mm-dd padding
-                return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-            }
-            return clean;
-        }
-        return clean;
+
+    // Helper to get YYYY-MM-DD from any date string
+    const getISODate = (val: any): string | null => {
+        const d = parseDate(val);
+        if (!d) return null;
+        return format(d, 'yyyy-MM-dd');
     };
 
     b2cData.forEach(d => {
-        const isoDate = toISODate(d.data);
+        const isoDate = getISODate(d.data);
         if (isoDate) allDates.add(isoDate);
     });
 
     const normalizedDailyData = Array.from(allDates).sort().map(date => {
         const crm = crmByDate[date] || { propostas: 0, emissoes: 0, custo: 0, count: 0, baseEntregue: 0, campaignCount: 0 };
-        const b2cRow = b2cData.find(row => toISODate(row.data) === date);
+        const b2cRow = b2cData.find(row => getISODate(row.data) === date);
         const propostas_b2c = b2cRow?.propostas_b2c_total || 0;
         const emissoes_b2c = b2cRow?.emissoes_b2c_total || 0;
 

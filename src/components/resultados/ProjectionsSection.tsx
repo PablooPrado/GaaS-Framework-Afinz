@@ -29,9 +29,27 @@ export const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({ data, cu
     const daysInMonth = getDaysInMonth(currentMonthDate);
 
     // Determine days passed and remaining
-    // If we are in the current month, use today. If past month, use full month.
+    // If we are in the current month, use the last day we have data for (or today if no data).
+    // This prevents "flatlining" logic where empty future/current days drag down the average.
     const isCurrentMonth = isSameMonth(today, currentMonthDate);
-    const daysPassed = isCurrentMonth ? getDate(today) : daysInMonth;
+
+    // Find the last day in the current month that has data
+    const lastDayWithData = useMemo(() => {
+        if (!isCurrentMonth) return daysInMonth;
+
+        const dates = Object.keys(data)
+            .filter(d => d.startsWith(currentMonthStr))
+            .sort();
+
+        if (dates.length > 0) {
+            const lastDate = parseISO(dates[dates.length - 1]);
+            return getDate(lastDate);
+        }
+
+        return getDate(today);
+    }, [data, currentMonthStr, isCurrentMonth, daysInMonth, today]);
+
+    const daysPassed = isCurrentMonth ? lastDayWithData : daysInMonth;
     const daysRemaining = daysInMonth - daysPassed;
 
     // Calculate Realized Data

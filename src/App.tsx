@@ -9,6 +9,7 @@ import { DiarioBordo } from './components/DiarioBordo';
 import { FrameworkView } from './components/FrameworkView';
 import { OrientadorView } from './components/OrientadorView';
 import { ConfiguracoesView } from './components/ConfiguracoesView';
+import { OriginacaoB2CView } from './components/OriginacaoB2CView'; // Add this line
 import { useFrameworkData } from './hooks/useFrameworkData';
 import { useAdvancedFilters } from './hooks/useAdvancedFilters';
 import { useCalendarFilter } from './hooks/useCalendarFilter';
@@ -47,7 +48,7 @@ function App() {
   }), [storeFilters, startDate, endDate, selectedBUs]);
 
   // These hooks now use the new FilterState structure
-  const { filteredData: advancedFilteredData, availableCanais, availableSegmentos, availableParceiros, countByCanal, countBySegmento, countByParceiro } = useAdvancedFilters(data, filters);
+  const { filteredData: advancedFilteredData, availableCanais, availableJornadas, availableSegmentos, availableParceiros, countByCanal, countByJornada, countBySegmento, countByParceiro } = useAdvancedFilters(data, filters);
   const { filteredData } = useCalendarFilter(advancedFilteredData, filters);
 
   // Calculate previous period filters for trend analysis
@@ -101,31 +102,38 @@ function App() {
       <GlobalHeader />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
+        {/* Sidebar Area - Swaps between Navigation and Filters */}
+        <div className="flex-shrink-0 transition-all duration-300 ease-in-out h-full relative">
 
-        {/* Filters Sidebar - Push Panel */}
-        <div
-          className={`bg-slate-900 border-r border-slate-700 transition-all duration-300 ease-in-out overflow-hidden flex flex-col ${showFiltersDrawer ? 'w-80 opacity-100' : 'w-0 opacity-0'}`}
-        >
-          <div className="w-80 h-full flex flex-col"> {/* Fixed width wrapper for content */}
-            <div className="p-4 flex justify-between items-center border-b border-slate-800">
-              <h3 className="font-bold text-slate-100">Filtros Avançados</h3>
-              <button onClick={() => setShowFiltersDrawer(false)} className="text-slate-400 hover:text-white">
-                <X size={20} />
-              </button>
+          {/* Main Navigation Sidebar */}
+          {!showFiltersDrawer && (
+            <Sidebar />
+          )}
+
+          {/* Filters Sidebar - Replaces Navigation */}
+          {showFiltersDrawer && (
+            <div className="w-80 h-full bg-slate-900 border-r border-slate-700 flex flex-col">
+              <div className="p-4 flex justify-between items-center border-b border-slate-800">
+                <h3 className="font-bold text-slate-100">Filtros</h3>
+                <button onClick={() => setShowFiltersDrawer(false)} className="text-slate-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto flex-1">
+                <FilterSidebar
+                  availableCanais={availableCanais}
+                  availableJornadas={availableJornadas}
+                  availableSegmentos={availableSegmentos}
+                  availableParceiros={availableParceiros}
+                  countByCanal={countByCanal}
+                  countByJornada={countByJornada}
+                  countBySegmento={countBySegmento}
+                  countByParceiro={countByParceiro}
+                />
+                {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
+              </div>
             </div>
-            <div className="p-4 overflow-y-auto flex-1">
-              <FilterSidebar
-                availableCanais={availableCanais}
-                availableSegmentos={availableSegmentos}
-                availableParceiros={availableParceiros}
-                countByCanal={countByCanal}
-                countBySegmento={countBySegmento}
-                countByParceiro={countByParceiro}
-              />
-              {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Main Content */}
@@ -152,7 +160,7 @@ function App() {
                     <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
                       <Menu size={32} className="text-blue-400" />
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">Bem-vindo ao Growth Brain</h2>
+                    <h2 className="text-xl font-bold text-white mb-2">Bem-vindo ao GaaS</h2>
                     <p className="text-slate-400 mb-8">Faça upload do seu arquivo de dados para começar a análise.</p>
                     <CSVUpload
                       onFileSelect={processCSV}
@@ -203,10 +211,13 @@ function App() {
                 {activeTab === 'orientador' && (
                   <OrientadorView />
                 )}
+                {activeTab === 'originacao-b2c' && (
+                  <OriginacaoB2CView />
+                )}
                 {activeTab === 'configuracoes' && (
                   <ConfiguracoesView />
                 )}
-                {!['launch', 'resultados', 'jornada', 'diario', 'framework', 'orientador', 'configuracoes'].includes(activeTab) && (
+                {!['launch', 'resultados', 'jornada', 'diario', 'framework', 'orientador', 'configuracoes', 'originacao-b2c'].includes(activeTab) && (
                   <div className="flex items-center justify-center h-full text-slate-400">
                     <p>Aba desconhecida: {activeTab}. Redirecionando...</p>
                   </div>

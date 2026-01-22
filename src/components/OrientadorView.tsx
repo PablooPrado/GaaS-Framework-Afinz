@@ -1,19 +1,37 @@
 import React, { useState, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useRecommendationEngine } from '../hooks/useRecommendationEngine';
+import { useBU } from '../contexts/BUContext';
 import { RecommendationCard } from './orientador/RecommendationCard';
 import { HistoricoModal } from './orientador/HistoricoModal';
 import { Recommendation } from '../types/recommendations';
-import { Lightbulb, Filter, ArrowUpDown } from 'lucide-react';
+import { Lightbulb, Filter, ArrowUpDown, Info } from 'lucide-react';
+import { Tooltip } from './Tooltip';
 
 type SortOption = 'score' | 'cac' | 'conversion' | 'volume' | 'recency';
 
 export const OrientadorView: React.FC = () => {
     const { activities, viewSettings } = useAppStore();
+    const { selectedBUs } = useBU();
 
     const recommendations = useRecommendationEngine(activities);
     const [selectedRec, setSelectedRec] = useState<Recommendation | null>(null);
     const [sortBy, setSortBy] = useState<SortOption>('score');
+
+    // Calculate filtered activities count for the header
+    const filteredActivitiesCount = useMemo(() => {
+        const filters = viewSettings.filtrosGlobais;
+        return activities.filter(act => {
+            // Use BU Context
+            const matchesBU = selectedBUs.length === 0 || selectedBUs.includes(act.bu as any);
+
+            const matchesCanal = filters.canais.length === 0 || filters.canais.includes(act.canal);
+            const matchesSegmento = filters.segmentos.length === 0 || filters.segmentos.includes(act.segmento);
+            const matchesJornada = filters.jornadas.length === 0 || filters.jornadas.includes(act.jornada);
+            const matchesParceiro = filters.parceiros.length === 0 || filters.parceiros.includes(act.parceiro);
+            return matchesBU && matchesCanal && matchesSegmento && matchesJornada && matchesParceiro;
+        }).length;
+    }, [activities, viewSettings.filtrosGlobais, selectedBUs]);
 
     // Apply global filters and sorting
     const filteredRecommendations = useMemo(() => {
@@ -22,13 +40,15 @@ export const OrientadorView: React.FC = () => {
         // 1. Filter
         const filtered = recommendations.filter(rec => {
             // BU Filter
-            const matchesBU = filters.bu.length === 0 || rec.sampleActivities.some(a => filters.bu.includes(a.bu));
+            // Use the strict BU from the combo grouping to avoid leaks, checking against Context
+            const matchesBU = selectedBUs.length === 0 || selectedBUs.includes(rec.combo.bu as any); // Cast as any if BU type mismatch, or strict check
 
             const matchesCanal = filters.canais.length === 0 || filters.canais.includes(rec.combo.canal);
             const matchesSegmento = filters.segmentos.length === 0 || filters.segmentos.includes(rec.combo.segmento);
+            const matchesJornada = filters.jornadas.length === 0 || rec.sampleActivities.some(a => filters.jornadas.includes(a.jornada));
             const matchesParceiro = filters.parceiros.length === 0 || rec.sampleActivities.some(a => filters.parceiros.includes(a.parceiro));
 
-            return matchesBU && matchesCanal && matchesSegmento && matchesParceiro;
+            return matchesBU && matchesCanal && matchesSegmento && matchesJornada && matchesParceiro;
         });
 
         // 2. Sort
@@ -54,7 +74,7 @@ export const OrientadorView: React.FC = () => {
                     return 0;
             }
         });
-    }, [recommendations, viewSettings.filtrosGlobais, sortBy]);
+    }, [recommendations, viewSettings.filtrosGlobais, sortBy, selectedBUs]);
 
     return (
         <div className="flex flex-col h-full bg-slate-950 p-6 overflow-hidden">
@@ -65,7 +85,7 @@ export const OrientadorView: React.FC = () => {
                         Orientador Estratégico
                     </h2>
                     <p className="text-slate-400 text-sm mt-1">
-                        Recomendações baseadas no histórico de {activities.length} campanhas.
+                        Recomendações baseadas no histórico de {filteredActivitiesCount} campanhas.
                     </p>
                 </div>
 
@@ -85,12 +105,40 @@ export const OrientadorView: React.FC = () => {
                             <button
                                 key={opt.id}
                                 onClick={() => setSortBy(opt.id as SortOption)}
-                                className={`px-3 py-1 text-xs font-medium rounded transition ${sortBy === opt.id
-                                        ? 'bg-blue-600 text-white shadow-sm'
-                                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                                className={`px-3 py-1 text-xs font-medium rounded transition flex items-center gap-1 ${sortBy === opt.id
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
                                     }`}
                             >
                                 {opt.label}
+                                {opt.id === 'score' && (
+                                    <Tooltip
+                                        content={
+                                            <div className="w-48">
+                                                <p className="text-[10px] font-bold text-slate-300 mb-2 border-b border-slate-700 pb-1">Cálculo do Score</p>
+                                                <div className="space-y-1 text-[10px] text-slate-400">
+                                                    <div className="flex justify-between">
+                                                        <span>💰 CAC</span>
+                                                        <span className="text-slate-200">40%</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>📈 Conversão</span>
+                                                        <span className="text-slate-200">40%</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>📊 Volume</span>
+                                                        <span className="text-slate-200">20%</span>
+                                                    </div>
+                                                </div>
+                                                <p className="text-[9px] text-slate-500 mt-2 italic">
+                                                    Score 100 = melhor combinação do período (Normalizado)
+                                                </p>
+                                            </div>
+                                        }
+                                    >
+                                        <Info size={12} className={sortBy === 'score' ? 'text-blue-200' : 'text-slate-500'} />
+                                    </Tooltip>
+                                )}
                             </button>
                         ))}
                     </div>

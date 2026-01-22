@@ -4,8 +4,8 @@ import { CalendarData, AnomalyType } from '../types/framework';
 import { JornadaChart } from './JornadaChart';
 import { DailyDetailsModal } from './jornada/DailyDetailsModal';
 import { PerformanceEvolutionChart } from './jornada/PerformanceEvolutionChart';
-import { BottleneckAnalysis } from './jornada/BottleneckAnalysis';
 import { Tooltip } from './Tooltip';
+import { format } from 'date-fns';
 
 interface JornadaDisparosViewProps {
   data: CalendarData;
@@ -18,7 +18,7 @@ interface JornadaDisparosViewProps {
 
 export const JornadaDisparosView: React.FC<JornadaDisparosViewProps> = ({
   data,
-  previousData,
+  // previousData,
   selectedBU,
   selectedCanais = [],
   selectedSegmentos = [],
@@ -37,7 +37,7 @@ export const JornadaDisparosView: React.FC<JornadaDisparosViewProps> = ({
   const selectedActivities = useMemo(() => {
     if (!selectedDate) return [];
 
-    const dateKey = selectedDate.toISOString().split('T')[0];
+    const dateKey = format(selectedDate, 'yyyy-MM-dd');
     const activities = data[dateKey] || [];
 
     return activities.filter((activity) => {
@@ -151,14 +151,14 @@ export const JornadaDisparosView: React.FC<JornadaDisparosViewProps> = ({
         }}
       />
 
-      <BottleneckAnalysis
+      {/* <BottleneckAnalysis
         data={selectedActivities.length > 0 ? { [selectedDate?.toISOString().split('T')[0] || '']: selectedActivities } : data}
         previousData={previousData}
         selectedBU={selectedBU}
         selectedCanais={selectedCanais}
         selectedSegmentos={selectedSegmentos}
         selectedParceiros={selectedParceiros}
-      />
+      /> */}
     </div>
   );
 };

@@ -9,7 +9,13 @@ export const useRecommendationEngine = (activities: Activity[]) => {
 
         activities.forEach(act => {
             // Normalize keys to avoid duplicates due to casing/spacing
-            const key = `${act.canal}|${act.oferta || 'Sem Oferta'}|${act.segmento}|${act.promocional || 'N/A'}`;
+            // Force 'Padrao' for Oferta 2 if empty, as requested
+            const bu = act.bu.trim();
+            const oferta2Raw = act.raw['Oferta 2'] || 'Padrao';
+            const promo2Raw = act.raw['Promocional 2'] || 'N/A';
+
+            const key = `${bu}|${act.canal}|${act.oferta || 'Sem Oferta'}|${act.segmento}|${act.promocional || 'N/A'}|${oferta2Raw}|${promo2Raw}`;
+
             if (!groups.has(key)) {
                 groups.set(key, []);
             }
@@ -19,12 +25,15 @@ export const useRecommendationEngine = (activities: Activity[]) => {
         const results: Recommendation[] = [];
 
         groups.forEach((acts, key) => {
-            const [canal, oferta, segmento, promocional] = key.split('|');
+            const [bu, canal, oferta, segmento, promocional, oferta2, promocional2] = key.split('|');
             const combo: RecommendationCombo = {
+                bu,
                 canal,
                 oferta,
                 segmento,
-                promocional: promocional !== 'N/A' ? promocional : undefined
+                promocional: promocional !== 'N/A' ? promocional : undefined,
+                oferta2: oferta2, // Always show Oferta 2 (defaults to Padrao)
+                promocional2: promocional2 !== 'N/A' ? promocional2 : undefined
             };
 
             // 2. Calculate Metrics
@@ -117,7 +126,7 @@ export const useRecommendationEngine = (activities: Activity[]) => {
                 metrics,
                 score,
                 insights,
-                sampleActivities: acts.sort((a, b) => b.dataDisparo.getTime() - a.dataDisparo.getTime()).slice(0, 5)
+                sampleActivities: acts.sort((a, b) => b.dataDisparo.getTime() - a.dataDisparo.getTime()) // removed slice
             });
         });
 

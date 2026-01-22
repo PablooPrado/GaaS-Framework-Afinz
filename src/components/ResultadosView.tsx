@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { StrategyMetrics } from '../types/strategy';
 import { DistributionAnalysis } from './DistributionAnalysis';
-import { ChannelComparisonChart } from './ChannelComparisonChart';
 import { GoalsVisualization } from './GoalsVisualization';
 import { GoalsModal } from './GoalsModal';
 import { ProjectionsSection } from './resultados/ProjectionsSection';
@@ -92,10 +91,6 @@ export const ResultadosView: React.FC<ResultadosViewProps> = ({ resultados, data
             currentCAC={currentCAC}
             scope={selectedBU || 'Global'}
           />
-        </div>
-
-        <div>
-          <ChannelComparisonChart data={data} />
         </div>
       </div>
 

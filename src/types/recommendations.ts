@@ -5,6 +5,9 @@ export interface RecommendationCombo {
     oferta: string;
     segmento: string;
     promocional?: string;
+    oferta2?: string;
+    promocional2?: string;
+    bu: string;
 }
 
 export interface RecommendationMetrics {

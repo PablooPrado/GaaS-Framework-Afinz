@@ -24,7 +24,6 @@ interface PerformanceEvolutionChartProps {
 }
 
 type MetricType = 'conversao' | 'cac' | 'entrega' | 'abertura';
-type ComparisonType = 'none' | 'periodo_anterior' | 'meta' | 'media';
 type GroupBy = 'daily' | 'weekly';
 
 export const PerformanceEvolutionChart: React.FC<PerformanceEvolutionChartProps> = ({
@@ -36,7 +35,6 @@ export const PerformanceEvolutionChart: React.FC<PerformanceEvolutionChartProps>
     onDayClick
 }) => {
     const [metric, setMetric] = useState<MetricType>('conversao');
-    const [comparison, setComparison] = useState<ComparisonType>('periodo_anterior');
     const [groupBy, setGroupBy] = useState<GroupBy>('daily');
 
     const handleDotClick = (data: any) => {
@@ -123,24 +121,8 @@ export const PerformanceEvolutionChart: React.FC<PerformanceEvolutionChartProps>
             };
         }).sort((a, b) => a.timestamp - b.timestamp);
 
-        if (comparison === 'media') {
-            const totalValue = result.reduce((acc, curr) => acc + curr.value, 0);
-            const avg = result.length > 0 ? totalValue / result.length : 0;
-            result.forEach(item => item.comparison = Number(avg.toFixed(2)));
-        }
-
-        if (comparison === 'meta') {
-            const goals: Record<MetricType, number> = {
-                conversao: 0.5,
-                cac: 20,
-                entrega: 98,
-                abertura: 15
-            };
-            result.forEach(item => item.comparison = goals[metric]);
-        }
-
         return result;
-    }, [data, selectedBU, selectedCanais, selectedSegmentos, selectedParceiros, groupBy, metric, comparison]);
+    }, [data, selectedBU, selectedCanais, selectedSegmentos, selectedParceiros, groupBy, metric]);
 
     const stats = useMemo(() => {
         if (chartData.length === 0) return { avg: 0, max: 0, maxDate: '', min: 0, minDate: '' };
@@ -161,15 +143,6 @@ export const PerformanceEvolutionChart: React.FC<PerformanceEvolutionChartProps>
             minDate: minItem?.label || ''
         };
     }, [chartData]);
-
-    const getComparisonLabel = (c: ComparisonType) => {
-        switch (c) {
-            case 'periodo_anterior': return 'Período Anterior';
-            case 'meta': return 'Meta';
-            case 'media': return 'Média';
-            default: return '';
-        }
-    };
 
     return (
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
@@ -193,20 +166,6 @@ export const PerformanceEvolutionChart: React.FC<PerformanceEvolutionChartProps>
                             <option value="cac">CAC</option>
                             <option value="entrega">Taxa de Entrega</option>
                             <option value="abertura">Taxa de Abertura</option>
-                        </select>
-                    </div>
-
-                    <div className="flex flex-col">
-                        <label className="text-[10px] text-slate-400 uppercase font-bold mb-1">Comparar</label>
-                        <select
-                            value={comparison}
-                            onChange={(e) => setComparison(e.target.value as ComparisonType)}
-                            className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded px-2 py-1.5"
-                        >
-                            <option value="none">Nenhum</option>
-                            <option value="periodo_anterior">Período Anterior</option>
-                            <option value="meta">Meta</option>
-                            <option value="media">Média</option>
                         </select>
                     </div>
 
@@ -261,18 +220,6 @@ export const PerformanceEvolutionChart: React.FC<PerformanceEvolutionChartProps>
                             activeDot={{ r: 7 }}
                             onClick={(state: any) => handleDotClick(state)}
                         />
-
-                        {comparison !== 'none' && (
-                            <Line
-                                type="monotone"
-                                dataKey="comparison"
-                                name={getComparisonLabel(comparison)}
-                                stroke="#94a3b8"
-                                strokeWidth={2}
-                                strokeDasharray="5 5"
-                                dot={false}
-                            />
-                        )}
                     </LineChart>
                 </ResponsiveContainer>
             </div>

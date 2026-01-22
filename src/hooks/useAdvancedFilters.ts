@@ -18,6 +18,11 @@ export const useAdvancedFilters = (data: CalendarData, filters: FilterState) => 
             return false;
           }
 
+          // Filtro por Jornada (NEW)
+          if (filters.jornadas.length > 0 && !filters.jornadas.includes(activity.jornada)) {
+            return false;
+          }
+
           // Filtro por Segmento
           if (filters.segmentos.length > 0 && !filters.segmentos.includes(activity.segmento)) {
             return false;
@@ -78,6 +83,18 @@ export const useAdvancedFilters = (data: CalendarData, filters: FilterState) => 
     return Array.from(canais).sort();
   }, [data]);
 
+  const availableJornadas = useMemo(() => {
+    const jornadas = new Set<string>();
+    Object.values(data).forEach(activities => {
+      activities.forEach(activity => {
+        if (activity.jornada) {
+          jornadas.add(activity.jornada);
+        }
+      });
+    });
+    return Array.from(jornadas).sort();
+  }, [data]);
+
   const availableSegmentos = useMemo(() => {
     const segmentos = new Set<string>();
     Object.values(data).forEach(activities => {
@@ -96,6 +113,16 @@ export const useAdvancedFilters = (data: CalendarData, filters: FilterState) => 
     Object.values(filteredData).forEach(activities => {
       activities.forEach(activity => {
         counts[activity.canal] = (counts[activity.canal] || 0) + 1;
+      });
+    });
+    return counts;
+  }, [filteredData]);
+
+  const countByJornada = useMemo(() => {
+    const counts: { [jornada: string]: number } = {};
+    Object.values(filteredData).forEach(activities => {
+      activities.forEach(activity => {
+        counts[activity.jornada] = (counts[activity.jornada] || 0) + 1;
       });
     });
     return counts;
@@ -136,9 +163,11 @@ export const useAdvancedFilters = (data: CalendarData, filters: FilterState) => 
   return {
     filteredData,
     availableCanais,
+    availableJornadas,
     availableSegmentos,
     availableParceiros,
     countByCanal,
+    countByJornada,
     countBySegmento,
     countByParceiro
   };

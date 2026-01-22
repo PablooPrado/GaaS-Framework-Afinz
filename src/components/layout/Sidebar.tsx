@@ -6,7 +6,8 @@ import {
     Lightbulb,
     BookOpen,
     Calendar,
-    ChevronRight
+    ChevronRight,
+    PieChart
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useBU, BU } from '../../contexts/BUContext';
@@ -31,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
         {
             title: 'ANÁLISE',
             items: [
+                { id: 'originacao-b2c', label: 'Originação B2C', icon: PieChart },
                 { id: 'jornada', label: 'Jornada & Disparos', icon: TrendingUp },
                 { id: 'resultados', label: 'Resultados', icon: BarChart3 },
                 { id: 'orientador', label: 'Orientador', icon: Lightbulb },

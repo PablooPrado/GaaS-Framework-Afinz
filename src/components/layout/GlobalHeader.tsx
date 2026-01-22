@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, User, Search, Settings } from 'lucide-react';
+import { User, Search, Settings } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 
 export const GlobalHeader: React.FC = () => {
@@ -20,12 +20,16 @@ export const GlobalHeader: React.FC = () => {
             </div>
 
             {/* Center: Logo/Brand */}
-            <div className="flex flex-col items-center justify-center w-1/3">
-                <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 font-bold text-xl tracking-tight">
-                    Dashboard Growth CRM
+            <div className="flex flex-col items-center justify-center gap-0">
+                <h1
+                    className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent tracking-widest leading-none"
+                >
+                    GaaS
                 </h1>
-                <span className="text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">
-                    Afinz v3.0
+                <span
+                    className="text-xl font-bold text-white tracking-wider uppercase leading-tight opacity-90"
+                >
+                    AFINZ
                 </span>
             </div>
 
@@ -38,10 +42,6 @@ export const GlobalHeader: React.FC = () => {
                 >
                     {/* Placeholder for Settings Icon interaction if needed, for now just visual */}
                     <Settings size={20} />
-                </button>
-                <button className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition relative">
-                    <Bell size={20} />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-[#0B0F19]"></span>
                 </button>
 
                 <div className="h-8 w-[1px] bg-white/10 mx-2"></div>

@@ -30,7 +30,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   activityCountByDay,
   getDominantBU,
   showComparison = true,
-  filters = { bu: ['B2C', 'B2B2C', 'Plurix'], canais: [], segmentos: [], parceiros: [], ofertas: [], disparado: 'Todos' }
+  filters = { bu: ['B2C', 'B2B2C', 'Plurix'], canais: [], jornadas: [], segmentos: [], parceiros: [], ofertas: [], disparado: 'Todos' }
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [diaryMode, setDiaryMode] = useState(false);
@@ -165,9 +165,9 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   // Helper to filter entries by date and active filters
   const getEntriesForDate = (dateKey: string) => {
-    const activeBUs = filters?.bu || [];
-    const activeSegmentos = filters?.segmentos || [];
-    const activeParceiros = filters?.parceiros || [];
+    const activeBUs: string[] = filters?.bu || [];
+    const activeSegmentos: string[] = filters?.segmentos || [];
+    const activeParceiros: string[] = filters?.parceiros || [];
 
     return entries.filter(e => {
       const matchDate = e.date === dateKey;
@@ -368,9 +368,9 @@ export const Calendar: React.FC<CalendarProps> = ({
               <div className="space-y-4">
                 {(() => {
                   // Get filtered anotações for diary display - respect BU checkbox selections
-                  const activeBUs = filters?.bu || [];
-                  const activeSegmentos = filters?.segmentos || [];
-                  const activeParceiros = filters?.parceiros || [];
+                  const activeBUs: string[] = filters?.bu || [];
+                  const activeSegmentos: string[] = filters?.segmentos || [];
+                  const activeParceiros: string[] = filters?.parceiros || [];
 
                   const filteredAnotacoes = entries.filter(e => {
                     // BU Filter

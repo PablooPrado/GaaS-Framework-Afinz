@@ -1,16 +1,17 @@
 import React from 'react';
 import { Activity, AnomalyType } from '../../types/framework';
-import { X, AlertCircle, CheckCircle } from 'lucide-react';
+import { X } from 'lucide-react'; // AlertCircle, CheckCircle
 
 interface DailyDetailsModalProps {
     date: Date | null;
     activities: Activity[];
     anomalyFilters?: AnomalyType[];
     onClose: () => void;
+    titleOverride?: string;
 }
 
-export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({ date, activities, anomalyFilters = [], onClose }) => {
-    if (!date) return null;
+export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({ date, activities, anomalyFilters = [], onClose, titleOverride }) => {
+    if (!date && !titleOverride) return null;
 
     // Filter activities based on anomaly filters if any
     const filteredActivities = activities.filter(activity => {
@@ -43,7 +44,7 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({ date, acti
                 <div className="flex items-center justify-between p-4 border-b border-slate-800 shrink-0">
                     <div>
                         <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                            📅 Detalhes do Dia: {date.toLocaleDateString('pt-BR')}
+                            {titleOverride ? titleOverride : `📅 Detalhes do Dia: ${date?.toLocaleDateString('pt-BR')}`}
                         </h2>
                         <p className="text-sm text-slate-400 mt-1">
                             {filteredActivities.length} atividades registradas {anomalyFilters.length > 0 && '(Filtrado)'}
@@ -87,17 +88,29 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({ date, acti
                                             </span>
                                             <span className="text-xs text-slate-400">•</span>
                                             <span className="text-xs font-medium text-slate-300">{activity.bu}</span>
+                                            {activity.segmento && (
+                                                <>
+                                                    <span className="text-xs text-slate-400">•</span>
+                                                    <span className="text-xs font-medium text-slate-300">{activity.segmento}</span>
+                                                </>
+                                            )}
+                                            {activity.jornada && (
+                                                <>
+                                                    <span className="text-xs text-slate-400">•</span>
+                                                    <span className="text-xs font-medium text-purple-300">{activity.jornada}</span>
+                                                </>
+                                            )}
                                         </div>
                                         <h3 className="text-sm font-bold text-slate-200 line-clamp-1" title={activity.id}>
                                             {activity.id}
                                         </h3>
                                     </div>
 
-                                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium ${isAnomaly ? 'text-amber-400 bg-amber-900/30' : 'text-emerald-400 bg-emerald-900/30'
+                                    {/* <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium ${isAnomaly ? 'text-amber-400 bg-amber-900/30' : 'text-emerald-400 bg-emerald-900/30'
                                         }`}>
                                         {isAnomaly ? <AlertCircle size={12} /> : <CheckCircle size={12} />}
                                         {activity.raw['Disparado?']}
-                                    </div>
+                                    </div> */}
                                 </div>
 
                                 <div className="grid grid-cols-4 gap-2 mt-2">
@@ -108,8 +121,8 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({ date, acti
                                     <div className="bg-slate-900/50 p-2 rounded">
                                         <div className="text-[10px] text-slate-500 mb-0.5">Entregue</div>
                                         <div className={`text-xs font-semibold ${(activity.kpis.baseEntregue || 0) === 0 && isDisparado
-                                                ? 'text-red-400'
-                                                : 'text-slate-200'
+                                            ? 'text-red-400'
+                                            : 'text-slate-200'
                                             }`}>
                                             {activity.kpis.baseEntregue || 0}
                                         </div>

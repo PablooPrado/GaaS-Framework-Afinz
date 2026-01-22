@@ -1,6 +1,7 @@
 
 import { create } from 'zustand';
 import { FrameworkRow, ViewSettings, Goal, JournalEntry, FilterState, Activity } from '../types/framework';
+import { B2CDataRow, AlertConfig } from '../types/b2c';
 
 interface AppState {
     // Data
@@ -26,11 +27,18 @@ interface AppState {
     // Navigation Actions
     setTab: (tab: ViewSettings['abaAtual']) => void;
     setPeriodo: (inicio: string, fim: string) => void;
+
+    // B2C Actions
+    b2cData: B2CDataRow[];
+    setB2CData: (data: B2CDataRow[]) => void;
+    alertConfig: AlertConfig;
+    setAlertConfig: (config: AlertConfig) => void;
 }
 
 const INITIAL_FILTERS: FilterState = {
     bu: [],
     canais: [],
+    jornadas: [],
     segmentos: [],
     parceiros: [],
     ofertas: [],
@@ -88,5 +96,15 @@ export const useAppStore = create<AppState>((set) => ({
 
     setPeriodo: (inicio, fim) => set((state) => ({
         viewSettings: { ...state.viewSettings, periodo: { inicio, fim } }
-    }))
+    })),
+
+    // B2C State
+    b2cData: [],
+    setB2CData: (data) => set({ b2cData: data }),
+
+    alertConfig: {
+        share_crm_limiar: 10,
+        ativar_anomalias: true
+    },
+    setAlertConfig: (config) => set({ alertConfig: config })
 }));

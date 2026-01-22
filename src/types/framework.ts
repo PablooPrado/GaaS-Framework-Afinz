@@ -47,6 +47,7 @@ export interface CalendarData {
 export interface FilterState {
   bu: string[];
   canais: string[];
+  jornadas: string[];
   segmentos: string[];
   parceiros: string[];
   ofertas: string[];
@@ -102,7 +103,7 @@ export interface JournalEntry {
 
 export interface ViewSettings {
   periodo: { inicio: string; fim: string };
-  abaAtual: "launch" | "resultados" | "jornada" | "framework" | "diario" | "orientador" | "configuracoes";
+  abaAtual: "launch" | "resultados" | "jornada" | "framework" | "diario" | "orientador" | "configuracoes" | "originacao-b2c";
   filtrosGlobais: FilterState;
   modoTempoJornada: "diario" | "semanal";
 }

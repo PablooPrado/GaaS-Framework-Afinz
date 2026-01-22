@@ -54,6 +54,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, side = 'top', size = 
     <span
       ref={anchorRef}
       className="inline-flex items-center align-middle select-none"
+      onMouseEnter={() => setVisible(true)}
       onMouseLeave={() => setVisible(false)}
     >
       {children ? children : <Info size={size} className="text-slate-400 hover:text-slate-300 transition-colors cursor-default" />}

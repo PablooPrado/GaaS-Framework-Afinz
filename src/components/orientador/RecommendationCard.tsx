@@ -1,6 +1,6 @@
 import React from 'react';
 import { Recommendation } from '../../types/recommendations';
-import { TrendingUp, TrendingDown, Minus, DollarSign, Users, Info, Clock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, DollarSign, Users, Clock } from 'lucide-react';
 import { Tooltip } from '../Tooltip';
 
 interface RecommendationCardProps {
@@ -65,47 +65,32 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommen
                                 </span>
                             </>
                         )}
+
+                        {/* Oferta 2 - Cyan/Teal */}
+                        <span className="text-xs text-slate-400">•</span>
+                        <span className="text-[10px] bg-cyan-500/10 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                            {combo.oferta2}
+                        </span>
+
+                        {/* Promo 2 - Indigo */}
+                        {combo.promocional2 && (
+                            <>
+                                <span className="text-xs text-slate-400">•</span>
+                                <span className="text-[10px] bg-indigo-500/10 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-500/20">
+                                    {combo.promocional2}
+                                </span>
+                            </>
+                        )}
                     </div>
                     <h3 className="text-sm font-bold text-slate-100 line-clamp-2" title={combo.oferta}>
                         {combo.oferta}
                     </h3>
                 </div>
 
-                {/* Score Circle with Tooltip */}
-                <Tooltip
-                    side="left"
-                    content={
-                        <div className="w-48">
-                            <p className="text-[10px] font-bold text-slate-300 mb-2 border-b border-slate-700 pb-1">Cálculo do Score</p>
-                            <div className="space-y-1 text-[10px] text-slate-400">
-                                <div className="flex justify-between">
-                                    <span>💰 CAC</span>
-                                    <span className="text-slate-200">40%</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>📈 Conversão</span>
-                                    <span className="text-slate-200">40%</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>📊 Volume</span>
-                                    <span className="text-slate-200">20%</span>
-                                </div>
-                            </div>
-                            <p className="text-[9px] text-slate-500 mt-2 italic">
-                                Score 100 = melhor combinação do período
-                            </p>
-                        </div>
-                    }
-                >
-                    <div className="relative group/score">
-                        <div className={`flex flex-col items-center justify-center w-12 h-12 rounded-full border-2 ${scoreColorClass}`}>
-                            <span className="text-sm font-bold">{Math.round(score.finalScore)}</span>
-                        </div>
-                        <div className="absolute top-0 right-0 -mr-1 -mt-1 bg-slate-900 rounded-full p-0.5 text-slate-400 opacity-0 group-hover/score:opacity-100 transition-opacity">
-                            <Info size={10} />
-                        </div>
-                    </div>
-                </Tooltip>
+                {/* Score Circle */}
+                <div className={`flex flex-col items-center justify-center w-12 h-12 rounded-full border-2 ${scoreColorClass}`}>
+                    <span className="text-sm font-bold">{Math.round(score.finalScore)}</span>
+                </div>
             </div>
 
             <div className="grid grid-cols-4 gap-2 mb-4">

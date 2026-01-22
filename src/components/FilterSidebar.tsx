@@ -1,33 +1,46 @@
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { FilterState } from '../types/framework';
 
 interface FilterSidebarProps {
   availableCanais?: string[];
+  availableJornadas?: string[];
   availableSegmentos?: string[];
   availableParceiros?: string[];
   countByCanal?: { [canal: string]: number };
+  countByJornada?: { [jornada: string]: number };
   countBySegmento?: { [segmento: string]: number };
   countByParceiro?: { [parceiro: string]: number };
+  onClose?: () => void;
 }
 
 export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   availableCanais = [],
+  availableJornadas = [],
   availableSegmentos = [],
   availableParceiros = [],
   countByCanal = {},
+  countByJornada = {},
   countBySegmento = {},
-  countByParceiro = {}
+  countByParceiro = {},
+  onClose
 }) => {
   const { viewSettings, setGlobalFilters } = useAppStore();
   const filters = viewSettings.filtrosGlobais;
 
+  const [jornadaSearch, setJornadaSearch] = useState('');
+
   const [expandedSections, setExpandedSections] = useState({
     canal: true,
+    jornada: false,
     segmento: false,
     parceiro: false
   });
+
+  const filteredJornadas = availableJornadas.filter(j =>
+    j.toLowerCase().includes(jornadaSearch.toLowerCase())
+  );
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
@@ -73,18 +86,25 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
       ofertas: [],
       disparado: 'Todos'
     });
+    setJornadaSearch('');
   };
 
   return (
-    <div className="w-64 bg-slate-900 border-r border-slate-700 p-6 h-full overflow-y-auto flex flex-col">
-      <div className="space-y-6 flex-1">
-        {/* Header */}
-        <div>
-          <h2 className="text-lg font-bold text-slate-100 flex items-center justify-between gap-2">
-            <span>Filtros Avançados</span>
-          </h2>
-          <div className="h-1 w-12 bg-amber-500 rounded mt-2" />
-        </div>
+    <div className="w-full bg-slate-900 border-r border-slate-700 h-full flex flex-col">
+      {/* Header matching Sidebar padding */}
+      <div className="p-4 flex items-center justify-between shrink-0">
+        <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          Filtros
+        </p>
+        {onClose && (
+          <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+          </button>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 space-y-6">
+
 
         {/* Canal Filter */}
         {availableCanais.length > 0 && (
@@ -120,6 +140,66 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                     <span className="text-slate-500 text-xs ml-auto">({countByCanal[canal] || 0})</span>
                   </label>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Jornada Filter (NEW) */}
+        {availableJornadas && availableJornadas.length > 0 && (
+          <div className="space-y-3 border-t border-slate-700 pt-4">
+            <button
+              onClick={() => toggleSection('jornada')}
+              className="flex items-center justify-between w-full p-2 hover:bg-slate-800 rounded transition"
+            >
+              <p className="text-sm font-semibold text-slate-400 uppercase">Jornadas</p>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition ${expandedSections.jornada ? 'rotate-180' : ''}`} />
+            </button>
+            {expandedSections.jornada && (
+              <div className="space-y-2 pl-2">
+                {/* Search Input */}
+                <div className="flex items-center bg-slate-800 rounded px-2 py-1.5 border border-slate-700 mb-2">
+                  <Search size={14} className="text-slate-500 mr-2" />
+                  <input
+                    type="text"
+                    placeholder="Buscar jornada..."
+                    value={jornadaSearch}
+                    onChange={(e) => setJornadaSearch(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs text-slate-200 w-full placeholder-slate-600"
+                  />
+                </div>
+
+                {/* Visible Jornadas List (Filtered) */}
+                <div className="max-h-48 overflow-y-auto space-y-1">
+                  <button
+                    onClick={() => toggleAll('jornadas', filteredJornadas)}
+                    className={`w-full text-left px-3 py-2 rounded text-xs font-semibold transition ${areAllSelected('jornadas', filteredJornadas)
+                      ? 'bg-purple-500/20 text-purple-400 border border-purple-500/50'
+                      : 'bg-slate-800/50 text-slate-400 border border-slate-700 hover:bg-slate-800'
+                      }`}
+                  >
+                    {areAllSelected('jornadas', filteredJornadas)
+                      ? (jornadaSearch ? '✓ Todas Visíveis' : '✓ Todas')
+                      : (jornadaSearch ? 'Selecionar Visíveis' : 'Todas')}
+                  </button>
+
+                  {filteredJornadas.length > 0 ? (
+                    filteredJornadas.map(jornada => (
+                      <label key={jornada} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-slate-800 rounded transition">
+                        <input
+                          type="checkbox"
+                          checked={filters.jornadas.includes(jornada)}
+                          onChange={() => toggleItem('jornadas', jornada)}
+                          className="w-4 h-4 rounded border-slate-600 text-purple-500 focus:ring-purple-500"
+                        />
+                        <span className="text-slate-300 text-sm truncate" title={jornada}>{jornada}</span>
+                        <span className="text-slate-500 text-xs ml-auto shrink-0">({countByJornada?.[jornada] || 0})</span>
+                      </label>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-500 p-2 italic">Nenhuma jornada encontrada</p>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Recommendation } from '../../types/recommendations';
 import { X, Calendar, Download, ChevronLeft, ChevronRight } from 'lucide-react';
-import { AreaChart, Area, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer, Tooltip as RechartsTooltip, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 interface HistoricoModalProps {
     recommendation: Recommendation;
@@ -75,7 +75,7 @@ export const HistoricoModal: React.FC<HistoricoModalProps> = ({ recommendation, 
                         <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                             📜 Histórico de Execuções
                         </h2>
-                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
+                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-1 flex-wrap">
                             <span className="bg-slate-800 px-2 py-0.5 rounded">{combo.canal}</span>
                             <span>+</span>
                             <span className="bg-slate-800 px-2 py-0.5 rounded">{combo.segmento}</span>
@@ -86,6 +86,20 @@ export const HistoricoModal: React.FC<HistoricoModalProps> = ({ recommendation, 
                                     <span>+</span>
                                     <span className="bg-pink-500/10 text-pink-300 px-2 py-0.5 rounded border border-pink-500/20 font-medium">
                                         {combo.promocional}
+                                    </span>
+                                </>
+                            )}
+
+                            <span>+</span>
+                            <span className="bg-cyan-500/10 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/20 font-medium">
+                                {combo.oferta2}
+                            </span>
+
+                            {combo.promocional2 && (
+                                <>
+                                    <span>+</span>
+                                    <span className="bg-indigo-500/10 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/20 font-medium">
+                                        {combo.promocional2}
                                     </span>
                                 </>
                             )}
@@ -141,6 +155,21 @@ export const HistoricoModal: React.FC<HistoricoModalProps> = ({ recommendation, 
                                             <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                                    <XAxis
+                                        dataKey="date"
+                                        stroke="#64748b"
+                                        tick={{ fill: '#64748b', fontSize: 10 }}
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <YAxis
+                                        stroke="#64748b"
+                                        tick={{ fill: '#64748b', fontSize: 10 }}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        width={30}
+                                    />
                                     <RechartsTooltip
                                         contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', fontSize: '12px' }}
                                         itemStyle={{ color: '#e2e8f0' }}
@@ -161,48 +190,72 @@ export const HistoricoModal: React.FC<HistoricoModalProps> = ({ recommendation, 
                         </div>
 
                         <div className="space-y-3">
-                            {currentActivities.map((activity) => (
-                                <div key={activity.id} className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3 hover:border-slate-600 transition">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div>
-                                            <div className="text-xs font-bold text-slate-200 mb-0.5">{activity.id}</div>
-                                            <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                <span className="flex items-center gap-1">
-                                                    <Calendar size={10} />
-                                                    {activity.dataDisparo.toLocaleDateString('pt-BR')}
-                                                </span>
-                                                <span>•</span>
-                                                <span>{activity.bu}</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                            {currentActivities.map((activity) => {
+                                const getChannelColor = (canal: string) => {
+                                    const c = canal.toLowerCase();
+                                    if (c.includes('email') || c.includes('e-mail')) return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+                                    if (c.includes('sms')) return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+                                    if (c.includes('push')) return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+                                    if (c.includes('whats')) return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+                                    return 'bg-slate-700 text-slate-300 border-slate-600';
+                                };
 
-                                    <div className="grid grid-cols-4 gap-2 mt-2">
-                                        <div className="bg-slate-900/50 p-2 rounded">
-                                            <div className="text-[10px] text-slate-500 mb-0.5">Cartões</div>
-                                            <div className="text-xs font-semibold text-slate-200">{activity.kpis.cartoes || 0}</div>
-                                        </div>
-                                        <div className="bg-slate-900/50 p-2 rounded">
-                                            <div className="text-[10px] text-slate-500 mb-0.5">Conversão</div>
-                                            <div className="text-xs font-semibold text-emerald-400">
-                                                {activity.kpis.taxaConversao ? (activity.kpis.taxaConversao * 100).toFixed(2) : 0}%
+                                return (
+                                    <div key={activity.id} className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3 hover:border-slate-600 transition">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${getChannelColor(activity.canal)}`}>
+                                                        {activity.canal}
+                                                    </span>
+                                                    <span className="text-xs text-slate-400">•</span>
+                                                    <span className="text-xs font-medium text-slate-300">{activity.bu}</span>
+                                                    {activity.segmento && (
+                                                        <>
+                                                            <span className="text-xs text-slate-400">•</span>
+                                                            <span className="text-xs font-medium text-slate-300">{activity.segmento}</span>
+                                                        </>
+                                                    )}
+                                                    {activity.jornada && (
+                                                        <>
+                                                            <span className="text-xs text-slate-400">•</span>
+                                                            <span className="text-xs font-medium text-purple-300">{activity.jornada}</span>
+                                                        </>
+                                                    )}
+                                                    <span className="text-xs text-slate-500 ml-auto flex items-center gap-1">
+                                                        <Calendar size={10} />
+                                                        {activity.dataDisparo.toLocaleDateString('pt-BR')}
+                                                    </span>
+                                                </div>
+                                                <h3 className="text-sm font-bold text-slate-200 line-clamp-1" title={activity.id}>
+                                                    {activity.id}
+                                                </h3>
                                             </div>
                                         </div>
-                                        <div className="bg-slate-900/50 p-2 rounded">
-                                            <div className="text-[10px] text-slate-500 mb-0.5">CAC</div>
-                                            <div className="text-xs font-semibold text-amber-400">
-                                                {activity.kpis.cac ? `R$ ${activity.kpis.cac.toFixed(2)}` : '-'}
+
+                                        <div className="grid grid-cols-4 gap-2 mt-2">
+                                            <div className="bg-slate-900/50 p-2 rounded">
+                                                <div className="text-[10px] text-slate-500 mb-0.5">Enviado</div>
+                                                <div className="text-xs font-semibold text-slate-200">{activity.kpis.baseEnviada || 0}</div>
                                             </div>
-                                        </div>
-                                        <div className="bg-slate-900/50 p-2 rounded">
-                                            <div className="text-[10px] text-slate-500 mb-0.5">Custo</div>
-                                            <div className="text-xs font-semibold text-slate-300">
-                                                {activity.kpis.custoTotal ? `R$ ${activity.kpis.custoTotal.toLocaleString('pt-BR')}` : '-'}
+                                            <div className="bg-slate-900/50 p-2 rounded">
+                                                <div className="text-[10px] text-slate-500 mb-0.5">Entregue</div>
+                                                <div className="text-xs font-semibold text-slate-200">{activity.kpis.baseEntregue || 0}</div>
+                                            </div>
+                                            <div className="bg-slate-900/50 p-2 rounded">
+                                                <div className="text-[10px] text-slate-500 mb-0.5">Cartões</div>
+                                                <div className="text-xs font-semibold text-blue-400">{activity.kpis.cartoes || 0}</div>
+                                            </div>
+                                            <div className="bg-slate-900/50 p-2 rounded">
+                                                <div className="text-[10px] text-slate-500 mb-0.5">Conversão</div>
+                                                <div className="text-xs font-semibold text-emerald-400">
+                                                    {activity.kpis.taxaConversao ? (activity.kpis.taxaConversao * 100).toFixed(2) : 0}%
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         {/* Pagination Controls */}
