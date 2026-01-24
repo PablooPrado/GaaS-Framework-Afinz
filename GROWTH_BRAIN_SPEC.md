@@ -29,6 +29,7 @@ O Operator Owner (estrategista de Growth) precisa responder diariamente:
 |--------|--------|-------|
 | **Launch Planner** | ✅ Pronto | Calendário interativo com filtros e detalhes. |
 | **Analytics (Resultados)** | ✅ Pronto | Dashboards, metas vs realizado. |
+| **Originação B2C** | ✅ Pronto | Análise de Share, KPIs de conversão. |
 | **Jornada & Disparos** | ✅ Pronto | Gráficos temporais de evolução. |
 | **Framework Explorer** | ✅ Pronto | Tabela completa editável. |
 | **Diário de Bordo** | ✅ Pronto | Sistema de notas com tags e persistência. |
@@ -52,24 +53,65 @@ O sistema consome CSVs baseados no Framework de Aquisição:
 
 ---
 
-## 4. FUNCIONALIDADES DETALHADAS
+## 4. MANUAL DE OPERAÇÃO TÉCNICA (PLAYBOOK)
 
-### 4.1 Launch Planner (Calendário)
-- **Visualização**: Grid mensal com indicadores de BU.
-- **Interatividade**: Hover cards com 6 KPIs.
-- **Filtros**: Cruzamento de BU, Canal, Segmento, Parceiro.
+### 4.1 Launch Planner (Control Tower)
+O coração da operação. Um calendário visual 6x7 que agrupa disparos por Data e Business Unit.
 
-### 4.2 Resultados (Analytics)
-- **KPIs de Topo**: Gasto, Cartões, CAC Médio.
-- **Comparativos**: Barras de performance por BU.
-- **Distribuição**: Pizza interativa (Canais, Segmentos, Ofertass).
-- **Metas**: Cadastro de metas mensais e visualização de progresso.
+**Lógica de Renderização:**
+- **Grid Inteligente:** Detecta automaticamente o último mês com dados disponíveis ("Safra Recente") e navega para ele no load inicial.
+- **Priority Rendering:** Se o dado possui `safraKey` (YYYY-MM), ele é renderizado na visão dessa safra. Caso contrário, usa a `dataDisparo`.
+- **Células de Dia:**
+  - `Hover`: Dispara um card flutuante com sumário executivo (Total Cartões, CAC, Custo).
+  - `Click`: Abre o modal `DailyDetailsModal`, listando todas as activities (campanhas) individuais daquele dia.
+  - **Indicadores (Dots):** Cores representam a BU dominante do dia (Azul=B2C, Verde=B2B2C, Roxo=Plurix).
 
-### 4.3 Diário de Bordo (Notes System)
-- **Cards**: Notas vinculadas a datas específicas.
-- **Tags**: Categorização por BU e Segmento.
-- **Persistência**: Dados salvos localmente (`localStorage`).
-- **Visualização**: Modo Kanban/Notas integrado ao calendário.
+**Interações Críticas:**
+- **Drag & Drop:** *[Feature em Roadmap]* Para mover disparos de dia.
+- **Edit Activity:** No modal de detalhes, clique no ícone de lápis para editar a data de disparo ou observações.
+
+### 4.2 Arquitetura de Analytics (Resultados)
+Painel executivo focado em "Meta vs Realizado".
+
+**Fórmulas de KPIs:**
+1.  **CPA / CAC Global:**
+    `Σ (Custo Total das Campanhas) / Σ (Cartões Emitidos)`
+2.  **Conversão Global:**
+    `Σ (Cartões Emitidos) / Σ (Propostas ou Cliques)` *[Depende do canal]*
+3.  **Projeção Linear:**
+    `(Total Realizado / Dias Corridos) * Dias no Mês`
+    *Calculado apenas se o mês não encerrou.*
+
+**Mecanismo de Metas:**
+- As metas são armazenadas no `localStorage` por chave de mês `goal_YYYY-MM`.
+- **Gauge Charts:** Mostram visualmente o % de atingimento.
+  - *Vermelho*: < 70%
+  - *Amarelo*: 70% - 99%
+  - *Verde*: >= 100%
+
+### 4.3 Originação B2C (Deep Dive)
+Módulo especializado para análise de eficiência do canal CRM frente ao todo.
+
+**Conceitos Chave:**
+- **Share CRM:** Percentual de cartões B2C que vieram de campanhas de CRM.
+  - Fórmula: `(Cartões CRM / Total Emissões B2C) * 100`
+- **Limiar de Alerta:** Configurado em `useAppStore`. Se Share < Limite (ex: 20%), o gráfico fica vermelho/alerta.
+- **Drill-Down Semanal:** O gráfico de barras "Cartões por Dia" permite clique na barra para abrir o detalhe daquela semana específica.
+
+### 4.4 Lab de Growth (Diário & Experimentos)
+Sistema híbrido de documentação (Notes) e gestão de hipóteses (Experiments).
+
+**A. Diário (Logbook)**
+- **Uso:** Registrar anomalias ("Sistema caiu"), eventos externos ("Feriado") ou disparos manuais não rastreados.
+- **Persistência:** `localStorage` -> key `growth_diary_entries`.
+- **Tags:** Obrigatório selecionar BU e Segmento para facilitar busca futura.
+
+**B. Gestor de Experimentos (Kanban)**
+- **Fluxo:** Hipótese -> Em Andamento -> Aprendizado.
+- **Card de Experimento:**
+  - *Hipótese:* O que esperamos que aconteça? (ex: "Mudar copy aumenta CTR")
+  - *Conclusão:* O que realmente aconteceu? (Dado quantitativo).
+- **Significância:** *[Feature Beta]* Calculadora Chi-Square integrada para validar se o resultado é estatisticamente relevante.
 
 ---
 
@@ -102,6 +144,7 @@ src/
 - [x] Launch Planner completo
 - [x] Filtros globais avançados
 - [x] Dashboard de Resultados
+- [x] Originação B2C (Análise de Share)
 - [x] Diário de Bordo (Notas)
 - [x] Gráficos de Jornada
 

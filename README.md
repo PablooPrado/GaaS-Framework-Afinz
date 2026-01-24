@@ -71,6 +71,7 @@ O calendário e gráficos atualizam em tempo real.
 |-----|--------|--------|
 | **🚀 Launch Planner** | Calendário operacional + KPIs do período | ✅ Funcional |
 | **📊 Resultados** | Comparativos, tabela de combinações, pizza interativa, metas | ✅ Funcional |
+| **📈 Originação B2C** | Análise de Share CRM vs Mercado, KPIs de conversão | ✅ Funcional |
 | **📈 Jornada & Disparos** | Gráfico temporal (Cartões, Aprovações, Pedidos) | ✅ Concluído |
 | **📋 Framework** | Tabela completa editável (41 colunas) + export CSV | ✅ Concluído |
 | **📔 Diário de Bordo** | Sistema completo de notas com tags e persistência | ✅ Concluído |
