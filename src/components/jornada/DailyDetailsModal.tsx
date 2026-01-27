@@ -38,10 +38,10 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({ date, acti
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-slate-800 shrink-0">
+                <div className="flex items-center justify-between p-4 border-b border-white/10 shrink-0">
                     <div>
                         <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                             {titleOverride ? titleOverride : `📅 Detalhes do Dia: ${date?.toLocaleDateString('pt-BR')}`}

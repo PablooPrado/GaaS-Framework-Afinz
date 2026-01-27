@@ -29,7 +29,7 @@ export const ActivityEditModal: React.FC<ActivityEditModalProps> = ({ activity, 
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-[400px] p-6">
+            <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl w-[400px] p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-bold text-white">Editar Atividade</h3>
                     <button onClick={onClose} className="text-slate-400 hover:text-white">

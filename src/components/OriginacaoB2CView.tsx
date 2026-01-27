@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useB2CAnalysis } from '../hooks/useB2CAnalysis';
 import { useAppStore } from '../store/useAppStore';
 import { OriginacaoKPIsComparison } from './originacao/OriginacaoKPIsComparison';
@@ -8,14 +8,56 @@ import { OriginacaoTable } from './originacao/OriginacaoTable';
 import { B2CUpload } from './originacao/B2CUpload';
 import { ActivityShareCorrelationChart } from './originacao/ActivityShareCorrelationChart';
 import { ShareBySegmentChart } from './originacao/ShareBySegmentChart';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Loader2 } from 'lucide-react';
 import { DailyDetailsModal } from './jornada/DailyDetailsModal';
 import { Activity } from '../types/framework';
 import { format } from 'date-fns';
+import { storageService } from '../services/storageService';
+import { useCSVParser } from '../hooks/useCSVParser';
 
 export const OriginacaoB2CView: React.FC = () => {
     const { dailyAnalysis, summary, previousSummary, viewMode, setViewMode, getActivities, segmentStats } = useB2CAnalysis();
-    const { alertConfig, b2cData } = useAppStore();
+    const { alertConfig, b2cData, setB2CData, b2cFilename, setB2CFilename } = useAppStore();
+    const { parseB2CCSV } = useCSVParser();
+    const [loading, setLoading] = useState(false);
+    const [synced, setSynced] = useState(false);
+
+    // Auto-Sync B2C Data
+    useEffect(() => {
+        const syncB2C = async () => {
+            // If already loaded or synced, skip
+            if (b2cData.length > 0 || synced) return;
+            setSynced(true);
+
+            try {
+                // Check Cloud
+                const files = await storageService.listFiles('b2c');
+                if (files && files.length > 0) {
+                    setLoading(true);
+                    console.log('🔄 B2C Auto-Sync:', files[0].name);
+
+                    const url = await storageService.getDownloadUrl('b2c/' + files[0].name);
+                    const resp = await fetch(url);
+                    const blob = await resp.blob();
+                    const file = new File([blob], files[0].name, { type: 'text/csv' });
+
+                    const { data } = await parseB2CCSV(file);
+                    if (data && data.length > 0) {
+                        setB2CData(data);
+                        // Optional: we can expose setB2CFilename if added to store, currently just data.
+                    }
+                    setLoading(false);
+                }
+            } catch (e) {
+                console.error('B2C Sync failed', e);
+                setLoading(false);
+            }
+        };
+
+        syncB2C();
+    }, [b2cData.length, synced, setB2CData, parseB2CCSV]);
+
+    // ... Rest of component
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
@@ -103,6 +145,10 @@ export const OriginacaoB2CView: React.FC = () => {
                                 shareThreshold={alertConfig.share_crm_limiar}
                                 viewMode={viewMode}
                                 setViewMode={setViewMode}
+                                onPointClick={(date) => {
+                                    const dateStr = format(date, 'yyyy-MM-dd');
+                                    handleDayClick(dateStr);
+                                }}
                             />
                             <OriginacaoTable
                                 data={dailyAnalysis}

@@ -118,24 +118,17 @@ export const parseDate = (dateString: string | number): Date | null => {
   if (!dateString) return null;
 
   try {
-    // Handle Excel Serial Date (numbers like 45234)
+    // Handle Excel Serial Date
     if (typeof dateString === 'number' || (typeof dateString === 'string' && !isNaN(Number(dateString)) && !dateString.includes('/') && !dateString.includes('-'))) {
       const serial = Number(dateString);
-      // Excel base date is 1899-12-30
-      // 25569 is the number of days between 1900-01-01 and 1970-01-01
-      // Adjust for leap year bug in Excel 1900
       const utc_days = Math.floor(serial - 25569);
       const utc_value = utc_days * 86400;
       const date_info = new Date(utc_value * 1000);
-
-      // Adjust for timezone offset to keep the date correct
       const fractional_day = serial - Math.floor(serial) + 0.0000001;
       const total_seconds = Math.floor(86400 * fractional_day);
       const seconds = total_seconds % 60;
       const minutes = Math.floor(total_seconds / 60) % 60;
       const hours = Math.floor(total_seconds / (60 * 60));
-
-      // Create date object
       return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
     }
 
@@ -145,51 +138,56 @@ export const parseDate = (dateString: string | number): Date | null => {
     if (trimmed.includes('/')) {
       const parts = trimmed.split('/');
       if (parts.length === 3) {
-        let day = parseInt(parts[0], 10);
-        let month = parseInt(parts[1], 10);
+        const p0 = parseInt(parts[0], 10);
+        const p1 = parseInt(parts[1], 10);
         let year = parseInt(parts[2], 10);
-
-        // Handle 2-digit years (e.g., 25 -> 2025)
         if (year < 100) year += 2000;
 
-        // JavaScript Date month is 0-indexed (0=Jan, 11=Dec)
-        const date = new Date(year, month - 1, day);
+        // Try DD/MM/YYYY first
+        let day = p0;
+        let month = p1;
 
-        // Validate strictly matches input (avoids "31/02" becoming "03/03")
-        if (date.getFullYear() === year &&
-          date.getMonth() === month - 1 &&
-          date.getDate() === day) {
+        let date = new Date(year, month - 1, day);
+        if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+          return date;
+        }
+
+        // Fallback: MM/DD/YYYY (US Format)
+        // If DD/MM failed (e.g. 01/16/2025 -> Month 16 invalid), try swap
+        day = p1;
+        month = p0;
+        date = new Date(year, month - 1, day);
+        if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
           return date;
         }
       }
     }
 
-    // Tenta: YYYY-MM-DD
+    // Tenta: YYYY-MM-DD (ISO)
     if (trimmed.includes('-')) {
-      // Assume YYYY-MM-DD
       const parts = trimmed.split('-');
-      // Check if basic format YYYY-MM-DD or YYYY-MM-DDTHH...
       if (parts.length >= 3) {
         const year = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10);
-        const day = parseInt(parts[2].substring(0, 2), 10); // Handle T or space if present
+        // Remove time part if exists to avoid timezone drift
+        const dayPart = parts[2].split('T')[0].split(' ')[0];
+        const day = parseInt(dayPart, 10);
 
         if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
           return new Date(year, month - 1, day);
         }
       }
-
-      // Fallback to simpler parsing if complex string
-      const date = new Date(trimmed);
-      if (!isNaN(date.getTime())) {
-        const userTimezoneOffset = date.getTimezoneOffset() * 60000;
-        return new Date(date.getTime() + userTimezoneOffset);
-      }
     }
 
-    // Tenta parsing direto
-    const date = new Date(trimmed);
+    // Fallback direct parsing but strip Timezone Z to force Local
+    let cleanDateStr = trimmed;
+    if (cleanDateStr.endsWith('Z')) {
+      cleanDateStr = cleanDateStr.slice(0, -1);
+    }
+    const date = new Date(cleanDateStr);
     if (!isNaN(date.getTime())) {
+      // If it has hours equal to offset, it might still have drifted. 
+      // Ideally we rely on the manual parsing above.
       return date;
     }
 

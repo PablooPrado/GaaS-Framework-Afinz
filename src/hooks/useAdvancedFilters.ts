@@ -52,7 +52,13 @@ export const useAdvancedFilters = (data: CalendarData, filters: FilterState) => 
             const activityDate = new Date(activity.dataDisparo);
             activityDate.setHours(0, 0, 0, 0);
 
-            if (activityDate > endDate) return false;
+            if (activityDate > endDate) {
+              // DEBUG: Log rejection
+              if (activityDate.getDate() > 15) {
+                // console.warn(`🚫 Rejected date > 15: ${activity.dataDisparo} > ${filters.dataFim}`);
+              }
+              return false;
+            }
           }
 
           return true;

@@ -265,7 +265,7 @@ export const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({ data, cu
                 <h3 className="text-lg font-bold text-slate-100 mb-6">Evolução: Realizado vs. Projetado vs. Meta</h3>
                 <div className="h-[350px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} onClick={handleChartClick}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                             <XAxis
                                 dataKey="label"

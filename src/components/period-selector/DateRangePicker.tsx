@@ -166,7 +166,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     return (
         <div className="flex h-[450px]">
             {/* Sidebar Presets */}
-            <div className="w-48 bg-slate-900 border-r border-slate-800 p-4 flex flex-col gap-2">
+            <div className="w-48 bg-slate-900/50 border-r border-white/10 p-4 flex flex-col gap-2">
                 {presets.map((preset, i) => (
                     <button
                         key={i}
@@ -193,7 +193,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-4 border-t border-slate-800 flex justify-between items-center bg-slate-900">
+                <div className="p-4 border-t border-white/10 flex justify-between items-center bg-slate-900/50">
                     <div className="flex items-center gap-2">
                         <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
                             <input

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Menu, X, Filter } from 'lucide-react';
 import { CSVUpload } from './components/CSVUpload';
 import { FilterSidebar } from './components/FilterSidebar';
+import { LoginView } from './components/LoginView'; // NEW
 
 import { ResultadosView } from './components/ResultadosView';
 import { JornadaDisparosView } from './components/JornadaDisparosView';
@@ -9,7 +10,7 @@ import { DiarioBordo } from './components/DiarioBordo';
 import { FrameworkView } from './components/FrameworkView';
 import { OrientadorView } from './components/OrientadorView';
 import { ConfiguracoesView } from './components/ConfiguracoesView';
-import { OriginacaoB2CView } from './components/OriginacaoB2CView'; // Add this line
+import { OriginacaoB2CView } from './components/OriginacaoB2CView';
 import { useFrameworkData } from './hooks/useFrameworkData';
 import { useAdvancedFilters } from './hooks/useAdvancedFilters';
 import { useCalendarFilter } from './hooks/useCalendarFilter';
@@ -18,16 +19,21 @@ import { useAppStore } from './store/useAppStore';
 import { usePeriod } from './contexts/PeriodContext';
 import { useBU } from './contexts/BUContext';
 import { format } from 'date-fns';
-import { GlobalHeader } from './components/layout/GlobalHeader';
-import { Sidebar } from './components/layout/Sidebar';
+import { MainLayout } from './components/layout/MainLayout'; // NEW
 import { LaunchPlanner } from './components/launch-planner/LaunchPlanner';
 import { PageHeader } from './components/layout/PageHeader';
+import PaidMediaAfinzApp from './modules/paid-media-afinz/PaidMediaAfinzApp';
+import { AnimatePresence } from 'framer-motion';
+import { PageTransition } from './components/layout/PageTransition'; // NEW
 import './App.css';
+import { useAuth } from './context/AuthContext'; // NEW
 
 function App() {
+  const { user, loading: authLoading } = useAuth(); // Auth check
   const {
     viewSettings,
-    updateActivity
+    updateActivity,
+    setTab
   } = useAppStore();
   const storeFilters = viewSettings.filtrosGlobais;
   const activeTab = viewSettings.abaAtual;
@@ -93,106 +99,114 @@ function App() {
       case 'framework': return 'Framework';
       case 'diario': return 'Diário de Bordo';
       case 'configuracoes': return 'Configurações';
+      case 'midia-paga': return 'Mídia Paga (Ads)';
       default: return 'Dashboard';
     }
   };
 
+  // --- RENDERING ---
+
+  // 1. Auth Loading
+  if (authLoading) return <div className="h-screen w-full bg-slate-950 text-slate-500 flex items-center justify-center">Carregando...</div>;
+
+  // 2. Not Logged In
+  if (!user) return <LoginView />;
+
+  // 3. Paid Media Full Screen
+  if (activeTab === 'midia-paga') {
+    return <PaidMediaAfinzApp onBack={() => setTab('launch')} />;
+  }
+
   return (
-    <div className="flex flex-col min-h-screen bg-[#0F172A]">
-      <GlobalHeader />
+    <MainLayout>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar Area - Swaps between Navigation and Filters */}
-        <div className="flex-shrink-0 transition-all duration-300 ease-in-out h-full relative">
-
-          {/* Main Navigation Sidebar */}
-          {!showFiltersDrawer && (
-            <Sidebar />
-          )}
-
-          {/* Filters Sidebar - Replaces Navigation */}
-          {showFiltersDrawer && (
-            <div className="w-80 h-full bg-slate-900 border-r border-slate-700 flex flex-col">
-              <div className="p-4 flex justify-between items-center border-b border-slate-800">
-                <h3 className="font-bold text-slate-100">Filtros</h3>
-                <button onClick={() => setShowFiltersDrawer(false)} className="text-slate-400 hover:text-white">
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="p-4 overflow-y-auto flex-1">
-                <FilterSidebar
-                  availableCanais={availableCanais}
-                  availableJornadas={availableJornadas}
-                  availableSegmentos={availableSegmentos}
-                  availableParceiros={availableParceiros}
-                  countByCanal={countByCanal}
-                  countByJornada={countByJornada}
-                  countBySegmento={countBySegmento}
-                  countByParceiro={countByParceiro}
-                />
-                {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-[#0F172A] relative min-w-0">
-
-          {hasData && (
-            <PageHeader title={getPageTitle(activeTab)}>
-              {/* Toggle Filters Button inside Header */}
-              <button
-                onClick={() => setShowFiltersDrawer(!showFiltersDrawer)}
-                className={`p-2 rounded-lg transition ${showFiltersDrawer ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-                title="Filtros Avançados"
-              >
-                <Filter size={20} />
+      {/* Filters Overlay Drawer */}
+      {showFiltersDrawer && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowFiltersDrawer(false)} />
+          <div className="relative w-80 h-full bg-slate-900/80 backdrop-blur-xl border-r border-white/10 flex flex-col shadow-2xl animate-fade-in-right">
+            <div className="p-4 flex justify-between items-center border-b border-slate-800">
+              <h3 className="font-bold text-slate-100">Filtros Avançados</h3>
+              <button onClick={() => setShowFiltersDrawer(false)} className="text-slate-400 hover:text-white">
+                <X size={20} />
               </button>
-            </PageHeader>
-          )}
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              <FilterSidebar
+                availableCanais={availableCanais}
+                availableJornadas={availableJornadas}
+                availableSegmentos={availableSegmentos}
+                availableParceiros={availableParceiros}
+                countByCanal={countByCanal}
+                countByJornada={countByJornada}
+                countBySegmento={countBySegmento}
+                countByParceiro={countByParceiro}
+              />
+              {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
+            </div>
+          </div>
+        </div>
+      )}
 
-          <div className="flex-1 overflow-auto p-6">
-            {!hasData && (
-              <div className="flex flex-col items-center justify-center h-full">
-                {!loading && (
-                  <div className="max-w-md w-full bg-slate-800/50 p-8 rounded-2xl border border-slate-700 text-center">
-                    <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Menu size={32} className="text-blue-400" />
-                    </div>
-                    <h2 className="text-xl font-bold text-white mb-2">Bem-vindo ao GaaS</h2>
-                    <p className="text-slate-400 mb-8">Faça upload do seu arquivo de dados para começar a análise.</p>
-                    <CSVUpload
-                      onFileSelect={processCSV}
-                      onLoadSimulatedData={loadSimulatedData}
-                      loading={loading}
-                      error={error}
-                      totalActivities={totalActivities}
-                    />
-                  </div>
-                )}
-                {loading && (
-                  <div className="text-slate-400 animate-pulse">Carregando dados...</div>
-                )}
+      {hasData && (
+        <PageHeader title={getPageTitle(activeTab)}>
+          <button
+            onClick={() => setShowFiltersDrawer(!showFiltersDrawer)}
+            className={`p-2 rounded-lg transition ${showFiltersDrawer ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+            title="Filtros Avançados"
+          >
+            <Filter size={20} />
+          </button>
+        </PageHeader>
+      )}
+
+      <div className="flex-1 pb-10">
+        {!hasData && (
+          <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
+            {!loading && (
+              <div className="max-w-md w-full bg-slate-800/50 p-8 rounded-2xl border border-slate-700 text-center">
+                <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Menu size={32} className="text-blue-400" />
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">Bem-vindo ao GaaS</h2>
+                <p className="text-slate-400 mb-8">Faça upload do seu arquivo de dados para começar a análise.</p>
+                <CSVUpload
+                  onFileSelect={processCSV}
+                  onLoadSimulatedData={loadSimulatedData}
+                  loading={loading}
+                  error={error}
+                  totalActivities={totalActivities}
+                />
               </div>
             )}
+            {loading && (
+              <div className="text-slate-400 animate-pulse">Carregando dados...</div>
+            )}
+          </div>
+        )}
 
-            {hasData && (
-              <div className="h-full">
-                {activeTab === 'launch' && (
+        {hasData && (
+          <AnimatePresence mode="wait">
+            <div className="h-full" key={activeTab}>
+              {activeTab === 'launch' && (
+                <PageTransition>
                   <LaunchPlanner
                     data={launchPlannerData}
                     onActivityUpdate={(id, newDate) => updateActivity(id, { dataDisparo: newDate })}
                   />
-                )}
-                {activeTab === 'resultados' && (
+                </PageTransition>
+              )}
+              {activeTab === 'resultados' && (
+                <PageTransition>
                   <ResultadosView
                     resultados={resultados}
                     data={filteredData}
                     selectedBU={selectedBUs.length === 1 ? selectedBUs[0] : undefined}
                   />
-                )}
-                {activeTab === 'jornada' && (
+                </PageTransition>
+              )}
+              {activeTab === 'jornada' && (
+                <PageTransition>
                   <JornadaDisparosView
                     data={filteredData}
                     previousData={previousFilteredData}
@@ -201,33 +215,44 @@ function App() {
                     selectedSegmentos={filters.segmentos}
                     selectedParceiros={filters.parceiros}
                   />
-                )}
-                {activeTab === 'diario' && (
+                </PageTransition>
+              )}
+              {activeTab === 'diario' && (
+                <PageTransition>
                   <DiarioBordo />
-                )}
-                {activeTab === 'framework' && (
+                </PageTransition>
+              )}
+              {activeTab === 'framework' && (
+                <PageTransition>
                   <FrameworkView />
-                )}
-                {activeTab === 'orientador' && (
+                </PageTransition>
+              )}
+              {activeTab === 'orientador' && (
+                <PageTransition>
                   <OrientadorView />
-                )}
-                {activeTab === 'originacao-b2c' && (
+                </PageTransition>
+              )}
+              {activeTab === 'originacao-b2c' && (
+                <PageTransition>
                   <OriginacaoB2CView />
-                )}
-                {activeTab === 'configuracoes' && (
+                </PageTransition>
+              )}
+              {activeTab === 'configuracoes' && (
+                <PageTransition>
                   <ConfiguracoesView />
-                )}
-                {!['launch', 'resultados', 'jornada', 'diario', 'framework', 'orientador', 'configuracoes', 'originacao-b2c'].includes(activeTab) && (
-                  <div className="flex items-center justify-center h-full text-slate-400">
-                    <p>Aba desconhecida: {activeTab}. Redirecionando...</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </main>
+                </PageTransition>
+              )}
+              {/* midia-paga rendred above conditionally as full screen */}
+              {!['launch', 'resultados', 'jornada', 'diario', 'framework', 'orientador', 'configuracoes', 'originacao-b2c', 'midia-paga'].includes(activeTab) && (
+                <div className="flex items-center justify-center h-full text-slate-400">
+                  <p>Aba desconhecida: {activeTab}. Redirecionando...</p>
+                </div>
+              )}
+            </div>
+          </AnimatePresence>
+        )}
       </div>
-    </div>
+    </MainLayout>
   );
 }
 

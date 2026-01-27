@@ -98,10 +98,10 @@ export const GoalsModal: React.FC<GoalsModalProps> = ({
 
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl border border-slate-700 flex flex-col md:flex-row overflow-hidden">
+            <div className="bg-slate-900/80 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-2xl border border-white/10 flex flex-col md:flex-row overflow-hidden">
 
                 {/* Sidebar / Tabs */}
-                <div className="w-full md:w-1/3 bg-slate-900/50 border-r border-slate-700 p-4 flex flex-col">
+                <div className="w-full md:w-1/3 bg-slate-900/50 border-r border-white/10 p-4 flex flex-col">
                     <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2 mb-6">
                         <Target className="text-blue-400" size={20} />
                         Metas
@@ -125,7 +125,7 @@ export const GoalsModal: React.FC<GoalsModalProps> = ({
                     </div>
 
                     {/* Summary Card in Sidebar */}
-                    <div className="mt-6 bg-slate-800 rounded-lg p-4 border border-slate-700">
+                    <div className="mt-6 bg-slate-800/50 rounded-lg p-4 border border-white/10">
                         <div className="flex items-center gap-2 text-slate-400 mb-3">
                             <Calculator size={16} />
                             <span className="text-xs font-bold uppercase tracking-wider">Consolidado</span>
@@ -149,7 +149,7 @@ export const GoalsModal: React.FC<GoalsModalProps> = ({
 
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col">
-                    <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800">
+                    <div className="p-4 border-b border-white/10 flex justify-between items-center bg-slate-800/50">
                         <div>
                             <h3 className="text-slate-100 font-bold">Configuração: {activeTab}</h3>
                             <p className="text-xs text-slate-400">Defina as metas para o mês de {currentMonthLabel}</p>

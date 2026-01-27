@@ -8,20 +8,31 @@ import { Recommendation } from '../types/recommendations';
 import { Lightbulb, Filter, ArrowUpDown, Info } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 
+import { usePeriod } from '../contexts/PeriodContext';
+import { isWithinInterval } from 'date-fns';
+
 type SortOption = 'score' | 'cac' | 'conversion' | 'volume' | 'recency';
 
 export const OrientadorView: React.FC = () => {
     const { activities, viewSettings } = useAppStore();
     const { selectedBUs } = useBU();
+    const { startDate, endDate } = usePeriod();
 
-    const recommendations = useRecommendationEngine(activities);
+    // Filter activities by Date Range FIRST as requested
+    const dateFilteredActivities = useMemo(() => {
+        return activities.filter(act => {
+            return isWithinInterval(act.dataDisparo, { start: startDate, end: endDate });
+        });
+    }, [activities, startDate, endDate]);
+
+    const recommendations = useRecommendationEngine(dateFilteredActivities);
     const [selectedRec, setSelectedRec] = useState<Recommendation | null>(null);
     const [sortBy, setSortBy] = useState<SortOption>('score');
 
-    // Calculate filtered activities count for the header
+    // Calculate filtered activities count for the header (using the date-filtered set)
     const filteredActivitiesCount = useMemo(() => {
         const filters = viewSettings.filtrosGlobais;
-        return activities.filter(act => {
+        return dateFilteredActivities.filter(act => {
             // Use BU Context
             const matchesBU = selectedBUs.length === 0 || selectedBUs.includes(act.bu as any);
 
@@ -31,7 +42,7 @@ export const OrientadorView: React.FC = () => {
             const matchesParceiro = filters.parceiros.length === 0 || filters.parceiros.includes(act.parceiro);
             return matchesBU && matchesCanal && matchesSegmento && matchesJornada && matchesParceiro;
         }).length;
-    }, [activities, viewSettings.filtrosGlobais, selectedBUs]);
+    }, [dateFilteredActivities, viewSettings.filtrosGlobais, selectedBUs]);
 
     // Apply global filters and sorting
     const filteredRecommendations = useMemo(() => {

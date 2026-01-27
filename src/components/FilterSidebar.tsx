@@ -90,7 +90,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   };
 
   return (
-    <div className="w-full bg-slate-900 border-r border-slate-700 h-full flex flex-col">
+    <div className="w-full bg-transparent h-full flex flex-col">
       {/* Header matching Sidebar padding */}
       <div className="p-4 flex items-center justify-between shrink-0">
         <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">

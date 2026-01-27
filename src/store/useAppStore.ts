@@ -1,7 +1,23 @@
 
 import { create } from 'zustand';
+import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
+import { get, set, del } from 'idb-keyval'; // IndexedDB
 import { FrameworkRow, ViewSettings, Goal, JournalEntry, FilterState, Activity } from '../types/framework';
 import { B2CDataRow, AlertConfig } from '../types/b2c';
+import { DailyAdMetrics, Budget } from '../schemas/paid-media';
+
+// Custom Storage Adapter using IDB-Keyval
+const storage: StateStorage = {
+    getItem: async (name: string): Promise<string | null> => {
+        return (await get(name)) || null;
+    },
+    setItem: async (name: string, value: string): Promise<void> => {
+        await set(name, value);
+    },
+    removeItem: async (name: string): Promise<void> => {
+        await del(name);
+    },
+};
 
 interface AppState {
     // Data
@@ -33,6 +49,12 @@ interface AppState {
     setB2CData: (data: B2CDataRow[]) => void;
     alertConfig: AlertConfig;
     setAlertConfig: (config: AlertConfig) => void;
+
+    // Paid Media
+    paidMediaData: DailyAdMetrics[];
+    setPaidMediaData: (data: DailyAdMetrics[]) => void;
+    budgets: Budget[];
+    setBudgets: (bg: Budget[]) => void;
 }
 
 const INITIAL_FILTERS: FilterState = {
@@ -47,64 +69,90 @@ const INITIAL_FILTERS: FilterState = {
     dataFim: ''
 };
 
-export const useAppStore = create<AppState>((set) => ({
-    frameworkData: [],
-    activities: [],
-    goals: [],
-    journal: [],
+export const useAppStore = create<AppState>()(
+    persist(
+        (set) => ({
+            frameworkData: [],
+            activities: [],
+            goals: [],
+            journal: [],
 
-    viewSettings: {
-        periodo: { inicio: '', fim: '' }, // Should be initialized with current month
-        abaAtual: 'launch',
-        filtrosGlobais: INITIAL_FILTERS,
-        modoTempoJornada: 'diario'
-    },
+            viewSettings: {
+                periodo: { inicio: '', fim: '' }, // Should be initialized with current month
+                abaAtual: 'launch',
+                filtrosGlobais: INITIAL_FILTERS,
+                modoTempoJornada: 'diario'
+            },
 
-    setFrameworkData: (data, activities) => set({ frameworkData: data, activities }),
+            setFrameworkData: (data, activities) => set({ frameworkData: data, activities }),
 
-    setGoals: (goals) => set({ goals }),
+            setGoals: (goals) => set({ goals }),
 
-    addJournalEntry: (entry) => set((state) => ({
-        journal: [...state.journal, entry]
-    })),
+            addJournalEntry: (entry) => set((state) => ({
+                journal: [...state.journal, entry]
+            })),
 
-    updateJournalEntry: (id, entry) => set((state) => ({
-        journal: state.journal.map(j => j.id === id ? { ...j, ...entry } : j)
-    })),
+            updateJournalEntry: (id, entry) => set((state) => ({
+                journal: state.journal.map(j => j.id === id ? { ...j, ...entry } : j)
+            })),
 
-    updateActivity: (id, updates) => set((state) => ({
-        activities: state.activities.map((a) => (a.id === id ? { ...a, ...updates } : a))
-    })),
+            updateActivity: (id, updates) => set((state) => ({
+                activities: state.activities.map((a) => (a.id === id ? { ...a, ...updates } : a))
+            })),
 
-    setGlobalFilters: (filters) => set((state) => ({
-        viewSettings: {
-            ...state.viewSettings,
-            filtrosGlobais: { ...state.viewSettings.filtrosGlobais, ...filters }
+            setGlobalFilters: (filters) => set((state) => ({
+                viewSettings: {
+                    ...state.viewSettings,
+                    filtrosGlobais: { ...state.viewSettings.filtrosGlobais, ...filters }
+                }
+            })),
+
+            resetFilters: () => set((state) => ({
+                viewSettings: {
+                    ...state.viewSettings,
+                    filtrosGlobais: INITIAL_FILTERS
+                }
+            })),
+
+            setTab: (tab) => set((state) => ({
+                viewSettings: { ...state.viewSettings, abaAtual: tab }
+            })),
+
+            setPeriodo: (inicio, fim) => set((state) => ({
+                viewSettings: { ...state.viewSettings, periodo: { inicio, fim } }
+            })),
+
+            // B2C State
+            b2cData: [],
+            setB2CData: (data) => set({ b2cData: data }),
+
+            // Paid Media Actions
+            paidMediaData: [],
+            setPaidMediaData: (data) => set({ paidMediaData: data }),
+            budgets: [],
+            setBudgets: (bg) => set({ budgets: bg }),
+
+            alertConfig: {
+                share_crm_limiar: 10,
+                ativar_anomalias: true
+            },
+            setAlertConfig: (config) => set({ alertConfig: config })
+        }),
+        {
+            name: 'app-storage', // unique name
+            storage: createJSONStorage(() => storage), // use IDB
+            partialize: (state) => ({
+                // Select fields to persist
+                frameworkData: state.frameworkData,
+                activities: state.activities,
+                goals: state.goals,
+                journal: state.journal,
+                b2cData: state.b2cData,
+                paidMediaData: state.paidMediaData,
+                budgets: state.budgets,
+                viewSettings: { ...state.viewSettings, abaAtual: 'launch' }, // Reset tab to launch on reload but keep prefs
+                alertConfig: state.alertConfig
+            }),
         }
-    })),
-
-    resetFilters: () => set((state) => ({
-        viewSettings: {
-            ...state.viewSettings,
-            filtrosGlobais: INITIAL_FILTERS
-        }
-    })),
-
-    setTab: (tab) => set((state) => ({
-        viewSettings: { ...state.viewSettings, abaAtual: tab }
-    })),
-
-    setPeriodo: (inicio, fim) => set((state) => ({
-        viewSettings: { ...state.viewSettings, periodo: { inicio, fim } }
-    })),
-
-    // B2C State
-    b2cData: [],
-    setB2CData: (data) => set({ b2cData: data }),
-
-    alertConfig: {
-        share_crm_limiar: 10,
-        ativar_anomalias: true
-    },
-    setAlertConfig: (config) => set({ alertConfig: config })
-}));
+    )
+);

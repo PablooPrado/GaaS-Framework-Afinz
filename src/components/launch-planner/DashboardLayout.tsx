@@ -20,12 +20,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
     const { goals } = useAppStore();
     const { startDate, endDate, compareEnabled, setPeriod } = usePeriod();
 
-    // Sync displayDate with startDate when it changes (if it's a different month)
+    // Sync displayDate with endDate (focus on the "target" or "current" end of the range)
     useEffect(() => {
-        if (startDate && format(startDate, 'yyyy-MM') !== format(displayDate, 'yyyy-MM')) {
-            setDisplayDate(startDate);
+        if (endDate && format(endDate, 'yyyy-MM') !== format(displayDate, 'yyyy-MM')) {
+            setDisplayDate(endDate);
         }
-    }, [startDate]);
+    }, [endDate]);
 
     // Handle month change from Calendar
     const handleMonthChange = (newDate: Date) => {

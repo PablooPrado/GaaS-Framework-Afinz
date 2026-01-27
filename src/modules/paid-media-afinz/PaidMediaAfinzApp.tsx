@@ -1,0 +1,200 @@
+import { storageService } from '../../services/storageService';
+import { parseXLSX } from './utils/fileParser';
+import { useAppStore } from '../../store/useAppStore'; // For paidMediaData if needed, though useFilters seems to handle rawData here.
+// Actually, inspecting previous code, useFilters handles local state, but we might want to sync with useAppStore if that's the source of truth.
+// Looking at lines 17: const { rawData, setRawData } = useFilters();
+// I will stick to setting rawData provided by useFilters for now to avoid breaking changes, assuming FilterProvider manages it.
+
+import React, { useState, useEffect } from 'react';
+import { FilterProvider, useFilters } from './context/FilterContext';
+import { FileUpload } from './components/FileUpload';
+import { FilterBar } from './components/FilterBar';
+import { OverviewTab } from './components/Tabs/OverviewTab';
+import { MonthlyAnalysisTab } from './components/Tabs/MonthlyAnalysisTab';
+import { CampaignDetailsTab } from './components/Tabs/CampaignDetailsTab';
+import { BudgetTab } from './components/Tabs/BudgetTab';
+import { DailyAnalysisTab } from './components/Tabs/DailyAnalysisTab';
+import { LayoutDashboard, BarChart2, List, Wallet, UploadCloud, ArrowLeft, Calendar, Loader2, CloudAo } from 'lucide-react'; // Added Loader2
+
+interface PaidMediaAfinzAppProps {
+  onBack?: () => void;
+}
+
+const DashboardContent: React.FC<PaidMediaAfinzAppProps> = ({ onBack }) => {
+  const { rawData, setRawData } = useFilters();
+  const [activeTab, setActiveTab] = useState<'overview' | 'monthly' | 'campaigns' | 'budget' | 'daily'>('overview');
+  const [isSyncing, setIsSyncing] = useState(true);
+
+  // Auto-Sync Effect
+  useEffect(() => {
+    const syncWithCloud = async () => {
+      if (rawData.length > 0) {
+        setIsSyncing(false);
+        return;
+      }
+
+      try {
+        console.log('Verificando dados na nuvem...');
+        const files = await storageService.listFiles('media');
+        if (files && files.length > 0) {
+          // Get latest file
+          const latestFile = files[0]; // storageService usually sorts by defaults or we take first. 
+          // Assuming listFiles returns ordered list or we pick first. Ideally we'd sort by created_at.
+
+          // Fetch content
+          const url = await storageService.getDownloadUrl('media/' + latestFile.name);
+          const resp = await fetch(url);
+          const blob = await resp.blob();
+          const file = new File([blob], latestFile.name, { type: blob.type });
+
+          // Parse
+          const data = await parseXLSX(file);
+          if (data && data.length > 0) {
+            setRawData(data);
+            // Optional: Notify success via toast?
+          }
+        }
+      } catch (e) {
+        console.error('Erro ao sincronizar dados:', e);
+        // Fail silently and show upload screen
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+
+    syncWithCloud();
+  }, []); // Run once on mount
+
+  if (isSyncing) {
+    return (
+      <div className="min-h-screen w-full bg-slate-900 flex flex-col items-center justify-center p-4 absolute top-0 left-0 z-50">
+        <div className="flex flex-col items-center animate-pulse">
+          <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
+            <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Sincronizando Dados...</h2>
+          <p className="text-slate-400 text-sm">Buscando informações salvas na nuvem.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (rawData.length === 0) {
+    return (
+      <div className="min-h-screen w-full bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-4 absolute top-0 left-0 z-50">
+        <div className="absolute top-4 left-4">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors px-4 py-2 rounded-lg hover:bg-slate-200"
+          >
+            <ArrowLeft size={20} />
+            Voltar ao GaaS
+          </button>
+        </div>
+        <div className="text-center mb-10 animate-fade-in-up">
+          <h1 className="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">
+            Dashboard de Mídia Paga
+          </h1>
+          <p className="text-slate-500 text-lg">
+            Importe seus dados do Meta Ads e Google Ads para começar.
+          </p>
+        </div>
+        <div className="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-xl border border-slate-100 animate-fade-in">
+          <FileUpload onDataLoaded={setRawData} />
+        </div>
+        <p className="mt-8 text-slate-400 text-sm">
+          Versão 1.0 • Processamento Local e Seguro
+        </p>
+      </div>
+    );
+  }
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'monthly', label: 'Análise Mensal', icon: BarChart2 },
+    { id: 'daily', label: 'Análise Diária', icon: Calendar },
+    { id: 'campaigns', label: 'Campanhas', icon: List },
+    { id: 'budget', label: 'Orçamentos', icon: Wallet },
+  ] as const;
+
+  return (
+    <div className="min-h-screen w-full bg-slate-50 text-slate-900 flex flex-col absolute top-0 left-0 z-50">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-[60] group">
+        <div className="px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-900 transition-colors mr-2"
+                title="Voltar ao GaaS"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            )}
+            <div className="flex items-center gap-2">
+              <div className="bg-primary/20 p-2 rounded-lg">
+                <BarChart2 className="w-6 h-6 text-primary-dark" />
+              </div>
+              <h1 className="font-bold text-xl text-slate-800 tracking-tight">Media <span className="text-primary font-extrabold">Analytics</span></h1>
+            </div>
+          </div>
+
+          <nav className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                                        flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
+                                        ${isActive
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                    }
+                                    `}
+                >
+                  <Icon size={16} />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          <button
+            onClick={() => setRawData([])}
+            className="text-sm font-medium text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors px-3 py-1.5 hover:bg-red-50 rounded-lg"
+          >
+            <UploadCloud size={16} />
+            Novo Arquivo
+          </button>
+        </div>
+
+        {/* Global Filter Bar */}
+        <FilterBar />
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 container mx-auto px-6 py-8 pb-32 max-w-[1600px] animate-fade-in">
+
+        {/* Render Active Tab */}
+
+        {activeTab === 'overview' && <OverviewTab />}
+        {activeTab === 'monthly' && <MonthlyAnalysisTab />}
+        {activeTab === 'daily' && <DailyAnalysisTab />}
+        {activeTab === 'campaigns' && <CampaignDetailsTab />}
+        {activeTab === 'budget' && <BudgetTab />}
+      </main>
+    </div>
+  );
+};
+
+export default function PaidMediaAfinzApp({ onBack }: PaidMediaAfinzAppProps) {
+  return (
+    <FilterProvider>
+      <DashboardContent onBack={onBack} />
+    </FilterProvider>
+  );
+}

@@ -15,6 +15,7 @@ interface OriginacaoChartsProps {
     shareThreshold?: number;
     viewMode: ViewMode;
     setViewMode: (mode: ViewMode) => void;
+    onPointClick?: (date: Date) => void;
 }
 
 const tooltipFormatter = (value: number, name: string) => {
@@ -27,7 +28,17 @@ const tooltipFormatter = (value: number, name: string) => {
     return [value, name];
 };
 
-export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareThreshold = 15, viewMode, setViewMode }) => {
+export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareThreshold = 15, viewMode, setViewMode, onPointClick }) => {
+
+    const handleChartClick = (data: any) => {
+        if (data && data.activePayload && data.activePayload.length > 0 && onPointClick) {
+            const item = data.activePayload[0].payload;
+            if (item && item.data) {
+                const [y, m, d] = item.data.split('-').map(Number);
+                onPointClick(new Date(y, m - 1, d));
+            }
+        }
+    };
 
     const fmt = (val: number, isPercent = false) => {
         if (isPercent) return `${val.toFixed(1)}%`;
@@ -111,7 +122,7 @@ export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareT
                     <h3 className="text-sm font-bold text-slate-300 mb-4">Volume de Propostas: CRM vs B2C Total</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={chartData}>
+                            <BarChart data={chartData} onClick={handleChartClick}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                                 <XAxis dataKey="displayDate" stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
@@ -133,7 +144,7 @@ export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareT
                     <h3 className="text-sm font-bold text-slate-300 mb-4">Taxa de Conversão: CRM vs Média B2C</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData}>
+                            <LineChart data={chartData} onClick={handleChartClick}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                                 <XAxis dataKey="displayDate" stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <YAxis stroke="#64748b" tick={{ fontSize: 10 }} unit="%" />
@@ -154,7 +165,7 @@ export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareT
                     <h3 className="text-sm font-bold text-slate-300 mb-4">Tendência Share CRM (%)</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData}>
+                            <LineChart data={chartData} onClick={handleChartClick}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                                 <XAxis dataKey="displayDate" stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <YAxis stroke="#64748b" tick={{ fontSize: 10 }} unit="%" />
@@ -191,7 +202,7 @@ export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareT
                     <h3 className="text-sm font-bold text-slate-300 mb-4">Volume de Emissões: CRM vs B2C</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={chartData}>
+                            <BarChart data={chartData} onClick={handleChartClick}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                                 <XAxis dataKey="displayDate" stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
@@ -213,7 +224,7 @@ export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareT
                     <h3 className="text-sm font-bold text-slate-300 mb-4">CAC Evolution (R$)</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData}>
+                            <LineChart data={chartData} onClick={handleChartClick}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                                 <XAxis dataKey="displayDate" stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />

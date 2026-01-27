@@ -4,12 +4,15 @@ import App from './App.tsx'
 import './App.css'
 import { PeriodProvider } from './contexts/PeriodContext'
 import { BUProvider } from './contexts/BUContext'
+import { AuthProvider } from './context/AuthContext';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <PeriodProvider>
       <BUProvider>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </BUProvider>
     </PeriodProvider>
   </React.StrictMode>,

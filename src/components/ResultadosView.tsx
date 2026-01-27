@@ -5,8 +5,10 @@ import { GoalsVisualization } from './GoalsVisualization';
 import { GoalsModal } from './GoalsModal';
 import { ProjectionsSection } from './resultados/ProjectionsSection';
 import { useGoals } from '../hooks/useGoals';
-import { CalendarData } from '../types/framework';
+import { CalendarData, Activity } from '../types/framework';
 import { Target } from 'lucide-react';
+import { DailyDetailsModal } from './jornada/DailyDetailsModal';
+import { format } from 'date-fns';
 
 interface ResultadosViewProps {
   resultados: StrategyMetrics;
@@ -17,6 +19,21 @@ interface ResultadosViewProps {
 export const ResultadosView: React.FC<ResultadosViewProps> = ({ resultados, data, selectedBU }) => {
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false);
   const { getGoal, saveGoal } = useGoals();
+
+  // Modal State
+  const [dailyModalOpen, setDailyModalOpen] = useState(false);
+  const [selectedActivities, setSelectedActivities] = useState<Activity[]>([]);
+  const [dailyModalDate, setDailyModalDate] = useState<Date | null>(null);
+
+  const handleDayClick = (dateStr: string) => {
+    const activities = data[dateStr] || [];
+    const [y, m, d] = dateStr.split('-').map(Number);
+
+    setDailyModalDate(new Date(y, m - 1, d));
+    setSelectedActivities(activities);
+    setDailyModalOpen(true);
+  };
+
 
   // Determinar mês atual baseado nos dados (pega o mês mais recente com dados)
   const currentMonthKey = Object.keys(data).sort().pop()?.substring(0, 7) || new Date().toISOString().substring(0, 7);
@@ -66,6 +83,10 @@ export const ResultadosView: React.FC<ResultadosViewProps> = ({ resultados, data
         data={data}
         currentGoal={currentGoal}
         selectedBU={selectedBU}
+        onPointClick={(date) => {
+          const dateStr = format(date, 'yyyy-MM-dd');
+          handleDayClick(dateStr);
+        }}
       />
 
       {/* 3. Meta vs Realizado | Comparativo de Canais */}
@@ -102,6 +123,14 @@ export const ResultadosView: React.FC<ResultadosViewProps> = ({ resultados, data
         initialGoal={fullGoal}
         currentMonthLabel={currentMonthKey}
       />
+
+      {dailyModalOpen && (
+        <DailyDetailsModal
+          date={dailyModalDate}
+          activities={selectedActivities}
+          onClose={() => setDailyModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

@@ -1,79 +1,347 @@
-import React from 'react';
-import { User, Shield, Bell, Moon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Moon, LogOut, Mail, Loader2, UploadCloud, FileText, Download, Trash2, RefreshCw, CheckCircle, Database, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { storageService, StorageFile } from '../services/storageService';
+import { useFrameworkData } from '../hooks/useFrameworkData';
+import { useCSVParser } from '../hooks/useCSVParser';
+import { useAppStore } from '../store/useAppStore';
+import { parseXLSX } from '../modules/paid-media-afinz/utils/fileParser';
 
-export const ConfiguracoesView: React.FC = () => {
+const FileManager: React.FC<{ title: string; slot: string; accept: string }> = ({ title, slot, accept }) => {
+    const [files, setFiles] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [restoring, setRestoring] = useState(false);
+    const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    // Hooks for restoration
+    const { processCSV } = useFrameworkData();
+    const { parseB2CCSV } = useCSVParser();
+    const { setB2CData, setPaidMediaData } = useAppStore();
+
+    useEffect(() => {
+        loadFiles();
+    }, []);
+
+    const loadFiles = async () => {
+        setLoading(true);
+        setMsg(null);
+        try {
+            const list = await storageService.listFiles(slot);
+            setFiles(list || []);
+        } catch (e: any) {
+            console.error(e);
+            // Translate common Supabase errors
+            let errorText = e.message;
+            if (e.message.includes('Bucket not found')) {
+                errorText = 'Bucket "app-data" não encontrado. Crie-o no Supabase.';
+            } else if (e.message.includes('jwks')) {
+                errorText = 'Erro de Autenticação (Chave API inválida?).';
+            }
+            setMsg({ type: 'error', text: errorText });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        setMsg(null);
+        try {
+            await storageService.uploadFile(slot, file);
+            await loadFiles();
+            setMsg({ type: 'success', text: 'Upload realizado com sucesso!' });
+        } catch (e: any) {
+            setMsg({ type: 'error', text: 'Falha no upload: ' + e.message });
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDelete = async (path: string) => {
+        if (!confirm('Tem certeza que deseja excluir este arquivo?')) return;
+        setLoading(true);
+        try {
+            await storageService.deleteFile(slot + '/' + path);
+            await loadFiles();
+        } catch (e: any) {
+            alert(e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRestore = async (path: string) => {
+        setRestoring(true);
+        setMsg(null);
+        try {
+            const fullPath = slot + '/' + path;
+            const signedUrl = await storageService.getDownloadUrl(fullPath);
+
+            // 1. Fetch Blob
+            const resp = await fetch(signedUrl);
+            const blob = await resp.blob();
+            // Create dummy file object
+            const file = new File([blob], path, { type: blob.type });
+
+            // 2. Parse based on slot
+            if (slot === 'framework') {
+                await processCSV(file);
+            } else if (slot === 'b2c') {
+                const { data } = await parseB2CCSV(file);
+                setB2CData(data);
+            } else if (slot === 'media') {
+                const data = await parseXLSX(file);
+                setPaidMediaData(data);
+            }
+
+            setMsg({ type: 'success', text: 'Dados restaurados e aplicados ao Dashboard!' });
+        } catch (e: any) {
+            console.error(e);
+            setMsg({ type: 'error', text: 'Erro ao restaurar: ' + e.message });
+        } finally {
+            setRestoring(false);
+        }
+    };
+
     return (
-        <div className="p-8 max-w-4xl mx-auto space-y-8">
-            <div>
-                <h2 className="text-2xl font-bold text-slate-100 mb-2">Configurações</h2>
-                <p className="text-slate-400">Gerencie suas preferências e configurações da conta.</p>
+        <div className="border border-slate-700/50 bg-slate-800/30 rounded-lg overflow-hidden backdrop-blur-sm transition-all hover:border-blue-500/30">
+            <div className="bg-slate-800/50 p-4 flex justify-between items-center border-b border-slate-700/50">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                        <Database size={18} />
+                    </div>
+                    <div>
+                        <span className="font-semibold text-slate-200 text-sm block">{title}</span>
+                        <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">{accept.replace(/\./g, '').toUpperCase()}</span>
+                    </div>
+                </div>
+                <div className="relative group">
+                    <input
+                        type="file"
+                        accept={accept}
+                        onChange={handleUpload}
+                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                        disabled={uploading}
+                    />
+                    <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed group-hover:scale-105">
+                        {uploading ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
+                        {uploading ? 'Enviando...' : 'Novo Upload'}
+                    </button>
+                </div>
             </div>
 
-            <div className="grid gap-6">
-                {/* Perfil Section */}
-                <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-400">
-                            <User size={24} />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-semibold text-white">Perfil do Usuário</h3>
-                            <p className="text-sm text-slate-400">Gerencie suas informações pessoais</p>
-                        </div>
+            <div className="p-2 max-h-56 overflow-y-auto min-h-[120px] scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                {loading && !files.length ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-slate-500 gap-2">
+                        <Loader2 className="animate-spin" />
+                        <span className="text-xs">Carregando lista...</span>
                     </div>
+                ) : files.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-slate-500 gap-2 dashed-border">
+                        <UploadCloud size={24} className="opacity-20" />
+                        <p className="text-xs italic">Nenhum arquivo na nuvem.</p>
+                        {msg?.type === 'error' && (
+                            <p className="text-[10px] text-red-400 bg-red-900/20 px-2 py-1 rounded max-w-[200px] text-center">
+                                {msg.text}
+                            </p>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-1">
+                        {files.map((f: any) => (
+                            <div key={f.id} className="flex items-center justify-between p-3 hover:bg-slate-700/30 rounded-lg group transition-colors border border-transparent hover:border-slate-700">
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <FileText size={16} className="text-slate-500 group-hover:text-blue-400 transition-colors flex-shrink-0" />
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-slate-300 truncate max-w-[220px] group-hover:text-white transition-colors" title={f.name}>
+                                            {f.name}
+                                        </p>
+                                        <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                                            <span>{new Date(f.created_at).toLocaleString('pt-BR')}</span>
+                                            <span>•</span>
+                                            <span>{(f.metadata?.size / 1024).toFixed(1)} KB</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                    <button
+                                        onClick={() => handleRestore(f.name)}
+                                        disabled={restoring}
+                                        className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors tooltip-trigger"
+                                        title="Restaurar e Aplicar"
+                                    >
+                                        <RefreshCw size={16} className={restoring ? 'animate-spin' : ''} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(f.name)}
+                                        className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        title="Excluir Definitivamente"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+            {msg && msg.type === 'success' && (
+                <div className="bg-emerald-500/10 text-emerald-400 text-xs px-4 py-2 flex items-center gap-2 border-t border-emerald-500/20">
+                    <CheckCircle size={12} />
+                    {msg.text}
+                </div>
+            )}
+            {msg && msg.type === 'error' && files.length > 0 && ( /* Only show error footer if lists loaded but later error occures, otherwise handled in empty state */
+                <div className="bg-red-500/10 text-red-400 text-xs px-4 py-2 flex items-center gap-2 border-t border-red-500/20">
+                    <AlertCircle size={12} />
+                    {msg.text}
+                </div>
+            )}
+        </div>
+    );
+};
 
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">Nome</label>
-                                <input type="text" value="Admin User" readOnly className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:outline-none focus:border-blue-500" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
-                                <input type="email" value="admin@afinz.com.br" readOnly className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-200 focus:outline-none focus:border-blue-500" />
-                            </div>
+export const ConfiguracoesView: React.FC = () => {
+    const { user, signInWithEmail, signOut, loading } = useAuth();
+    const [emailInput, setEmailInput] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const [sent, setSent] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSending(true);
+        setError(null);
+        try {
+            await signInWithEmail(emailInput);
+            setSent(true);
+        } catch (err: any) {
+            setError(err.message || 'Erro ao enviar email');
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    if (loading) {
+        return <div className="h-full w-full flex items-center justify-center bg-slate-900"><Loader2 className="animate-spin text-blue-500 w-8 h-8" /></div>;
+    }
+
+    // --- LOGGED OUT STATE ---
+    // Should depend on App guard, but as fallback:
+    if (!user) {
+        return <div className="p-8 text-center text-slate-500">Sessão expirada. Recarregue a página.</div>;
+    }
+
+    // --- LOGGED IN STATE ---
+    return (
+        <div className="min-h-full bg-slate-900 text-slate-200 p-8 space-y-8 animate-fade-in pb-24">
+            <div className="max-w-5xl mx-auto space-y-8">
+
+                <div className="flex justify-between items-end border-b border-slate-800 pb-6">
+                    <div>
+                        <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Configurações</h2>
+                        <p className="text-slate-400 text-lg">Central de controle e sincronização.</p>
+                    </div>
+                    <div className="text-right hidden md:block">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1">Status do Sistema</span>
+                        <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span className="text-xs font-bold">Online & Conectado</span>
                         </div>
                     </div>
                 </div>
 
-                {/* System Settings */}
-                <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-white mb-6">Preferências do Sistema</h3>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900 transition-colors cursor-pointer">
-                            <div className="flex items-center gap-3">
-                                <Moon size={20} className="text-purple-400" />
-                                <div>
-                                    <p className="font-medium text-slate-200">Aparência</p>
-                                    <p className="text-xs text-slate-400">Tema escuro ativado</p>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Column: Profile & Settings */}
+                    <div className="space-y-6">
+                        {/* Profile Section */}
+                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg">
+                                    <User size={28} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-lg font-bold text-white truncate" title={user.email}>{user.email?.split('@')[0]}</h3>
+                                    <p className="text-xs text-slate-400 truncate">{user.email}</p>
                                 </div>
                             </div>
-                            <div className="w-10 h-6 bg-blue-600 rounded-full relative">
-                                <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+
+                            <div className="space-y-3 mb-6">
+                                <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-700/50 flex justify-between items-center group">
+                                    <span className="text-xs font-bold text-slate-500 uppercase">ID</span>
+                                    <code className="text-xs text-slate-300 font-mono bg-black/20 px-2 py-0.5 rounded group-hover:text-white transition-colors">
+                                        {user.id.substring(0, 8)}...
+                                    </code>
+                                </div>
                             </div>
+
+                            <button
+                                onClick={signOut}
+                                className="w-full flex items-center justify-center gap-2 text-red-400 hover:text-white hover:bg-red-500 bg-red-500/10 border border-red-500/20 px-4 py-3 rounded-xl transition-all text-sm font-bold"
+                            >
+                                <LogOut size={16} />
+                                Desconectar
+                            </button>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900 transition-colors cursor-pointer">
-                            <div className="flex items-center gap-3">
-                                <Bell size={20} className="text-emerald-400" />
-                                <div>
-                                    <p className="font-medium text-slate-200">Notificações</p>
-                                    <p className="text-xs text-slate-400">Alertas de campanhas</p>
+                        {/* Visual Settings */}
+                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 shadow-xl opacity-60 pointer-events-none">
+                            <h3 className="text-sm font-bold text-slate-400 uppercase mb-4 tracking-wider">Aparência</h3>
+                            <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400">
+                                        <Moon size={18} />
+                                    </div>
+                                    <span className="text-slate-300 font-medium text-sm">Modo Escuro</span>
                                 </div>
-                            </div>
-                            <div className="w-10 h-6 bg-blue-600 rounded-full relative">
-                                <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+                                <div className="w-10 h-5 bg-blue-600 rounded-full relative">
+                                    <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full shadow-sm" />
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg hover:bg-slate-900 transition-colors cursor-pointer">
-                            <div className="flex items-center gap-3">
-                                <Shield size={20} className="text-amber-400" />
-                                <div>
-                                    <p className="font-medium text-slate-200">Segurança</p>
-                                    <p className="text-xs text-slate-400">Logs de acesso</p>
+                    {/* Right Column: File Manager (Spans 2 cols) */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 shadow-xl backdrop-blur-sm relative overflow-hidden">
+                            {/* Background subtle effect */}
+                            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
+
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-blue-500/20 rounded-xl text-blue-400 shadow-inner">
+                                        <UploadCloud size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white">Gestão de Arquivos</h3>
+                                        <p className="text-sm text-slate-400">Armazenamento em nuvem seguro e versionado.</p>
+                                    </div>
                                 </div>
+                            </div>
+
+                            <div className="space-y-4 relative z-10">
+                                <FileManager
+                                    title="Framework Strategy"
+                                    slot="framework"
+                                    accept=".csv"
+                                />
+                                <FileManager
+                                    title="Histórico B2C" // RENAMED FROM B2C History
+                                    slot="b2c"
+                                    accept=".csv"
+                                />
+                                <FileManager
+                                    title="Mídia Paga (Ads)"
+                                    slot="media"
+                                    accept=".xlsx, .xls"
+                                />
                             </div>
                         </div>
                     </div>
