@@ -38,11 +38,14 @@ export const LoginView: React.FC = () => {
                 <div className="relative z-10 text-center">
 
                     {/* Modern CSS Logo */}
-                    {/* Media Analytics Title */}
-                    <div className="mb-10 flex flex-col items-center justify-center animate-fade-in select-none">
-                        <h1 className="text-5xl font-bold text-white tracking-tight">
-                            Media <span className="text-orange-500 font-extrabold">Analytics</span>
+                    {/* GaaS Brand from GlobalHeader (Scaled Up) */}
+                    <div className="mb-12 flex flex-col items-center justify-center animate-fade-in select-none gap-2">
+                        <h1 className="text-7xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent tracking-widest leading-none">
+                            GaaS
                         </h1>
+                        <span className="text-xl font-bold text-white tracking-[0.3em] uppercase leading-tight opacity-90 pl-1">
+                            AFINZ
+                        </span>
                     </div>
 
                     <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Login Corporativo</h2>
