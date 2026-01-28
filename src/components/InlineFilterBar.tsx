@@ -72,14 +72,14 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
         items,
         field,
         counts,
-        colorClass = "text-slate-400"
+        align = 'left'
     }: {
         title: string,
         icon: any,
         items: string[],
         field: keyof FilterState,
         counts: Record<string, number>,
-        colorClass?: string
+        align?: 'left' | 'right'
     }) => {
         if (items.length === 0) return null;
 
@@ -90,13 +90,13 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
         return (
             <div className="relative group">
                 <button className={`flex items-center gap-2 px-3 py-2 rounded-lg transition border ${isActive
-                    ? 'bg-slate-800 border-blue-500/50 text-slate-100'
+                    ? 'bg-slate-800 border-slate-600 text-slate-200'
                     : 'bg-transparent border-transparent hover:bg-slate-800/50 text-slate-400'
                     }`}>
-                    <Icon size={16} className={isActive ? 'text-blue-400' : colorClass} />
+                    <Icon size={16} className={isActive ? 'text-slate-200' : 'text-slate-400'} />
                     <span className="text-sm font-medium">{title}</span>
                     {isActive && (
-                        <span className="bg-blue-500/20 text-blue-400 text-[10px] px-1.5 py-0.5 rounded-full ml-1">
+                        <span className="bg-slate-700 text-slate-300 text-[10px] px-1.5 py-0.5 rounded-full ml-1 border border-slate-600">
                             {selectedCount}
                         </span>
                     )}
@@ -104,7 +104,7 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
                 </button>
 
                 {/* Dropdown - Visible on Hover */}
-                <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 transform origin-top-left">
+                <div className={`absolute top-full mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 transform origin-top-left ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'}`}>
                     <div className="flex items-center justify-between px-2 py-1 mb-2 border-b border-slate-800">
                         <span className="text-xs font-bold text-slate-500 uppercase">{title}</span>
                         <button
@@ -118,7 +118,7 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
                         {items.map(item => (
                             <label key={item} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-slate-800 rounded-lg transition group/item">
                                 <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${(filters[field] as string[]).includes(item)
-                                    ? 'bg-blue-600 border-blue-600'
+                                    ? 'bg-slate-600 border-slate-500' // Minimalist check
                                     : 'border-slate-600 group-hover/item:border-slate-500'
                                     }`}>
                                     {(filters[field] as string[]).includes(item) && <Check size={10} className="text-white" />}
@@ -141,7 +141,6 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
                 items={availableCanais}
                 field="canais"
                 counts={countByCanal}
-                colorClass="text-blue-400"
             />
             <FilterDropdown
                 title="Jornadas"
@@ -149,7 +148,6 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
                 items={availableJornadas}
                 field="jornadas"
                 counts={countByJornada}
-                colorClass="text-purple-400"
             />
             <FilterDropdown
                 title="Segmentos"
@@ -157,7 +155,6 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
                 items={availableSegmentos}
                 field="segmentos"
                 counts={countBySegmento}
-                colorClass="text-green-400"
             />
             <FilterDropdown
                 title="Parceiros"
@@ -165,7 +162,7 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
                 items={availableParceiros}
                 field="parceiros"
                 counts={countByParceiro}
-                colorClass="text-orange-400"
+                align="right"
             />
 
             {hasActiveFilters && (
