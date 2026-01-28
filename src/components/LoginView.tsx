@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Mail, CheckCircle, AlertCircle, Loader2, ArrowRight, ShieldCheck, TrendingUp } from 'lucide-react';
+import { Mail, CheckCircle, AlertCircle, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
 import afinzIconBlue from '../assets/afinz-icon-blue.png';
 
 export const LoginView: React.FC = () => {
@@ -38,16 +38,11 @@ export const LoginView: React.FC = () => {
                 <div className="relative z-10 text-center">
 
                     {/* Modern CSS Logo */}
-                    <div className="mb-8 flex flex-col items-center justify-center animate-fade-in select-none">
-                        <div className="bg-gradient-to-br from-blue-600 to-cyan-500 p-5 rounded-2xl shadow-2xl shadow-blue-500/20 mb-5 transform hover:scale-110 transition-all duration-300 border border-white/10 group cursor-default relative overflow-hidden">
-                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 backdrop-blur-sm"></div>
-                            <TrendingUp size={40} className="text-white relative z-10 drop-shadow-md" strokeWidth={3} />
-                        </div>
-                        <h1 className="text-4xl font-black text-white tracking-tighter mb-1 flex items-baseline justify-center gap-3">
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-white drop-shadow-sm">GaaS</span>
-                            <span className="text-lg font-light tracking-[0.3em] text-slate-300">AFINZ</span>
+                    {/* Media Analytics Title */}
+                    <div className="mb-10 flex flex-col items-center justify-center animate-fade-in select-none">
+                        <h1 className="text-5xl font-bold text-white tracking-tight">
+                            Media <span className="text-orange-500 font-extrabold">Analytics</span>
                         </h1>
-                        <div className="h-0.5 w-24 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent rounded-full mt-2"></div>
                     </div>
 
                     <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Login Corporativo</h2>
