@@ -97,7 +97,7 @@ export const KPICard: React.FC<KPICardProps> = ({
             </div>
 
             {/* Decorator Line */}
-            <div className={`absolute bottom-0 left-0 h-1 w-full ${status === 'error' ? 'bg-red-500' : status === 'warning' ? 'bg-yellow-400' : 'bg-primary/50'}`} />
+            <div className={`absolute bottom-0 left-0 h-1 w-full ${status === 'error' ? 'bg-red-500' : status === 'warning' ? 'bg-amber-400' : 'bg-orange-500'}`} />
         </div>
     );
 };
