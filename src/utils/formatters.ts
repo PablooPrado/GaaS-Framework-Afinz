@@ -107,10 +107,22 @@ export const parseNumber = (value: string | number): number | null => {
   }
 };
 
-export const formatDateKey = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+export const formatDateKey = (date: Date | string): string => {
+  if (typeof date === 'string') {
+    // Robust cleanup for ISO strings to prevent timezone shift (e.g. 00:00Z -> previous day)
+    // If it looks like ISO YYYY-MM-DD... just take the date part
+    const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return `${match[1]}-${match[2]}-${match[3]}`; // Keeps the string date exactly as is
+    }
+  }
+
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return 'UNKNOWN'; // Safe fallback
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
@@ -166,7 +178,7 @@ export const parseDate = (dateString: string | number): Date | null => {
     // Tenta: YYYY-MM-DD (ISO)
     if (trimmed.includes('-')) {
       const parts = trimmed.split('-');
-      if (parts.length >= 3) {
+      if (parts.length >= 3 && !isNaN(parseInt(parts[1]))) {
         const year = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10);
         // Remove time part if exists to avoid timezone drift
@@ -176,6 +188,30 @@ export const parseDate = (dateString: string | number): Date | null => {
         if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
           return new Date(year, month - 1, day);
         }
+      }
+    }
+
+    // Support Text Months (e.g. 01-Jan-2026, 01/Jan/2026, 1 de Janeiro de 2026)
+    const monthNames: { [key: string]: number } = {
+      'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5,
+      'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11,
+      'january': 0, 'february': 1, 'march': 2, 'april': 3, 'may': 4, 'june': 5,
+      'july': 6, 'august': 7, 'september': 8, 'october': 9, 'november': 10, 'december': 11
+    };
+
+    const textMatch = trimmed.toLowerCase().match(/(\d{1,2})[\s\-\/de]+([a-zç]+)[\s\-\/de]+(\d{2,4})/);
+    if (textMatch) {
+      const day = parseInt(textMatch[1], 10);
+      const monthStr = textMatch[2]; // full captured string
+      // Find matching month key
+      const monthKey = Object.keys(monthNames).find(k => monthStr.includes(k) || k.includes(monthStr));
+
+      let year = parseInt(textMatch[3], 10);
+      if (year < 100) year += 2000;
+
+      if (monthKey !== undefined) {
+        const month = monthNames[monthKey];
+        return new Date(year, month, day);
       }
     }
 

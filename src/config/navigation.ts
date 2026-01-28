@@ -41,7 +41,7 @@ export const NAV_CONFIG: NavGroup[] = [
         title: 'ORIGEM',
         items: [
             { id: 'originacao-b2c', label: 'Originação B2C', icon: PieChart },
-            { id: 'midia-paga', label: 'Mídia Paga', icon: Wallet },
+            { id: 'midia-paga', label: 'Media Analytics', icon: Wallet },
         ]
     },
     {

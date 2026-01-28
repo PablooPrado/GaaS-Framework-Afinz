@@ -118,6 +118,7 @@ export const DistributionAnalysis: React.FC<DistributionAnalysisProps> = ({ data
 
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
+
       <div className="flex flex-col gap-6 mb-8">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-slate-100 flex items-center gap-3">
@@ -128,18 +129,16 @@ export const DistributionAnalysis: React.FC<DistributionAnalysisProps> = ({ data
           <div className="flex gap-2 bg-slate-900 rounded-lg p-1.5 border border-slate-700">
             <button
               onClick={() => setChartType('pie')}
-              className={`flex items-center gap-2 px-4 py-2 rounded text-base font-medium transition ${
-                chartType === 'pie' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded text-base font-medium transition ${chartType === 'pie' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'
+                }`}
             >
               <PieChartIcon size={18} />
               Pizza
             </button>
             <button
               onClick={() => setChartType('bar')}
-              className={`flex items-center gap-2 px-4 py-2 rounded text-base font-medium transition ${
-                chartType === 'bar' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded text-base font-medium transition ${chartType === 'bar' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'
+                }`}
             >
               <BarChart3 size={18} />
               Barras

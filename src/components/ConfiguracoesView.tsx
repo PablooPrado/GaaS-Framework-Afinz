@@ -6,6 +6,7 @@ import { useFrameworkData } from '../hooks/useFrameworkData';
 import { useCSVParser } from '../hooks/useCSVParser';
 import { useAppStore } from '../store/useAppStore';
 import { parseXLSX } from '../modules/paid-media-afinz/utils/fileParser';
+import { DataMigration } from './admin/DataMigration';
 
 const FileManager: React.FC<{ title: string; slot: string; accept: string }> = ({ title, slot, accept }) => {
     const [files, setFiles] = useState<any[]>([]);
@@ -309,7 +310,7 @@ export const ConfiguracoesView: React.FC = () => {
                     </div>
 
                     {/* Right Column: File Manager (Spans 2 cols) */}
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className="lg:col-span-2 space-y-8">
                         <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 shadow-xl backdrop-blur-sm relative overflow-hidden">
                             {/* Background subtle effect */}
                             <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
@@ -344,6 +345,9 @@ export const ConfiguracoesView: React.FC = () => {
                                 />
                             </div>
                         </div>
+
+                        {/* Database Migration Section */}
+                        <DataMigration />
                     </div>
                 </div>
             </div>

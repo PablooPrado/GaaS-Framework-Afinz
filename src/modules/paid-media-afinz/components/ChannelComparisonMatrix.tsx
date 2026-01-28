@@ -81,26 +81,27 @@ export const ChannelComparisonMatrix: React.FC<ChannelComparisonMatrixProps> = (
         }
 
         return (
-            <tr className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors group">
-                <td className="py-4 px-4 font-medium text-slate-700 bg-white group-hover:bg-slate-50">{label}</td>
+        return (
+            <tr className="border-b border-slate-700 last:border-0 hover:bg-slate-700/30 transition-colors group">
+                <td className="py-4 px-4 font-medium text-slate-300 bg-slate-800 group-hover:bg-slate-700/30">{label}</td>
 
                 {/* Meta */}
-                <td className="py-4 px-4 text-right border-l border-r border-slate-50 bg-[#1877F2]/5 text-slate-700">
-                    <div className="font-semibold">{format(metaVal)}<span className="text-xs text-slate-400 font-normal ml-0.5">{suffix}</span></div>
-                    {metaBetter && <div className="text-[10px] text-green-600 font-bold uppercase tracking-wide mt-1">Vencedor</div>}
+                <td className="py-4 px-4 text-right border-l border-r border-slate-700 bg-[#1877F2]/10 text-slate-200">
+                    <div className="font-semibold">{format(metaVal)}<span className="text-xs text-slate-500 font-normal ml-0.5">{suffix}</span></div>
+                    {metaBetter && <div className="text-[10px] text-green-400 font-bold uppercase tracking-wide mt-1">Vencedor</div>}
                 </td>
 
                 {/* Google */}
-                <td className="py-4 px-4 text-right border-r border-slate-50 bg-[#4285F4]/5 text-slate-700">
-                    <div className="font-semibold">{format(googleVal)}<span className="text-xs text-slate-400 font-normal ml-0.5">{suffix}</span></div>
-                    {googleBetter && <div className="text-[10px] text-green-600 font-bold uppercase tracking-wide mt-1">Vencedor</div>}
+                <td className="py-4 px-4 text-right border-r border-slate-700 bg-[#4285F4]/10 text-slate-200">
+                    <div className="font-semibold">{format(googleVal)}<span className="text-xs text-slate-500 font-normal ml-0.5">{suffix}</span></div>
+                    {googleBetter && <div className="text-[10px] text-green-400 font-bold uppercase tracking-wide mt-1">Vencedor</div>}
                 </td>
 
                 {/* Action */}
                 <td className="py-4 px-4 text-right">
-                    <div className="flex items-center justify-end gap-2 text-xs font-medium text-slate-600">
+                    <div className="flex items-center justify-end gap-2 text-xs font-medium text-slate-400">
                         {action}
-                        <ArrowRight size={14} className="text-slate-300" />
+                        <ArrowRight size={14} className="text-slate-600" />
                     </div>
                 </td>
             </tr>
@@ -112,20 +113,20 @@ export const ChannelComparisonMatrix: React.FC<ChannelComparisonMatrixProps> = (
     const fmtNum = (v: number) => new Intl.NumberFormat('pt-BR').format(v);
 
     return (
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="p-6 pb-4 border-b border-slate-50 flex justify-between items-center">
+        <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm overflow-hidden">
+            <div className="p-6 pb-4 border-b border-slate-700 flex justify-between items-center">
                 <div>
-                    <h3 className="text-lg font-bold text-slate-800">Análise de Canais</h3>
+                    <h3 className="text-lg font-bold text-slate-100">Análise de Canais</h3>
                     <p className="text-xs text-slate-400 mt-0.5">Comparativo direto de performance</p>
                 </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead>
-                        <tr className="bg-slate-50 text-slate-500 uppercase text-xs tracking-wider">
+                        <tr className="bg-slate-900 text-slate-500 uppercase text-xs tracking-wider">
                             <th className="py-3 px-4 text-left font-bold w-1/5">Métrica</th>
-                            <th className="py-3 px-4 text-right font-bold w-1/4 text-[#1877F2] bg-[#1877F2]/10 border-b-2 border-[#1877F2]">Meta Ads</th>
-                            <th className="py-3 px-4 text-right font-bold w-1/4 text-[#4285F4] bg-[#4285F4]/10 border-b-2 border-[#4285F4]">Google Ads</th>
+                            <th className="py-3 px-4 text-right font-bold w-1/4 text-[#1877F2] bg-[#1877F2]/20 border-b-2 border-[#1877F2]">Meta Ads</th>
+                            <th className="py-3 px-4 text-right font-bold w-1/4 text-[#4285F4] bg-[#4285F4]/20 border-b-2 border-[#4285F4]">Google Ads</th>
                             <th className="py-3 px-4 text-right font-bold w-1/3">Ação / Insight</th>
                         </tr>
                     </thead>

@@ -225,8 +225,14 @@ const handleB2C = (csvText: string) => {
             }
 
             results.data.forEach((row: any) => {
-                const dataStr = row.Data || row.data;
-                if (!dataStr) return;
+                const rawDate = row.Data || row.data;
+                const d = parseDate(rawDate);
+                if (!d) return;
+
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const dataStr = `${year}-${month}-${day}`;
 
                 const safeParseFloat = (val: any) => {
                     if (typeof val === 'number') return val;
@@ -253,7 +259,7 @@ const handleB2C = (csvText: string) => {
 
             self.postMessage({ type: 'SUCCESS_B2C', data: parsedData, warnings });
         },
-        error: (err) => {
+        error: (err: any) => {
             self.postMessage({ type: 'ERROR', error: err.message });
         }
     });

@@ -9,7 +9,9 @@ import { B2CUpload } from './originacao/B2CUpload';
 import { ActivityShareCorrelationChart } from './originacao/ActivityShareCorrelationChart';
 import { ShareBySegmentChart } from './originacao/ShareBySegmentChart';
 import { BarChart3, Loader2 } from 'lucide-react';
+import { FunnelOrchestrator } from './originacao/orchestrator/FunnelOrchestrator';
 import { DailyDetailsModal } from './jornada/DailyDetailsModal';
+import { MediaCorrelationCharts } from './analise/MediaCorrelationCharts';
 import { Activity } from '../types/framework';
 import { format } from 'date-fns';
 import { storageService } from '../services/storageService';
@@ -17,16 +19,20 @@ import { useCSVParser } from '../hooks/useCSVParser';
 
 export const OriginacaoB2CView: React.FC = () => {
     const { dailyAnalysis, summary, previousSummary, viewMode, setViewMode, getActivities, segmentStats } = useB2CAnalysis();
-    const { alertConfig, b2cData, setB2CData, b2cFilename, setB2CFilename } = useAppStore();
+    const { alertConfig, b2cData, setB2CData } = useAppStore();
     const { parseB2CCSV } = useCSVParser();
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [synced, setSynced] = useState(false);
 
     // Auto-Sync B2C Data
     useEffect(() => {
         const syncB2C = async () => {
             // If already loaded or synced, skip
-            if (b2cData.length > 0 || synced) return;
+            if (b2cData.length > 0) {
+                setLoading(false);
+                return;
+            }
+            if (synced) return;
             setSynced(true);
 
             try {
@@ -140,6 +146,11 @@ export const OriginacaoB2CView: React.FC = () => {
                                 <OriginacaoKPIsPerformance summary={summary} />
                             </div>
 
+                            {/* Funnel Orchestrator - HIDDEN PER USER REQUEST */}
+                            {/* <div className="mb-8">
+                                <FunnelOrchestrator />
+                            </div> */}
+
                             <OriginacaoCharts
                                 data={dailyAnalysis}
                                 shareThreshold={alertConfig.share_crm_limiar}
@@ -160,11 +171,23 @@ export const OriginacaoB2CView: React.FC = () => {
                                     onBarClick={handleWeekClick}
                                 />
                             </div>
+
+                            {/* Media Correlation Analysis - HIDDEN PER USER REQUEST */}
+                            {/* <MediaCorrelationCharts /> */}
                         </>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-slate-800 rounded-xl bg-slate-900/50">
-                            <p className="text-slate-500 mb-2">Nenhum dado B2C carregado.</p>
-                            <p className="text-xs text-slate-600">Faça upload do CSV diarizado para começar.</p>
+                            {loading ? (
+                                <div className="flex flex-col items-center gap-3 text-slate-400">
+                                    <Loader2 className="animate-spin text-blue-500" size={32} />
+                                    <p>Sincronizando dados...</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-slate-500 mb-2">Nenhum dado B2C carregado.</p>
+                                    <p className="text-xs text-slate-600">Faça upload do CSV diarizado para começar.</p>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>

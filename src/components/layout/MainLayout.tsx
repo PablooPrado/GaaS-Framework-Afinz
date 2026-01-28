@@ -14,7 +14,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
             {/* 2. Main Content Area (Full Width) */}
             <main className="flex-1 flex flex-col relative w-full max-w-[1920px] mx-auto pt-16">
-                <div className="flex-1 p-6 w-full h-full overflow-y-auto overflow-x-hidden">
+                <div className="flex-1 p-2 w-full h-full overflow-y-auto overflow-x-hidden">
                     {children}
                 </div>
             </main>

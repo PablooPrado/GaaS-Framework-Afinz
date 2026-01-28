@@ -4,13 +4,12 @@ import {
     Search,
     Settings,
     Calendar,
-    BookOpen,
     TrendingUp,
     BarChart3,
     Lightbulb,
     PieChart,
-    Wallet,
-    LayoutDashboard
+    LayoutDashboard,
+    BookOpen
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { NavDropdown } from './NavDropdown';
@@ -23,29 +22,30 @@ export const GlobalHeader: React.FC = () => {
 
     const navGroups = [
         {
-            title: 'PLANEJAMENTO',
+            title: 'Planejamento',
             items: [
                 { id: 'launch', label: 'Launch Planner', icon: Calendar, onClick: () => setTab('launch') },
                 { id: 'diario', label: 'Diário de Bordo', icon: BookOpen, onClick: () => setTab('diario') },
             ]
         },
         {
-            title: 'ANÁLISE',
+            title: 'Análise',
             items: [
                 { id: 'jornada', label: 'Jornada & Disparos', icon: TrendingUp, onClick: () => setTab('jornada') },
                 { id: 'resultados', label: 'Resultados', icon: BarChart3, onClick: () => setTab('resultados') },
                 { id: 'orientador', label: 'Orientador', icon: Lightbulb, onClick: () => setTab('orientador') },
-            ]
-        },
-        {
-            title: 'ORIGEM',
-            items: [
                 { id: 'originacao-b2c', label: 'Originação B2C', icon: PieChart, onClick: () => setTab('originacao-b2c') },
-                { id: 'midia-paga', label: 'Mídia Paga', icon: Wallet, onClick: () => setTab('midia-paga') },
             ]
         },
         {
-            title: 'SISTEMA',
+            // Separado (sem emoji/icon)
+            title: 'Mídia Paga',
+            items: [
+                { id: 'midia-paga', label: 'Media Analytics', icon: undefined, onClick: () => setTab('midia-paga') },
+            ]
+        },
+        {
+            title: 'Sistema',
             items: [
                 { id: 'framework', label: 'Framework', icon: LayoutDashboard, onClick: () => setTab('framework') },
             ]

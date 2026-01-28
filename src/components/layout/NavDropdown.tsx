@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 interface NavItem {
     id: string;
     label: string;
-    icon: React.ElementType;
+    icon?: React.ElementType;
     onClick: () => void;
     isActive?: boolean;
 }
@@ -63,7 +63,7 @@ export const NavDropdown: React.FC<NavDropdownProps> = ({ title, items, isActive
                                 }
                             `}
                         >
-                            <item.icon size={16} />
+                            {item.icon && <item.icon size={16} />}
                             {item.label}
                         </button>
                     ))}

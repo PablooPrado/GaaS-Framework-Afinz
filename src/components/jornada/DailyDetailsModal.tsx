@@ -113,7 +113,7 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({ date, acti
                                     </div> */}
                                 </div>
 
-                                <div className="grid grid-cols-4 gap-2 mt-2">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-2">
                                     <div className="bg-slate-900/50 p-2 rounded">
                                         <div className="text-[10px] text-slate-500 mb-0.5">Enviado</div>
                                         <div className="text-xs font-semibold text-slate-200">{activity.kpis.baseEnviada || 0}</div>
@@ -135,6 +135,18 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({ date, acti
                                         <div className="text-[10px] text-slate-500 mb-0.5">Conversão</div>
                                         <div className="text-xs font-semibold text-emerald-400">
                                             {activity.kpis.taxaConversao ? (activity.kpis.taxaConversao * 100).toFixed(2) : 0}%
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-2 rounded">
+                                        <div className="text-[10px] text-slate-500 mb-0.5">Custo</div>
+                                        <div className="text-xs font-semibold text-slate-200">
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(activity.kpis.custoTotal || 0)}
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-900/50 p-2 rounded">
+                                        <div className="text-[10px] text-slate-500 mb-0.5">CAC</div>
+                                        <div className="text-xs font-semibold text-slate-200">
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(activity.kpis.cac || 0)}
                                         </div>
                                     </div>
                                 </div>

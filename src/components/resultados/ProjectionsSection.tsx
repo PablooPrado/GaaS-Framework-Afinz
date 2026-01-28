@@ -13,14 +13,16 @@ import {
 } from 'recharts';
 import { CalendarData, Goal } from '../../types/framework';
 import { getDaysInMonth, getDate, parseISO, isSameMonth } from 'date-fns';
+import { formatDateKey } from '../../utils/formatters';
 
 interface ProjectionsSectionProps {
     data: CalendarData;
     currentGoal: Goal;
     selectedBU?: string;
+    onPointClick?: (date: Date) => void;
 }
 
-export const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({ data, currentGoal, selectedBU }) => {
+export const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({ data, currentGoal, selectedBU, onPointClick }) => {
     const [simulationBoost, setSimulationBoost] = useState<number>(0); // % increase in conversion
 
     const today = new Date();
@@ -46,7 +48,9 @@ export const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({ data, cu
             return getDate(lastDate);
         }
 
-        return getDate(today);
+        const currentDay = getDate(today);
+        // Ensure we don't go beyond daysInMonth
+        return Math.min(currentDay, daysInMonth);
     }, [data, currentMonthStr, isCurrentMonth, daysInMonth, today]);
 
     const daysPassed = isCurrentMonth ? lastDayWithData : daysInMonth;
@@ -116,8 +120,18 @@ export const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({ data, cu
         let accumProjected = 0;
         let accumGoal = 0;
 
+        // DEBUG LOGGING
+        const sampleDataKeys = Object.keys(data).slice(0, 3);
+        console.log('🔍 Projections Debug:', {
+            currentMonthStr,
+            sampleDataKeys,
+            firstDayGenerated: formatDateKey(`${currentMonthStr}-01`),
+            hasDataForFirstDay: !!data[formatDateKey(`${currentMonthStr}-01`)]
+        });
+
         for (let day = 1; day <= daysInMonth; day++) {
-            const dateStr = `${currentMonthStr}-${String(day).padStart(2, '0')}`;
+            const rawDateStr = `${currentMonthStr}-${String(day).padStart(2, '0')}`;
+            const dateStr = formatDateKey(rawDateStr);
 
             // Realized
             let dailyRealized = 0;
@@ -147,9 +161,18 @@ export const ProjectionsSection: React.FC<ProjectionsSectionProps> = ({ data, cu
         return points;
     }, [data, currentMonthStr, daysInMonth, daysPassed, currentGoal, projection.rateCartoes, simulationBoost, selectedBU]);
 
+    const handleChartClick = (e: any) => {
+        if (e && e.activePayload && e.activePayload[0] && onPointClick) {
+            const payload = e.activePayload[0].payload;
+            const day = payload.day;
+            const date = parseISO(`${currentMonthStr}-${String(day).padStart(2, '0')}`);
+            onPointClick(date);
+        }
+    };
+
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-0">
                 {/* Projections Table & Summary */}
                 <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 lg:col-span-1">
                     <h3 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">

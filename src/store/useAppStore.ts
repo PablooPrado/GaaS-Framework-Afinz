@@ -153,6 +153,27 @@ export const useAppStore = create<AppState>()(
                 viewSettings: { ...state.viewSettings, abaAtual: 'launch' }, // Reset tab to launch on reload but keep prefs
                 alertConfig: state.alertConfig
             }),
+            onRehydrateStorage: () => (state) => {
+                if (state) {
+                    // Hydrate Dates for Activities
+                    if (state.activities) {
+                        state.activities.forEach((activity) => {
+                            if (typeof activity.dataDisparo === 'string') {
+                                activity.dataDisparo = new Date(activity.dataDisparo);
+                            }
+                        });
+                    }
+
+                    // Hydrate Dates for FrameworkData (if needed, though mostly unused directly for dates)
+                    if (state.frameworkData) {
+                        state.frameworkData.forEach((row: any) => {
+                            if (row['Data de Disparo'] && typeof row['Data de Disparo'] === 'string') {
+                                row['Data de Disparo'] = new Date(row['Data de Disparo']);
+                            }
+                        });
+                    }
+                }
+            }
         }
     )
 );

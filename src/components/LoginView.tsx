@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Mail, CheckCircle, AlertCircle, Loader2, ArrowRight, ShieldCheck, User } from 'lucide-react';
+import { Mail, CheckCircle, AlertCircle, Loader2, ArrowRight, ShieldCheck, TrendingUp } from 'lucide-react';
+import afinzIconBlue from '../assets/afinz-icon-blue.png';
 
 export const LoginView: React.FC = () => {
     const { signInWithEmail, loading } = useAuth();
@@ -35,8 +36,18 @@ export const LoginView: React.FC = () => {
                 <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
 
                 <div className="relative z-10 text-center">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-white mx-auto mb-6 shadow-lg shadow-blue-500/30 transform rotate-3">
-                        <User size={32} />
+
+                    {/* Modern CSS Logo */}
+                    <div className="mb-8 flex flex-col items-center justify-center animate-fade-in select-none">
+                        <div className="bg-gradient-to-br from-blue-600 to-cyan-500 p-5 rounded-2xl shadow-2xl shadow-blue-500/20 mb-5 transform hover:scale-110 transition-all duration-300 border border-white/10 group cursor-default relative overflow-hidden">
+                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 backdrop-blur-sm"></div>
+                            <TrendingUp size={40} className="text-white relative z-10 drop-shadow-md" strokeWidth={3} />
+                        </div>
+                        <h1 className="text-4xl font-black text-white tracking-tighter mb-1 flex items-baseline justify-center gap-3">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-white drop-shadow-sm">GaaS</span>
+                            <span className="text-lg font-light tracking-[0.3em] text-slate-300">AFINZ</span>
+                        </h1>
+                        <div className="h-0.5 w-24 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent rounded-full mt-2"></div>
                     </div>
 
                     <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Login Corporativo</h2>

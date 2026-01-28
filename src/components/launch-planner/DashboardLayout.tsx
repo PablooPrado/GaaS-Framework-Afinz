@@ -7,7 +7,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { usePeriod } from '../../contexts/PeriodContext';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { differenceInDays, subDays, isWithinInterval } from 'date-fns';
-import { BookOpen } from 'lucide-react';
+import { Send } from 'lucide-react';
 
 interface DashboardLayoutProps {
     data: CalendarData;
@@ -70,10 +70,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
                     />
                 </div>
 
-                {/* Diário de Bordo Button */}
+                {/* Programar Disparo Button */}
                 <button className="w-full py-2 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 font-medium flex items-center justify-center gap-2 transition-colors text-sm">
-                    <BookOpen size={16} />
-                    Diário de Bordo
+                    <Send size={16} />
+                    Programar disparo
                 </button>
             </div>
 

@@ -87,8 +87,8 @@ export const WeeklyHeatmap: React.FC<WeeklyHeatmapProps> = ({ data }) => {
     const fmtConv = (v: number) => v.toFixed(0);
 
     return (
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+        <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-sm p-6">
+            <h3 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
                 🔥 Mapa de Calor Semanal (Médias)
             </h3>
 
@@ -98,7 +98,7 @@ export const WeeklyHeatmap: React.FC<WeeklyHeatmapProps> = ({ data }) => {
                         <tr>
                             <th className="text-left font-medium text-slate-400 py-2">Métrica</th>
                             {WeekDays.map((d, i) => (
-                                <th key={d} className="text-center font-bold text-slate-600 py-2 w-24">
+                                <th key={d} className="text-center font-bold text-slate-500 py-2 w-24">
                                     {d}
                                 </th>
                             ))}
@@ -106,16 +106,12 @@ export const WeeklyHeatmap: React.FC<WeeklyHeatmapProps> = ({ data }) => {
                     </thead>
                     <tbody>
                         {/* Spend Row */}
-                        <tr className="border-t border-slate-50">
-                            <td className="font-semibold text-slate-700 py-3">Investimento</td>
+                        <tr className="border-t border-slate-700">
+                            <td className="font-semibold text-slate-300 py-3">Investimento</td>
                             {aggregated.map((d, i) => (
                                 <td key={i} className="text-center py-2">
                                     <StatusPill
-                                        status={getStatus(d.avgSpend, overallAvgs.spend, 'lowerIsGood')} // High spend may be bad? Usually neutral. User said Green=Bad? No, Green=Good.
-                                        // User example: Investim. Green. 
-                                        // Let's assume High Spend = Good (Scale) for now? Or depends on goal.
-                                        // Actually High Spend without efficiency is bad.
-                                        // Let's default: High Spend = Good (Green).
+                                        status={getStatus(d.avgSpend, overallAvgs.spend, 'lowerIsGood')}
                                         type="good"
                                         label={fmtMoney(d.avgSpend)}
                                     />
@@ -123,20 +119,20 @@ export const WeeklyHeatmap: React.FC<WeeklyHeatmapProps> = ({ data }) => {
                             ))}
                         </tr>
                         {/* CPA Row */}
-                        <tr className="border-t border-slate-50">
-                            <td className="font-semibold text-slate-700 py-3">CPA (Custo/Conv)</td>
+                        <tr className="border-t border-slate-700">
+                            <td className="font-semibold text-slate-300 py-3">CPA (Custo/Conv)</td>
                             {aggregated.map((d, i) => (
                                 <td key={i} className="text-center py-2">
                                     <StatusPill
-                                        status={getStatus(d.avgCpa, overallAvgs.cpa, 'lowerIsGood')} // Lower is Good
+                                        status={getStatus(d.avgCpa, overallAvgs.cpa, 'lowerIsGood')}
                                         label={fmtCpa(d.avgCpa)}
                                     />
                                 </td>
                             ))}
                         </tr>
                         {/* Conv Row (Replacing ROI) */}
-                        <tr className="border-t border-slate-50">
-                            <td className="font-semibold text-slate-700 py-3">Conversões</td>
+                        <tr className="border-t border-slate-700">
+                            <td className="font-semibold text-slate-300 py-3">Conversões</td>
                             {aggregated.map((d, i) => (
                                 <td key={i} className="text-center py-2">
                                     <StatusPill
@@ -149,7 +145,7 @@ export const WeeklyHeatmap: React.FC<WeeklyHeatmapProps> = ({ data }) => {
                     </tbody>
                 </table>
             </div>
-            <p className="text-xs text-slate-400 mt-3 text-center">
+            <p className="text-xs text-slate-500 mt-3 text-center">
                 *Cores baseadas na variação vs média do período selecionado.
             </p>
         </div>
@@ -157,17 +153,13 @@ export const WeeklyHeatmap: React.FC<WeeklyHeatmapProps> = ({ data }) => {
 };
 
 const StatusPill: React.FC<{ status: 'good' | 'warning' | 'bad'; label: string; type?: 'good' }> = ({ status, label }) => {
-    // Override logic?
-    // User requested circles: 🟢 🟢 🟢
-    // I will implement colored pills.
-
-    let colorClass = 'bg-slate-100 text-slate-600';
-    if (status === 'good') colorClass = 'bg-green-100 text-green-700 border-green-200';
-    if (status === 'warning') colorClass = 'bg-yellow-50 text-yellow-700 border-yellow-200';
-    if (status === 'bad') colorClass = 'bg-red-50 text-red-700 border-red-200';
+    let colorClass = 'bg-slate-700 text-slate-400 border-slate-600';
+    if (status === 'good') colorClass = 'bg-green-500/10 text-green-400 border-green-500/20';
+    if (status === 'warning') colorClass = 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+    if (status === 'bad') colorClass = 'bg-red-500/10 text-red-400 border-red-500/20';
 
     return (
-        <div className={`mx-auto w-20 py-1.5 rounded-lg border text-xs font-bold ${colorClass} transition-all hover:scale-105 cursor-pointer`}>
+        <div className={`mx-auto w-24 py-1.5 rounded-lg border text-xs font-bold ${colorClass} transition-all hover:scale-105 cursor-pointer whitespace-nowrap`}>
             {label}
         </div>
     );

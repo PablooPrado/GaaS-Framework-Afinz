@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Menu, X, Filter } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { CSVUpload } from './components/CSVUpload';
-import { FilterSidebar } from './components/FilterSidebar';
+import { InlineFilterBar } from './components/InlineFilterBar';
 import { LoginView } from './components/LoginView'; // NEW
 
 import { ResultadosView } from './components/ResultadosView';
@@ -40,8 +40,6 @@ function App() {
 
   const { startDate, endDate } = usePeriod();
   const { selectedBUs } = useBU();
-
-  const [showFiltersDrawer, setShowFiltersDrawer] = useState(false);
 
   const { data, loading, error, totalActivities, processCSV, loadSimulatedData } = useFrameworkData();
 
@@ -99,7 +97,7 @@ function App() {
       case 'framework': return 'Framework';
       case 'diario': return 'Diário de Bordo';
       case 'configuracoes': return 'Configurações';
-      case 'midia-paga': return 'Mídia Paga (Ads)';
+      case 'midia-paga': return 'Media Analytics';
       default: return 'Dashboard';
     }
   };
@@ -120,43 +118,20 @@ function App() {
   return (
     <MainLayout>
 
-      {/* Filters Overlay Drawer */}
-      {showFiltersDrawer && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowFiltersDrawer(false)} />
-          <div className="relative w-80 h-full bg-slate-900/80 backdrop-blur-xl border-r border-white/10 flex flex-col shadow-2xl animate-fade-in-right">
-            <div className="p-4 flex justify-between items-center border-b border-slate-800">
-              <h3 className="font-bold text-slate-100">Filtros Avançados</h3>
-              <button onClick={() => setShowFiltersDrawer(false)} className="text-slate-400 hover:text-white">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-4 overflow-y-auto flex-1">
-              <FilterSidebar
-                availableCanais={availableCanais}
-                availableJornadas={availableJornadas}
-                availableSegmentos={availableSegmentos}
-                availableParceiros={availableParceiros}
-                countByCanal={countByCanal}
-                countByJornada={countByJornada}
-                countBySegmento={countBySegmento}
-                countByParceiro={countByParceiro}
-              />
-              {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
-            </div>
-          </div>
-        </div>
-      )}
-
       {hasData && (
         <PageHeader title={getPageTitle(activeTab)}>
-          <button
-            onClick={() => setShowFiltersDrawer(!showFiltersDrawer)}
-            className={`p-2 rounded-lg transition ${showFiltersDrawer ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-            title="Filtros Avançados"
-          >
-            <Filter size={20} />
-          </button>
+          <div className="flex ml-auto">
+            <InlineFilterBar
+              availableCanais={availableCanais}
+              availableJornadas={availableJornadas}
+              availableSegmentos={availableSegmentos}
+              availableParceiros={availableParceiros}
+              countByCanal={countByCanal}
+              countByJornada={countByJornada}
+              countBySegmento={countBySegmento}
+              countByParceiro={countByParceiro}
+            />
+          </div>
         </PageHeader>
       )}
 
@@ -180,7 +155,7 @@ function App() {
               </div>
             )}
             {loading && (
-              <div className="text-slate-400 animate-pulse">Carregando dados...</div>
+              <div className="text-slate-400 animate-pulse">Sincronizando dados...</div>
             )}
           </div>
         )}

@@ -118,76 +118,73 @@ const DashboardContent: React.FC<PaidMediaAfinzAppProps> = ({ onBack }) => {
   ] as const;
 
   return (
-    <div className="min-h-screen w-full bg-slate-50 text-slate-900 flex flex-col absolute top-0 left-0 z-50">
+    <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col absolute top-0 left-0 z-50">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-[60] group">
+      <header className="bg-slate-900/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-[60] group">
         <div className="px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {onBack && (
               <button
                 onClick={onBack}
-                className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-900 transition-colors mr-2"
+                className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors mr-2"
                 title="Voltar ao GaaS"
               >
                 <ArrowLeft size={20} />
               </button>
             )}
             <div className="flex items-center gap-2">
-              <div className="bg-primary/20 p-2 rounded-lg">
-                <BarChart2 className="w-6 h-6 text-primary-dark" />
+              <div className="bg-blue-500/20 p-2 rounded-lg">
+                <BarChart2 className="w-6 h-6 text-blue-400" />
               </div>
-              <h1 className="font-bold text-xl text-slate-800 tracking-tight">Media <span className="text-primary font-extrabold">Analytics</span></h1>
+              <h1 className="font-bold text-xl text-slate-100 tracking-tight">Media <span className="text-blue-500 font-extrabold">Analytics</span></h1>
             </div>
           </div>
 
-          <nav className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+          <nav className="flex items-center gap-1 bg-slate-800/50 p-1 rounded-lg border border-white/5">
             {tabs.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
+                className = {`
                                         flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
                                         ${isActive
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-                    }
+                    ? 'bg-slate-700 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }
                                     `}
                 >
-                  <Icon size={16} />
-                  {tab.label}
+              <Icon size={16} />
+                  { tab.label }
                 </button>
-              );
+          );
             })}
-          </nav>
+        </nav>
 
-          <button
-            onClick={() => setRawData([])}
-            className="text-sm font-medium text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors px-3 py-1.5 hover:bg-red-50 rounded-lg"
-          >
-            <UploadCloud size={16} />
-            Novo Arquivo
-          </button>
-        </div>
-
-        {/* Global Filter Bar */}
-        <FilterBar />
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 container mx-auto px-6 py-8 pb-32 max-w-[1600px] animate-fade-in">
-
-        {/* Render Active Tab */}
-
-        {activeTab === 'overview' && <OverviewTab />}
-        {activeTab === 'monthly' && <MonthlyAnalysisTab />}
-        {activeTab === 'daily' && <DailyAnalysisTab />}
-        {activeTab === 'campaigns' && <CampaignDetailsTab />}
-        {activeTab === 'budget' && <BudgetTab />}
-      </main>
+        <button
+          onClick={() => setRawData([])}
+          className="text-sm font-medium text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors px-3 py-1.5 hover:bg-red-50 rounded-lg"
+        >
+          <UploadCloud size={16} />
+          Novo Arquivo
+        </button>
     </div>
+
+        {/* Global Filter Bar */ }
+  <FilterBar />
+      </header >
+
+  {/* Main Content */ }
+  < main className = "flex-1 container mx-auto px-6 py-8 pb-32 max-w-[1600px] animate-fade-in" >
+
+    {/* Render Active Tab */ }
+
+{ activeTab === 'overview' && <OverviewTab /> }
+{ activeTab === 'monthly' && <MonthlyAnalysisTab /> }
+{ activeTab === 'daily' && <DailyAnalysisTab /> }
+{ activeTab === 'campaigns' && <CampaignDetailsTab /> }
+{ activeTab === 'budget' && <BudgetTab /> }
+      </main >
+    </div >
   );
 };
 

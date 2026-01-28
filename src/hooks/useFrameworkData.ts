@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { Activity, CalendarData, FrameworkRow } from '../types/framework';
-import { formatDateKey } from '../utils/formatters';
+import { CalendarData } from '../types/framework';
+import { formatDateKey, parseDate } from '../utils/formatters';
 import { useAppStore } from '../store/useAppStore';
 import { generateSimulatedData } from '../utils/simulatedData';
 import { storageService } from '../services/storageService';
@@ -63,7 +63,31 @@ export const useFrameworkData = (): {
       if (type === 'SUCCESS') {
         const result = (e.data as any).data; // { rows, activities }
         console.log(`✅ Worker Finalizado: ${result.activities.length} atividades`);
-        setFrameworkData(result.rows, result.activities);
+
+        // Fix: Hydrate dates that are serialized as strings during worker transfer
+        // Use parseDate to ensure we get Local Midnight (avoiding timezone shift to prev day)
+        const hydratedActivities = result.activities.map((a: any) => {
+          const d = (typeof a.dataDisparo === 'string' ? parseDate(a.dataDisparo) : a.dataDisparo) || new Date(a.dataDisparo);
+
+          // Heuristic Fix for Timezone Shift:
+          // If hours are 21:00 (typical of UTC midnight displayed in Brazil), shift to Next Day 00:00
+          if (d instanceof Date && !isNaN(d.getTime()) && d.getHours() === 21) {
+            d.setDate(d.getDate() + 1);
+            d.setHours(0);
+          }
+          return {
+            ...a,
+            dataDisparo: d
+          };
+        });
+
+        if (result.warnings && result.warnings.length > 0) {
+          console.warn('Import Warnings:', result.warnings);
+          // Alert user so they know rows are missing
+          alert(`⚠️ ATENÇÃO: ${result.warnings.length} linhas foram ignoradas!\nProvável erro de data/formato.\n\nErros:\n${result.warnings.slice(0, 3).join('\n')}`);
+        }
+
+        setFrameworkData(result.rows, hydratedActivities);
         // Optionally setDebugHeaders if worker returns them? (We didn't pass them back in worker logic, but that's fine for now)
         setLoading(false);
       } else if (type === 'ERROR') {
@@ -82,46 +106,102 @@ export const useFrameworkData = (): {
     reader.readAsText(file);
   }, [setFrameworkData]);
 
-  // CLOUD SYNC EFFECT
+  // CLOUD SYNC EFFECT (Refactored to Supabase)
   useEffect(() => {
-    const syncCloud = async () => {
-      // If we have data, we are done loading
-      if (storeActivities.length > 0) {
+    const loadFromSupabase = async () => {
+
+      // 1. Wait for Persist Hydration (Fix Race Condition)
+      if (useAppStore.persist && !useAppStore.persist.hasHydrated()) {
+        console.log('⏳ Aguardando hidratação do storage...');
+        await new Promise<void>((resolve) => {
+          const unsub = useAppStore.persist.onFinishHydration(() => {
+            resolve();
+          });
+        });
+        console.log('💧 Storage hidratado.');
+      }
+
+      const { activities, setB2CData, setPaidMediaData } = useAppStore.getState();
+
+      // Cache First Strategy: If we have data (especially activities), don't re-fetch immediately
+      // This prevents overwriting the just-uploaded CSV if migration hasn't run yet.
+      if (activities.length > 0) {
         setLoading(false);
         return;
       }
 
-      // If already started sync, don't do anything (keep loading state as is)
+      // Avoid double fetching
       if (synced) return;
-
       setSynced(true);
 
       try {
-        console.log('☁️ Verificando framework na nuvem...');
-        // setLoading(true); // Already true by default
+        console.log('📡 Conectando ao Supabase para buscar dados...');
+        import('../services/dataService').then(async ({ dataService }) => {
+          const [fetchedActivities, fetchedB2C, fetchedPaid] = await Promise.all([
+            dataService.fetchActivities(),
+            dataService.fetchB2CMetrics(),
+            dataService.fetchPaidMedia()
+          ]);
 
-        const files = await storageService.listFiles('framework');
-        if (files && files.length > 0) {
-          console.log('📂 Arquivo encontrado:', files[0].name);
-          const url = await storageService.getDownloadUrl('framework/' + files[0].name);
-          const resp = await fetch(url);
-          const blob = await resp.blob();
-          const file = new File([blob], files[0].name, { type: blob.type });
+          console.log(`✅ Dados Carregados: ${fetchedActivities.length} Atividades, ${fetchedB2C.length} B2C, ${fetchedPaid.length} Media.`);
 
-          processCSV(file);
-        } else {
-          console.log('📭 Nenhum arquivo na nuvem.');
+          // Reconstruct "rows" from raw data for compatibility
+          const rows = fetchedActivities.map(a => a.raw || {});
+
+          let finalB2C = fetchedB2C;
+          // FALLBACK: If Supabase B2C is empty, try Storage (Legacy)
+          if (fetchedB2C.length === 0) {
+            try {
+              const files = await storageService.listFiles('b2c');
+              if (files && files.length > 0) {
+                console.log('🔄 Fallback B2C: Found in Storage:', files[0].name);
+                const url = await storageService.getDownloadUrl('b2c/' + files[0].name);
+                const resp = await fetch(url);
+                const blob = await resp.blob();
+                const text = await blob.text();
+
+                // Parse with Worker
+                finalB2C = await new Promise<any[]>((resolve) => {
+                  const worker = new CsvWorker();
+                  worker.postMessage({ type: 'PARSE_B2C_CSV', fileContent: text } as WorkerMessage);
+                  worker.onmessage = (e) => {
+                    if (e.data.type === 'SUCCESS' || e.data.type === 'SUCCESS_B2C') {
+                      resolve(((e.data as any).data) || []);
+                    } else {
+                      resolve([]);
+                    }
+                    worker.terminate();
+                  };
+                  worker.onerror = () => { resolve([]); worker.terminate(); };
+                });
+                console.log(`✅ Fallback Loaded: ${finalB2C.length} B2C rows.`);
+              }
+            } catch (fallbackErr) {
+              console.warn('Fallback B2C failed:', fallbackErr);
+            }
+          }
+
+          setFrameworkData(rows, fetchedActivities);
+          setB2CData(finalB2C);
+          setPaidMediaData(fetchedPaid);
           setLoading(false);
-        }
+        }).catch(err => {
+          console.error('Erro ao importar dataService:', err);
+          setError('Fail to load data service');
+          setLoading(false);
+        });
+
       } catch (e: any) {
-        console.error('⚠️ Falha no Sync:', e);
+        console.error('⚠️ Falha no Carregamento SQL:', e);
+        // Do not set error visibly if we just failed to fetch empty data?
+        // But if connection error, show it.
+        setError('Erro de conexão com Banco de Dados.');
         setLoading(false);
       }
     };
 
-    // Run sync immediately
-    syncCloud();
-  }, [storeActivities.length, processCSV, synced]);
+    loadFromSupabase();
+  }, [setFrameworkData, synced]);
 
   const loadSimulatedData = useCallback(() => {
     try {

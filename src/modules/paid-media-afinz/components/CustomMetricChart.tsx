@@ -131,24 +131,24 @@ export const CustomMetricChart: React.FC = () => {
     const hasLeftAxisMetrics = selectedMetrics.some(m => METRICS_CONFIG.find(c => c.key === m)?.axis === 'left');
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm mt-8 animate-fade-in">
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 shadow-sm mt-8 animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div>
-                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <Filter size={18} className="text-primary" />
+                    <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <Filter size={18} className="text-blue-500" />
                         Análise Personalizada
                     </h3>
-                    <p className="text-sm text-slate-500">Compare até 4 métricas diferentes no mesmo período</p>
+                    <p className="text-sm text-slate-400">Compare até 4 métricas diferentes no mesmo período</p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                <div className="flex flex-wrap items-center gap-3 bg-slate-900 p-2 rounded-lg border border-slate-700">
                     {/* Date Toggle */}
-                    <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer mr-2">
+                    <label className="flex items-center gap-2 text-xs font-medium text-slate-400 cursor-pointer mr-2 hover:text-slate-200 transition">
                         <input
                             type="checkbox"
                             checked={useCustomDate}
                             onChange={(e) => setUseCustomDate(e.target.checked)}
-                            className="rounded text-primary focus:ring-primary/20"
+                            className="rounded text-blue-500 focus:ring-blue-500/20 bg-slate-800 border-slate-600"
                         />
                         Período Personalizado
                     </label>
@@ -159,26 +159,26 @@ export const CustomMetricChart: React.FC = () => {
                                 type="date"
                                 value={customDateRange.from}
                                 onChange={(e) => setCustomDateRange(prev => ({ ...prev, from: e.target.value }))}
-                                className="text-xs border-slate-200 rounded px-2 py-1 focus:ring-primary/20 focus:border-primary"
+                                className="text-xs bg-slate-800 border-slate-600 text-slate-200 rounded px-2 py-1 focus:ring-blue-500/20 focus:border-blue-500"
                             />
-                            <span className="text-slate-400">-</span>
+                            <span className="text-slate-600">-</span>
                             <input
                                 type="date"
                                 value={customDateRange.to}
                                 onChange={(e) => setCustomDateRange(prev => ({ ...prev, to: e.target.value }))}
-                                className="text-xs border-slate-200 rounded px-2 py-1 focus:ring-primary/20 focus:border-primary"
+                                className="text-xs bg-slate-800 border-slate-600 text-slate-200 rounded px-2 py-1 focus:ring-blue-500/20 focus:border-blue-500"
                             />
                         </div>
                     )}
                 </div>
 
                 {/* Granularity Toggle */}
-                <div className="flex bg-slate-100 p-1 rounded-lg">
+                <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700">
                     {(['day', 'week', 'month'] as const).map(g => (
                         <button
                             key={g}
                             onClick={() => setGranularity(g)}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${granularity === g ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${granularity === g ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}
                         >
                             {g === 'day' ? 'Dia' : g === 'week' ? 'Semana' : 'Mês'}
                         </button>
@@ -193,13 +193,13 @@ export const CustomMetricChart: React.FC = () => {
                         key={metric.key}
                         onClick={() => handleMetricToggle(metric.key)}
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${selectedMetrics.includes(metric.key)
-                            ? 'bg-primary/10 border-primary text-primary'
-                            : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                            ? 'bg-blue-500/10 border-blue-500/50 text-blue-400'
+                            : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'
                             }`}
                         style={{
                             borderColor: selectedMetrics.includes(metric.key) ? metric.color : undefined,
                             color: selectedMetrics.includes(metric.key) ? metric.color : undefined,
-                            backgroundColor: selectedMetrics.includes(metric.key) ? `${metric.color}20` : undefined // 20 = ~12% opacity hex
+                            backgroundColor: selectedMetrics.includes(metric.key) ? `${metric.color}20` : undefined
                         }}
                     >
                         {metric.label}
@@ -211,7 +211,7 @@ export const CustomMetricChart: React.FC = () => {
             <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
                         <XAxis
                             dataKey="day"
                             axisLine={false}
@@ -237,8 +237,8 @@ export const CustomMetricChart: React.FC = () => {
                             hide={!hasRightAxisMetrics}
                         />
                         <Tooltip
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                            labelStyle={{ color: '#64748b', marginBottom: '0.5rem' }}
+                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.5)' }}
+                            labelStyle={{ color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 'bold' }}
                             formatter={(value: any, name: any) => {
                                 const metric = METRICS_CONFIG.find(m => m.label === name);
                                 if (!metric) return value;

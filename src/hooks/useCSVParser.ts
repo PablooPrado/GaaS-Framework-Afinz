@@ -31,13 +31,13 @@ export const useCSVParser = () => {
 
             worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
                 const { type } = e.data;
-                if (type === 'SUCCESS') {
+                if (type === 'SUCCESS' || type === 'SUCCESS_B2C') {
                     // Force TS cast as we know the structure
                     const data = (e.data as any).data as B2CDataRow[];
                     const warnings = (e.data as any).warnings || [];
                     resolve({ data, warnings });
                 } else {
-                    const errMsg = (e.data as any).error;
+                    const errMsg = (e.data as any).error || 'Unknown Worker Error';
                     setError(errMsg);
                     reject(new Error(errMsg));
                 }
