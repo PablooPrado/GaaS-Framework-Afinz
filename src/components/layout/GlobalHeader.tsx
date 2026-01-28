@@ -63,7 +63,7 @@ export const GlobalHeader: React.FC = () => {
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-[#0B0F19]/95 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-6 shadow-sm">
+        <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-[#1A2238]/95 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-6 shadow-sm">
 
             {/* Left: Logo */}
             <div className="flex items-center gap-8">
