@@ -47,7 +47,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
     // Filter B2C Data for Current Period
     const currentB2CData = useMemo(() => {
         return b2cData.filter(d =>
-            isWithinInterval(new Date(d.data_ref), { start: startDate, end: endDate })
+            isWithinInterval(new Date(d.data), { start: startDate, end: endDate })
         );
     }, [b2cData, startDate, endDate]);
 

@@ -27,13 +27,17 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
         let cartoes = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.cartoes || 0), 0);
 
         // B2C Metrics (from b2cData)
+        // B2C Metrics (from b2cData)
         if (showB2C && b2c.length > 0) {
-            baseEnviada += b2c.reduce((sum, d) => sum + (d.qtd_clientes_unicos || 0), 0);
-            propostas += b2c.reduce((sum, d) => sum + (d.qtd_propostas || 0), 0);
-            aprovados += b2c.reduce((sum, d) => sum + (d.qtd_propostas_aprovadas || 0), 0);
-            emissoes += b2c.reduce((sum, d) => sum + (d.qtd_cartoes_emitidos || 0), 0);
-            cartoes += b2c.reduce((sum, d) => sum + (d.qtd_cartoes_emitidos || 0), 0);
-            custoTotal += b2c.reduce((sum, d) => sum + (d.vlr_investimento_total || 0), 0);
+            // Mapping available B2C fields to standard KPI structure
+            // Note: B2C Data only contains 'propostas_b2c_total' and 'emissoes_b2c_total' currently.
+            propostas += b2c.reduce((sum, d) => sum + (d.propostas_b2c_total || 0), 0);
+            emissoes += b2c.reduce((sum, d) => sum + (d.emissoes_b2c_total || 0), 0);
+            cartoes += b2c.reduce((sum, d) => sum + (d.emissoes_b2c_total || 0), 0);
+
+            // Estimations or missing data handling
+            // aprovados += b2c.reduce((sum, d) => sum + (d.propostas_b2c_total * (d.percentual_conversao_b2c/100) || 0), 0); // usage of rate?
+            // For now, only mapping explicit fields to avoid confusion
         }
 
         // ... rates calculation ...
