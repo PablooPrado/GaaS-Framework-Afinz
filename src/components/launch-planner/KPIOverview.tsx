@@ -62,8 +62,8 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
         };
     };
 
-    const currentMetrics = useMemo(() => calculateMetrics(activities), [activities]);
-    const previousMetrics = useMemo(() => calculateMetrics(previousActivities), [previousActivities]);
+    const currentMetrics = useMemo(() => calculateMetrics(activities, b2cData), [activities, b2cData]);
+    const previousMetrics = useMemo(() => calculateMetrics(previousActivities, []), [previousActivities]); // TODO: Pass previousB2CData if comparison needed
 
     const getVariation = (current: number, previous: number) => {
         if (previous === 0) return 0;
