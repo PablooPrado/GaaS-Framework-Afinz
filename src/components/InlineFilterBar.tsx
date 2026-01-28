@@ -89,11 +89,11 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
 
         return (
             <div className="relative group">
-                <button className={`flex items-center gap-2 px-3 py-2 rounded-lg transition border ${isActive
-                    ? 'bg-slate-800 border-slate-600 text-slate-200'
-                    : 'bg-transparent border-transparent hover:bg-slate-800/50 text-slate-400'
+                <button className={`flex items-center gap-2 px-3 py-2 rounded-lg transition border shadow-sm ${isActive
+                    ? 'bg-slate-900 border-slate-800 text-white'
+                    : 'bg-slate-900/80 border-transparent hover:bg-slate-900 text-slate-100'
                     }`}>
-                    <Icon size={16} className={isActive ? 'text-slate-200' : 'text-slate-400'} />
+                    <Icon size={16} className={isActive ? 'text-cyan-400' : 'text-slate-300'} />
                     <span className="text-sm font-medium">{title}</span>
                     {isActive && (
                         <span className="bg-slate-700 text-slate-300 text-[10px] px-1.5 py-0.5 rounded-full ml-1 border border-slate-600">

@@ -34,9 +34,9 @@ export const PeriodSelector: React.FC = () => {
         <div className="relative" ref={containerRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${isOpen
-                    ? 'bg-slate-800 border-blue-500 text-slate-100'
-                    : 'bg-slate-900/50 border-slate-700 text-slate-300 hover:bg-slate-800'
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border shadow-sm transition-all ${isOpen
+                    ? 'bg-slate-900 border-white text-white'
+                    : 'bg-slate-900/90 border-slate-700 text-white hover:bg-slate-900'
                     }`}
             >
                 <CalendarIcon size={16} className="text-slate-400" />
