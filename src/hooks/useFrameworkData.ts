@@ -121,7 +121,7 @@ export const useFrameworkData = (): {
         console.log('💧 Storage hidratado.');
       }
 
-      const { activities, setB2CData, setPaidMediaData } = useAppStore.getState();
+      const { activities, b2cData, setB2CData, setPaidMediaData } = useAppStore.getState();
 
       // Cache First Strategy: If we have data (especially activities), don't re-fetch immediately
       // This prevents overwriting the just-uploaded CSV if migration hasn't run yet.
