@@ -52,23 +52,39 @@ export const LaunchPlannerKPIs: React.FC<LaunchPlannerKPIsProps> = ({ activities
     }, [selectedDate, activities]);
 
     const metrics = useMemo(() => {
-        const totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
+        // Determine context: B2C (Total) or CRM (Launch Planner only)
+        // If B2C is selected (or nothing selected, defaulting to B2C view), use Total.
+        // If CRM is explicitly selected, use CRM.
+        const showTotal = !isBUSelected('CRM') && !isBUSelected('B2B2C') && !isBUSelected('Plurix');
 
-        // Find goal for current month
+        let totalCards = 0;
+        let goalCards = 0;
         const currentGoal = goals.find(g => g.mes === currentMonth);
-        const goalCards = currentGoal?.cartoes_meta || 0;
+
+        if (showTotal) {
+            // Use Total B2C Data from Daily Analysis
+            totalCards = dailyAnalysis.reduce((sum, d) => sum + d.emissoes_b2c_total, 0);
+            goalCards = currentGoal?.b2c_meta || 0;
+        } else {
+            // CRM Only
+            // Fallback to activities sum if simpler, or use dailyAnalysis.emissoes_crm
+            totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
+            goalCards = currentGoal?.cartoes_meta || 0;
+        }
+
         const goalProgress = goalCards > 0 ? (totalCards / goalCards) * 100 : 0;
 
         return {
             totalCards,
             goalCards,
-            goalProgress
+            goalProgress,
+            label: showTotal ? 'Meta (Total)' : 'Meta (CRM)'
         };
-    }, [activities, goals, currentMonth]);
+    }, [activities, goals, currentMonth, dailyAnalysis, isBUSelected]);
 
     const metaChartData = [
         { name: 'Realizado', value: metrics.totalCards, color: '#3B82F6' }, // Blue
-        { name: 'Meta', value: metrics.goalCards, color: '#10B981' }       // Emerald
+        { name: metrics.label, value: metrics.goalCards, color: '#10B981' }       // Emerald
     ];
 
     // Prepare Comparison Chart Data

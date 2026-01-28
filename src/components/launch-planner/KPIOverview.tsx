@@ -29,15 +29,16 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
         // B2C Metrics (from b2cData)
         // B2C Metrics (from b2cData)
         if (showB2C && b2c.length > 0) {
-            // Mapping available B2C fields to standard KPI structure
-            // Note: B2C Data only contains 'propostas_b2c_total' and 'emissoes_b2c_total' currently.
-            propostas += b2c.reduce((sum, d) => sum + (d.propostas_b2c_total || 0), 0);
-            emissoes += b2c.reduce((sum, d) => sum + (d.emissoes_b2c_total || 0), 0);
-            cartoes += b2c.reduce((sum, d) => sum + (d.emissoes_b2c_total || 0), 0);
+            // CRM metrics are already calculated above. 
+            // We ADD B2C metrics to them (Combined View) or if CRM filtered out, it starts at 0.
 
-            // Estimations or missing data handling
-            // aprovados += b2c.reduce((sum, d) => sum + (d.propostas_b2c_total * (d.percentual_conversao_b2c/100) || 0), 0); // usage of rate?
-            // For now, only mapping explicit fields to avoid confusion
+            // Fix: Parse numbers safely
+            propostas += b2c.reduce((sum, d) => sum + (Number(d.propostas_b2c_total) || 0), 0);
+            emissoes += b2c.reduce((sum, d) => sum + (Number(d.emissoes_b2c_total) || 0), 0);
+            cartoes += b2c.reduce((sum, d) => sum + (Number(d.emissoes_b2c_total) || 0), 0); // Assuming emissions = cards
+
+            // Since we don't have explicit approved/base for B2C, we might want to infer or leave 0.
+            // Leaving as 0. 
         }
 
         // ... rates calculation ...
@@ -98,9 +99,9 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
             }
         `}>
             <div className="flex items-center justify-between mb-0.5">
-                <div className="flex items-center gap-1 text-slate-400 text-[9px] font-bold uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
                     {label}
-                    <Info size={9} className="cursor-help opacity-40 hover:opacity-100 transition-opacity" />
+                    <Info size={12} className="cursor-help text-slate-600 hover:text-blue-400 transition-colors" strokeWidth={2.5} />
                 </div>
                 {variation !== undefined && variation !== 0 && (
                     <span className={`text-[9px] font-bold ${variation > 0 ? 'text-emerald-400' : 'text-red-400'}`}>

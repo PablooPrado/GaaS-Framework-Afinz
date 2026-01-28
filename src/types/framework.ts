@@ -76,16 +76,10 @@ export interface MetaMensal {
 
 export interface Goal {
   mes: string;           // "2025-11"
-  cartoes_meta?: number;
+  cartoes_meta?: number; // Meta CRM (Launch Planner)
+  b2c_meta?: number;     // Meta B2C Total (CRM + Direct)
   aprovacoes_meta?: number;
   cac_max?: number;
-  bus?: {
-    [key: string]: {
-      cartoes: number;
-      aprovacoes: number;
-      cac: number;
-    }
-  };
 }
 
 export interface JournalEntry {

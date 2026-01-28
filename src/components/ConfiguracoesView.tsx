@@ -346,6 +346,9 @@ export const ConfiguracoesView: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* Goals Manager Section */}
+                        <GoalsManager />
+
                         {/* Database Migration Section */}
                         <DataMigration />
                     </div>
