@@ -125,7 +125,9 @@ export const useFrameworkData = (): {
 
       // Cache First Strategy: If we have data (especially activities), don't re-fetch immediately
       // This prevents overwriting the just-uploaded CSV if migration hasn't run yet.
-      if (activities.length > 0) {
+      // Cache First Strategy: If we have BOTH activities and B2C data, don't re-fetch immediately
+      // This prevents overwriting the just-uploaded CSV if migration hasn't run yet.
+      if (activities.length > 0 && b2cData.length > 0) {
         setLoading(false);
         return;
       }
