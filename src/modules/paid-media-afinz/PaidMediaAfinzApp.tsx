@@ -14,7 +14,7 @@ import { MonthlyAnalysisTab } from './components/Tabs/MonthlyAnalysisTab';
 import { CampaignDetailsTab } from './components/Tabs/CampaignDetailsTab';
 import { BudgetTab } from './components/Tabs/BudgetTab';
 import { DailyAnalysisTab } from './components/Tabs/DailyAnalysisTab';
-import { LayoutDashboard, BarChart2, List, Wallet, UploadCloud, ArrowLeft, Calendar, Loader2, CloudAo } from 'lucide-react'; // Added Loader2
+import { LayoutDashboard, BarChart2, List, Wallet, UploadCloud, ArrowLeft, Calendar, Loader2 } from 'lucide-react'; // Added Loader2
 
 interface PaidMediaAfinzAppProps {
   onBack?: () => void;
