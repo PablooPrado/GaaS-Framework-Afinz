@@ -2,21 +2,41 @@ import React, { useMemo } from 'react';
 import { Activity } from '../../types/framework';
 import { Info } from 'lucide-react';
 
+import { B2CDataRow } from '../../types/b2c';
+import { useAppStore } from '../../store/useAppStore';
+
 interface KPIOverviewProps {
     activities: Activity[];
     previousActivities?: Activity[];
+    b2cData?: B2CDataRow[];
 }
 
-export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousActivities = [] }) => {
+export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousActivities = [], b2cData = [] }) => {
+    const { viewSettings } = useAppStore();
+    const showB2C = viewSettings.filtrosGlobais.bu.length === 0 || viewSettings.filtrosGlobais.bu.includes('B2C');
+    const showCRM = viewSettings.filtrosGlobais.bu.length === 0 || viewSettings.filtrosGlobais.bu.includes('CRM'); // Assuming 'CRM' or standard BU
 
-    const calculateMetrics = (acts: Activity[]) => {
-        const baseEnviada = acts.reduce((sum, a) => sum + (a.kpis?.baseEnviada || 0), 0);
-        const baseEntregue = acts.reduce((sum, a) => sum + (a.kpis?.baseEntregue || 0), 0);
-        const propostas = acts.reduce((sum, a) => sum + (a.kpis?.propostas || 0), 0);
-        const aprovados = acts.reduce((sum, a) => sum + (a.kpis?.aprovados || 0), 0);
-        const emissoes = acts.reduce((sum, a) => sum + (a.kpis?.emissoes || 0), 0);
-        const custoTotal = acts.reduce((sum, a) => sum + (a.kpis?.custoTotal || 0), 0);
-        const cartoes = acts.reduce((sum, a) => sum + (a.kpis?.cartoes || 0), 0);
+    const calculateMetrics = (acts: Activity[], b2c: B2CDataRow[] = []) => {
+        // CRM Metrics (from Activities)
+        let baseEnviada = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.baseEnviada || 0), 0) : 0;
+        let baseEntregue = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.baseEntregue || 0), 0) : 0;
+        let propostas = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.propostas || 0), 0) : 0;
+        let aprovados = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.aprovados || 0), 0) : 0;
+        let emissoes = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.emissoes || 0), 0) : 0;
+        let custoTotal = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.custoTotal || 0), 0) : 0;
+        let cartoes = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.cartoes || 0), 0);
+
+        // B2C Metrics (from b2cData)
+        if (showB2C && b2c.length > 0) {
+            baseEnviada += b2c.reduce((sum, d) => sum + (d.qtd_clientes_unicos || 0), 0);
+            propostas += b2c.reduce((sum, d) => sum + (d.qtd_propostas || 0), 0);
+            aprovados += b2c.reduce((sum, d) => sum + (d.qtd_propostas_aprovadas || 0), 0);
+            emissoes += b2c.reduce((sum, d) => sum + (d.qtd_cartoes_emitidos || 0), 0);
+            cartoes += b2c.reduce((sum, d) => sum + (d.qtd_cartoes_emitidos || 0), 0);
+            custoTotal += b2c.reduce((sum, d) => sum + (d.vlr_investimento_total || 0), 0);
+        }
+
+        // ... rates calculation ...
 
         // Rates
         const taxaEntrega = baseEnviada > 0 ? (baseEntregue / baseEnviada) * 100 : 0;

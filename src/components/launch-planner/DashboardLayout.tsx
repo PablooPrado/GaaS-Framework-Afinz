@@ -17,7 +17,7 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayClick }) => {
     const [displayDate, setDisplayDate] = React.useState(new Date());
-    const { goals } = useAppStore();
+    const { goals, b2cData } = useAppStore();
     const { startDate, endDate, compareEnabled, setPeriod } = usePeriod();
 
     // Sync displayDate with endDate (focus on the "target" or "current" end of the range)
@@ -43,6 +43,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
             isWithinInterval(a.dataDisparo, { start: startDate, end: endDate })
         );
     }, [allActivities, startDate, endDate]);
+
+    // Filter B2C Data for Current Period
+    const currentB2CData = useMemo(() => {
+        return b2cData.filter(d =>
+            isWithinInterval(new Date(d.data_ref), { start: startDate, end: endDate })
+        );
+    }, [b2cData, startDate, endDate]);
 
     // Filter for Previous Period (Comparison)
     const previousPeriodActivities = useMemo(() => {
@@ -92,6 +99,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
                     <KPIOverview
                         activities={currentPeriodActivities}
                         previousActivities={previousPeriodActivities}
+                        b2cData={currentB2CData}
                     />
                 </div>
 
@@ -105,8 +113,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
                         goals={goals}
                         currentMonth={format(startDate, 'yyyy-MM')}
                     />
-                </div>
-            </div>
-        </div>
+                </div >
+            </div >
+        </div >
     );
 };
