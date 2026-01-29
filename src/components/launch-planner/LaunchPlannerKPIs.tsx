@@ -24,6 +24,13 @@ export const LaunchPlannerKPIs: React.FC<LaunchPlannerKPIsProps> = ({ activities
     // Interaction State
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
+    // Toggle State for Meta Card: 'CRM' vs 'TOTAL' (B2C)
+    // Initialize based on current BU selection to keep consistent default behavior
+    const [metaMode, setMetaMode] = useState<'CRM' | 'TOTAL'>(() => {
+        const isspecific = isBUSelected('B2B2C') || isBUSelected('Plurix');
+        return isspecific ? 'CRM' : 'TOTAL';
+    });
+
     const handleChartClick = (data: any) => {
         if (data && data.activePayload && data.activePayload[0]) {
             const payload = data.activePayload[0].payload;
@@ -52,37 +59,33 @@ export const LaunchPlannerKPIs: React.FC<LaunchPlannerKPIsProps> = ({ activities
     }, [selectedDate, activities]);
 
     const metrics = useMemo(() => {
-        // Determine context: B2C (Total) or CRM (Launch Planner only)
-        // If B2C is selected (or nothing selected, defaulting to B2C view), use Total.
-        // If CRM is explicitly selected, use CRM.
-        const showTotal = !isBUSelected('CRM' as any) && !isBUSelected('B2B2C') && !isBUSelected('Plurix');
-
         let totalCards = 0;
         let goalCards = 0;
         let label = 'Meta';
         const currentGoal = goals.find(g => g.mes === currentMonth);
 
-        if (isBUSelected('Plurix')) {
-            // Plurix Only
-            totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
-            goalCards = currentGoal?.plurix_meta || 0;
-            label = 'Meta (Plurix)';
-        } else if (isBUSelected('B2B2C')) {
-            // B2B2C Only
-            totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
-            goalCards = currentGoal?.b2b2c_meta || 0;
-            label = 'Meta (B2B2C)';
-        } else if (showTotal) {
-            // Use Total B2C Data from Daily Analysis
+        // Logic split by MetaMode
+        if (metaMode === 'TOTAL') {
+            // Use Total B2C Data from Daily Analysis (Global View)
             totalCards = dailyAnalysis.reduce((sum, d) => sum + d.emissoes_b2c_total, 0);
             goalCards = currentGoal?.b2c_meta || 0;
-            label = 'Meta (Total)';
+            label = 'Meta (Total B2C)';
         } else {
-            // CRM Only (Launch Planner specific)
-            // Fallback to activities sum if simpler, or use dailyAnalysis.emissoes_crm
-            totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
-            goalCards = currentGoal?.cartoes_meta || 0;
-            label = 'Meta (CRM)';
+            // CRM Mode (Specific BU or CRM Global)
+            if (isBUSelected('Plurix')) {
+                totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
+                goalCards = currentGoal?.plurix_meta || 0;
+                label = 'Meta (Plurix)';
+            } else if (isBUSelected('B2B2C')) {
+                totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
+                goalCards = currentGoal?.b2b2c_meta || 0;
+                label = 'Meta (B2B2C)';
+            } else {
+                // CRM Global
+                totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
+                goalCards = currentGoal?.cartoes_meta || 0;
+                label = 'Meta (CRM)';
+            }
         }
 
         const goalProgress = goalCards > 0 ? (totalCards / goalCards) * 100 : 0;
@@ -93,14 +96,14 @@ export const LaunchPlannerKPIs: React.FC<LaunchPlannerKPIsProps> = ({ activities
             goalProgress,
             label
         };
-    }, [activities, goals, currentMonth, dailyAnalysis, isBUSelected]);
+    }, [activities, goals, currentMonth, dailyAnalysis, isBUSelected, metaMode]);
 
     const metaChartData = [
         { name: 'Realizado', value: metrics.totalCards, color: '#3B82F6' }, // Blue
         { name: metrics.label, value: metrics.goalCards, color: '#10B981' }       // Emerald
     ];
 
-    // Prepare Comparison Chart Data
+    // ... existing comparisonData ...
     const comparisonData = useMemo(() => {
         return dailyAnalysis.map(d => {
             const [y, m, day] = d.data.split('-').map(Number);
@@ -145,10 +148,20 @@ export const LaunchPlannerKPIs: React.FC<LaunchPlannerKPIsProps> = ({ activities
             <div className="space-y-4">
 
                 {/* 1. Cartões vs Meta */}
-                <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 flex flex-col justify-between h-48 relative overflow-hidden">
+                <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 flex flex-col justify-between h-48 relative overflow-hidden group">
                     <div className="flex justify-between items-start mb-1 relative z-10">
                         <div>
-                            <h3 className="text-slate-400 text-xs font-medium">Cartões vs Meta</h3>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-slate-400 text-xs font-medium">Cartões vs Meta</h3>
+                                {/* Minimalist Toggle Button */}
+                                <button
+                                    onClick={() => setMetaMode(prev => prev === 'CRM' ? 'TOTAL' : 'CRM')}
+                                    className="px-1.5 py-0.5 rounded text-[9px] font-bold border border-slate-700 bg-slate-800 text-slate-400 hover:text-white hover:border-slate-500 transition-colors"
+                                    title="Alternar Visualização: CRM vs Total Banco"
+                                >
+                                    {metaMode === 'CRM' ? 'CRM' : 'B2C'}
+                                </button>
+                            </div>
                             <div className="flex items-baseline gap-2 mt-0.5">
                                 <span className="text-xl font-bold text-white">{metrics.totalCards.toLocaleString()}</span>
                                 <span className="text-xs text-slate-500">/ {metrics.goalCards.toLocaleString()}</span>

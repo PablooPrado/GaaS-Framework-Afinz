@@ -94,8 +94,8 @@ const handleFramework = (csvText: string) => {
                 columnMap['Ordem de disparo'] = findCol('Ordem de disparo', ['Ordem', 'Step', 'Etapa'])!;
                 columnMap['Disparado?'] = findCol('Disparado?', ['Disparado', 'Status Disparo', 'Status', 'Envio', 'Enviado?', 'Foi disparado?', 'Disparo Realizado'])!;
                 columnMap['Perfil de Crédito'] = findCol('Perfil de Crédito', ['Perfil', 'Credit Profile'])!;
-                columnMap['Base Total'] = findCol('Base Total', ['Base Enviada'])!;
-                columnMap['Base Acionável'] = findCol('Base Acionável', ['Base Entregue', 'Base Acionavel'])!;
+                columnMap['Base Total'] = findCol('Base Total', ['Base Enviada', 'Enviados', 'Volume Enviado', 'Total Enviado'])!;
+                columnMap['Base Acionável'] = findCol('Base Acionável', ['Base Entregue', 'Base Acionavel', 'Volume Entregue', 'Vol. Entregas', 'Entregues', 'Total Entregue', 'Entregue'])!;
                 columnMap['Taxa de Entrega'] = findCol('Taxa de Entrega')!;
                 columnMap['Propostas'] = findCol('Propostas')!;
                 columnMap['Taxa de Proposta'] = findCol('Taxa de Proposta')!;

@@ -35,6 +35,7 @@ interface AppState {
     addJournalEntry: (entry: JournalEntry) => void;
     updateJournalEntry: (id: string, entry: Partial<JournalEntry>) => void;
     updateActivity: (id: string, updates: Partial<Activity>) => void;
+    addActivity: (activity: Activity) => void;
 
     // Filter Actions
     setGlobalFilters: (filters: Partial<FilterState>) => void;
@@ -98,6 +99,10 @@ export const useAppStore = create<AppState>()(
 
             updateActivity: (id, updates) => set((state) => ({
                 activities: state.activities.map((a) => (a.id === id ? { ...a, ...updates } : a))
+            })),
+
+            addActivity: (activity) => set((state) => ({
+                activities: [activity, ...state.activities]
             })),
 
             setGlobalFilters: (filters) => set((state) => ({

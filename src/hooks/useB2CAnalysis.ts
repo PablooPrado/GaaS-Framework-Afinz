@@ -22,19 +22,20 @@ const calculateMetrics = (
 ): { analysisData: DailyAnalysis[], summary: MetricsSummary | null } => {
 
     // 1. Process CRM Data (Aggregate by Date)
-    const crmByDate: Record<string, { propostas: number; emissoes: number; custo: number; count: number; baseEntregue: number; campaignCount: number }> = {};
+    const crmByDate: Record<string, { propostas: number; emissoes: number; custo: number; count: number; baseEntregue: number; baseEnviada: number; campaignCount: number }> = {};
     const dates = Object.keys(filteredData);
 
     dates.forEach(dateKey => {
         const activities = filteredData[dateKey];
         if (!crmByDate[dateKey]) {
-            crmByDate[dateKey] = { propostas: 0, emissoes: 0, custo: 0, count: 0, baseEntregue: 0, campaignCount: 0 };
+            crmByDate[dateKey] = { propostas: 0, emissoes: 0, custo: 0, count: 0, baseEntregue: 0, baseEnviada: 0, campaignCount: 0 };
         }
         activities.forEach(act => {
             crmByDate[dateKey].propostas += act.kpis.propostas || 0;
             crmByDate[dateKey].emissoes += act.kpis.cartoes || 0;
             crmByDate[dateKey].custo += act.kpis.custoTotal || 0;
             crmByDate[dateKey].baseEntregue += act.kpis.baseEntregue || 0;
+            crmByDate[dateKey].baseEnviada += act.kpis.baseEnviada || 0;
             if (['Email', 'SMS', 'WhatsApp'].includes(act.canal)) {
                 crmByDate[dateKey].campaignCount += 1;
             }
@@ -59,7 +60,7 @@ const calculateMetrics = (
     });
 
     const normalizedDailyData = Array.from(allDates).sort().map(date => {
-        const crm = crmByDate[date] || { propostas: 0, emissoes: 0, custo: 0, count: 0, baseEntregue: 0, campaignCount: 0 };
+        const crm = crmByDate[date] || { propostas: 0, emissoes: 0, custo: 0, count: 0, baseEntregue: 0, baseEnviada: 0, campaignCount: 0 };
         const b2cRow = b2cData.find(row => getISODate(row.data) === date);
         const propostas_b2c = b2cRow?.propostas_b2c_total || 0;
         const emissoes_b2c = b2cRow?.emissoes_b2c_total || 0;
@@ -70,6 +71,7 @@ const calculateMetrics = (
             crm_emissoes: crm.emissoes,
             crm_custo: crm.custo,
             crm_base_entregue: crm.baseEntregue,
+            crm_base_enviada: crm.baseEnviada,
             crm_count: crm.count,
             crm_campaign_count: crm.campaignCount,
             b2c_propostas: propostas_b2c,
@@ -103,7 +105,7 @@ const calculateMetrics = (
 
         if (!grouped[key]) {
             grouped[key] = {
-                crm_propostas: 0, crm_emissoes: 0, crm_custo: 0, crm_count: 0, crm_base_entregue: 0, crm_campaign_count: 0,
+                crm_propostas: 0, crm_emissoes: 0, crm_custo: 0, crm_count: 0, crm_base_entregue: 0, crm_base_enviada: 0, crm_campaign_count: 0,
                 b2c_propostas: 0, b2c_emissoes: 0, count: 0, originalDate: key
             };
         }
@@ -112,6 +114,7 @@ const calculateMetrics = (
         grouped[key].crm_emissoes += d.crm_emissoes;
         grouped[key].crm_custo += d.crm_custo;
         grouped[key].crm_base_entregue += d.crm_base_entregue;
+        grouped[key].crm_base_enviada += d.crm_base_enviada;
         grouped[key].crm_count += d.crm_count;
         grouped[key].crm_campaign_count += d.crm_campaign_count;
         grouped[key].b2c_propostas += d.b2c_propostas;
@@ -126,7 +129,11 @@ const calculateMetrics = (
 
         const share_propostas = g.b2c_propostas > 0 ? (g.crm_propostas / g.b2c_propostas) * 100 : 0;
         const share_emissoes = g.b2c_emissoes > 0 ? (g.crm_emissoes / g.b2c_emissoes) * 100 : 0;
-        const conv_crm = g.crm_base_entregue > 0 ? (g.crm_emissoes / g.crm_base_entregue) * 100 : 0;
+
+        // Use Delivered if available, else Sent
+        const effectiveBase = g.crm_base_entregue > 0 ? g.crm_base_entregue : g.crm_base_enviada;
+        const conv_crm = effectiveBase > 0 ? (g.crm_emissoes / effectiveBase) * 100 : 0;
+
         const conv_b2c = g.b2c_propostas > 0 ? (g.b2c_emissoes / g.b2c_propostas) * 100 : 0;
         const performance_index = conv_b2c > 0 ? conv_crm / conv_b2c : 0;
         const cac = g.crm_emissoes > 0 ? g.crm_custo / g.crm_emissoes : 0;
@@ -140,7 +147,7 @@ const calculateMetrics = (
             mes: m,
             ano: y,
             propostas_crm: g.crm_propostas,
-            entregas_crm: g.crm_base_entregue,
+            entregas_crm: effectiveBase, // Fallback applied here
             custo_crm: g.crm_custo,
             emissoes_crm: g.crm_emissoes,
             num_campanhas_crm: g.crm_campaign_count,

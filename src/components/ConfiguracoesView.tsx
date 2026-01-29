@@ -6,7 +6,8 @@ import { useFrameworkData } from '../hooks/useFrameworkData';
 import { useCSVParser } from '../hooks/useCSVParser';
 import { useAppStore } from '../store/useAppStore';
 import { parseXLSX } from '../modules/paid-media-afinz/utils/fileParser';
-import { DataMigration } from './admin/DataMigration';
+import { GoalsManager } from './admin/GoalsManager';
+import { activityService } from '../services/activityService';
 
 const FileManager: React.FC<{ title: string; slot: string; accept: string }> = ({ title, slot, accept }) => {
     const [files, setFiles] = useState<any[]>([]);
@@ -54,9 +55,19 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
         try {
             await storageService.uploadFile(slot, file);
             await loadFiles();
-            setMsg({ type: 'success', text: 'Upload realizado com sucesso!' });
+
+            // AUTO-SYNC: If framework, parse and sync immediately
+            if (slot === 'framework') {
+                const data = await processCSV(file);
+                await activityService.syncFrameworkActivities(data);
+                setMsg({ type: 'success', text: 'Upload e Sincronização com Banco de Dados realizados!' });
+            } else {
+                setMsg({ type: 'success', text: 'Upload realizado com sucesso!' });
+            }
+
         } catch (e: any) {
-            setMsg({ type: 'error', text: 'Falha no upload: ' + e.message });
+            console.error(e);
+            setMsg({ type: 'error', text: 'Falha: ' + e.message });
         } finally {
             setUploading(false);
         }
@@ -90,7 +101,9 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
 
             // 2. Parse based on slot
             if (slot === 'framework') {
-                await processCSV(file);
+                // Parse AND Sync to DB
+                const data = await processCSV(file);
+                await activityService.syncFrameworkActivities(data);
             } else if (slot === 'b2c') {
                 const { data } = await parseB2CCSV(file);
                 setB2CData(data);
@@ -99,7 +112,7 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
                 setPaidMediaData(data);
             }
 
-            setMsg({ type: 'success', text: 'Dados restaurados e aplicados ao Dashboard!' });
+            setMsg({ type: 'success', text: 'Dados restaurados e sincronizados!' });
         } catch (e: any) {
             console.error(e);
             setMsg({ type: 'error', text: 'Erro ao restaurar: ' + e.message });
@@ -212,6 +225,7 @@ export const ConfiguracoesView: React.FC = () => {
     const [isSending, setIsSending] = useState(false);
     const [sent, setSent] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'goals' | 'database'>('goals');
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -247,16 +261,7 @@ export const ConfiguracoesView: React.FC = () => {
                         <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Configurações</h2>
                         <p className="text-slate-400 text-lg">Central de controle e sincronização.</p>
                     </div>
-                    <div className="text-right hidden md:block">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1">Status do Sistema</span>
-                        <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            <span className="text-xs font-bold">Online & Conectado</span>
-                        </div>
-                    </div>
+
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -309,51 +314,77 @@ export const ConfiguracoesView: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Right Column: File Manager (Spans 2 cols) */}
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 shadow-xl backdrop-blur-sm relative overflow-hidden">
-                            {/* Background subtle effect */}
-                            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
-
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 relative z-10">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-blue-500/20 rounded-xl text-blue-400 shadow-inner">
-                                        <UploadCloud size={24} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white">Gestão de Arquivos</h3>
-                                        <p className="text-sm text-slate-400">Armazenamento em nuvem seguro e versionado.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4 relative z-10">
-                                <FileManager
-                                    title="Framework Strategy"
-                                    slot="framework"
-                                    accept=".csv"
-                                />
-                                <FileManager
-                                    title="Histórico B2C" // RENAMED FROM B2C History
-                                    slot="b2c"
-                                    accept=".csv"
-                                />
-                                <FileManager
-                                    title="Mídia Paga (Ads)"
-                                    slot="media"
-                                    accept=".xlsx, .xls"
-                                />
-                            </div>
+                    {/* Right Column: Content Area (Spans 2 cols) */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Tabs Navigation */}
+                        <div className="flex items-center gap-2 border-b border-slate-700/50">
+                            <button
+                                onClick={() => setActiveTab('goals')}
+                                className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'goals'
+                                    ? 'border-blue-500 text-blue-400'
+                                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                                    }`}
+                            >
+                                Gestão de Metas
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('database')}
+                                className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === 'database'
+                                    ? 'border-blue-500 text-blue-400'
+                                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                                    }`}
+                            >
+                                Gestão de Banco de Dados
+                            </button>
                         </div>
 
-                        {/* Goals Manager Section */}
-                        <GoalsManager />
+                        {/* Tab Content */}
+                        <div className="animate-fade-in">
+                            {activeTab === 'goals' && (
+                                <GoalsManager />
+                            )}
 
-                        {/* Database Migration Section */}
-                        <DataMigration />
+                            {activeTab === 'database' && (
+                                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 shadow-xl backdrop-blur-sm relative overflow-hidden">
+                                    {/* Background subtle effect */}
+                                    <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
+
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 relative z-10">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 bg-blue-500/20 rounded-xl text-blue-400 shadow-inner">
+                                                <Database size={24} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-white">Banco de Dados & Arquivos</h3>
+                                                <p className="text-sm text-slate-400">Importação e sincronização das tabelas do sistema.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 relative z-10">
+                                        <FileManager
+                                            title="Framework Strategy"
+                                            slot="framework"
+                                            accept=".csv"
+                                        />
+                                        <FileManager
+                                            title="Histórico B2C"
+                                            slot="b2c"
+                                            accept=".csv"
+                                        />
+                                        <FileManager
+                                            title="Mídia Paga (Ads)"
+                                            slot="media"
+                                            accept=".xlsx, .xls"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     );
 };
+

@@ -19,7 +19,7 @@ const ITEMS_PER_PAGE = 10;
 
 export const OriginacaoTable: React.FC<OriginacaoTableProps> = ({ data, onRowClick }) => {
     const [currentPage, setCurrentPage] = useState(1);
-    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'data', direction: 'desc' }); // Default sort by date desc
+    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'data', direction: 'asc' }); // Default sort by date ASC (Oldest First)
 
     // Sorting Logic
     const sortedData = useMemo(() => {
@@ -41,9 +41,10 @@ export const OriginacaoTable: React.FC<OriginacaoTableProps> = ({ data, onRowCli
         return sorted;
     }, [data, sortConfig]);
 
-    // Apply Pagination AND Sorting
-    const totalPages = Math.ceil(sortedData.length / ITEMS_PER_PAGE);
-    const paginatedData = sortedData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    // Apply Pagination AND Sorting - Adjusted for larger view
+    const itemsPerPage = 25; // User requested bigger table
+    const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+    const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const requestSort = (key: SortKey) => {
         let direction: SortDirection = 'asc';
@@ -56,15 +57,9 @@ export const OriginacaoTable: React.FC<OriginacaoTableProps> = ({ data, onRowCli
 
     const getSortIcon = (name: SortKey) => {
         if (sortConfig.key === name) {
-            // User Request: Arrow Up = Newest First (Descending for Date)
-            // Standard: Asc (Up) / Desc (Down)
-            // We will Flip the visual icon: Ascending Config -> Arrow Down, Descending Config -> Arrow Up
-            // Wait, standard is: Asc = Arrow Up (Small to Large). Desc = Arrow Down (Large to Small).
-            // User wants: Arrow Up = Newest (Large Date) at top. 
-            // So when direction is 'desc' (Newest First), show Arrow Up.
-            return sortConfig.direction === 'asc' ? <ArrowDown size={14} /> : <ArrowUp size={14} />;
+            return sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />;
         }
-        return <ArrowUpDown size={14} className="text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />;
+        return <ArrowUpDown size={14} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />;
     };
 
     const handleExport = () => {
@@ -106,10 +101,10 @@ export const OriginacaoTable: React.FC<OriginacaoTableProps> = ({ data, onRowCli
     // Helper for easier header code
     const SortableHeader = ({ label, sortKey, align = 'right' }: { label: string, sortKey: SortKey, align?: string }) => (
         <th
-            className={`px-4 py-3 cursor-pointer hover:bg-slate-800 transition select-none group ${align === 'right' ? 'text-right' : 'text-left'}`}
+            className={`px-4 py-4 cursor-pointer hover:bg-slate-100 transition select-none group border-b border-slate-200 border-r border-slate-300 last:border-r-0 ${align === 'right' ? 'text-right' : 'text-left'}`}
             onClick={() => requestSort(sortKey)}
         >
-            <div className={`flex items-center gap-2 ${align === 'right' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`flex items-center gap-2 font-semibold text-slate-700 ${align === 'right' ? 'justify-end' : 'justify-start'}`}>
                 {label}
                 {getSortIcon(sortKey)}
             </div>
@@ -117,20 +112,20 @@ export const OriginacaoTable: React.FC<OriginacaoTableProps> = ({ data, onRowCli
     );
 
     return (
-        <div className="bg-slate-800 border border-slate-700/50 rounded-xl overflow-hidden mt-6 shadow-lg">
-            <div className="p-4 border-b border-slate-700/50 flex justify-between items-center">
-                <h3 className="font-bold text-slate-300">Detalhamento Diário</h3>
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden mt-6 shadow-sm">
+            <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+                <h3 className="font-bold text-lg text-slate-800">Detalhamento Diário</h3>
                 <button
                     onClick={handleExport}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-xs text-slate-200"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 rounded text-sm text-slate-600 font-medium transition shadow-sm"
                 >
                     <Download size={14} /> Exportar ({sortedData.length})
                 </button>
             </div>
 
             <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-slate-400 uppercase bg-slate-900/50">
+                <table className="w-full text-sm text-left border-collapse">
+                    <thead className="text-xs uppercase bg-slate-50 text-slate-500">
                         <tr>
                             <SortableHeader label="Data" sortKey="data" align="left" />
                             <SortableHeader label="Vol. Entregas" sortKey="entregas_crm" />
@@ -143,62 +138,60 @@ export const OriginacaoTable: React.FC<OriginacaoTableProps> = ({ data, onRowCli
                             <SortableHeader label="% Conv CRM" sortKey="taxa_conversao_crm" />
                             <SortableHeader label="% Conv B2C" sortKey="taxa_conversao_b2c" />
                             <SortableHeader label="CAC" sortKey="cac_medio" />
-                            {/* Status column removed */}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-700/50">
+                    <tbody className="divide-y divide-slate-100">
                         {paginatedData.map((row) => (
                             <tr
                                 key={row.data}
-                                className={`cursor-pointer hover:bg-slate-700/50 transition ${row.eh_anomalia ? 'bg-red-900/10' : ''}`}
+                                className={`cursor-pointer hover:bg-blue-50/50 transition ${row.eh_anomalia ? 'bg-red-50' : 'bg-white'}`}
                                 onClick={() => onRowClick && onRowClick(row.data)}
                             >
-                                <td className="px-4 py-2 font-medium text-slate-200 whitespace-nowrap">
+                                <td className="px-4 py-3 font-medium text-slate-700 whitespace-nowrap border-r border-slate-300 last:border-r-0">
                                     {row.data.split('-').reverse().join('/')}
                                 </td>
-                                <td className="px-4 py-2 text-right">{row.entregas_crm.toLocaleString()}</td>
-                                <td className="px-4 py-2 text-right">R$ {row.custo_crm.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                <td className="px-4 py-2 text-right">{row.propostas_crm}</td>
-                                <td className="px-4 py-2 text-right font-bold text-white">{row.emissoes_crm}</td>
-                                <td className="px-4 py-2 text-right text-slate-500">{row.propostas_b2c_total}</td>
-                                <td className="px-4 py-2 text-right text-slate-500">{row.emissoes_b2c_total}</td>
-                                <td className="px-4 py-2 text-right">
-                                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${row.share_emissoes_crm_percentual < 10 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+                                <td className="px-4 py-3 text-right text-slate-600 border-r border-slate-300 last:border-r-0">{row.entregas_crm.toLocaleString()}</td>
+                                <td className="px-4 py-3 text-right text-slate-600 border-r border-slate-300 last:border-r-0">R$ {row.custo_crm.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                <td className="px-4 py-3 text-right text-slate-600 border-r border-slate-300 last:border-r-0">{row.propostas_crm}</td>
+                                <td className="px-4 py-3 text-right font-bold text-slate-800 border-r border-slate-300 last:border-r-0">{row.emissoes_crm}</td>
+                                <td className="px-4 py-3 text-right text-slate-500 border-r border-slate-300 last:border-r-0">{row.propostas_b2c_total}</td>
+                                <td className="px-4 py-3 text-right text-slate-500 border-r border-slate-300 last:border-r-0">{row.emissoes_b2c_total}</td>
+                                <td className="px-4 py-3 text-right border-r border-slate-300 last:border-r-0">
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${row.share_emissoes_crm_percentual < 10 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'
                                         }`}>
                                         {row.share_emissoes_crm_percentual.toFixed(1)}%
                                     </span>
                                 </td>
-                                <td className="px-4 py-2 text-right text-emerald-400">
+                                <td className="px-4 py-3 text-right text-emerald-600 font-medium border-r border-slate-300 last:border-r-0">
                                     {row.taxa_conversao_crm.toFixed(1)}%
                                 </td>
-                                <td className="px-4 py-2 text-right text-slate-500">
+                                <td className="px-4 py-3 text-right text-slate-500 border-r border-slate-300 last:border-r-0">
                                     {row.taxa_conversao_b2c.toFixed(1)}%
                                 </td>
-                                <td className="px-4 py-2 text-right">R$ {row.cac_medio.toFixed(0)}</td>
-                                {/* Status column removed */}
+                                <td className="px-4 py-3 text-right text-slate-600 border-r border-slate-300 last:border-r-0">R$ {row.cac_medio.toFixed(0)}</td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
 
-            {/* Pagination Controls */}
+            {/* Pagination Controls - Light Theme */}
             {totalPages > 1 && (
-                <div className="p-4 border-t border-slate-700/50 flex justify-center items-center gap-4">
+                <div className="p-4 border-t border-slate-200 flex justify-center items-center gap-4 bg-slate-50/50">
                     <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="p-1 rounded hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400"
+                        className="p-2 rounded-lg hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-500 transition"
                     >
                         <ChevronLeft size={20} />
                     </button>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-sm font-medium text-slate-600">
                         {currentPage} / {totalPages}
                     </span>
                     <button
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
-                        className="p-1 rounded hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400"
+                        className="p-2 rounded-lg hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-500 transition"
                     >
                         <ChevronRight size={20} />
                     </button>

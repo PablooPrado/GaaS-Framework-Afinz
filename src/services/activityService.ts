@@ -1,0 +1,263 @@
+import { supabase } from './supabaseClient';
+import { ActivityFormSchema, ActivityFormInput } from '../schemas/ActivityFormSchema';
+import { ActivityRow } from '../types/activity';
+
+/**
+ * Service Layer para operações Unificadas de Atividades (GaaS + Histórico)
+ */
+
+export const saveActivity = async (
+    formData: ActivityFormInput,
+    segmento: string
+): Promise<ActivityRow> => {
+    // 1. Validar com Zod
+    const validated = ActivityFormSchema.parse(formData);
+
+    // 2. Calcular próxima ordem para este segmento (considerando tabela unificada)
+    // Nota: Isso pega o MAX ordem de QUALQUER atividade do segmento, histórico ou programado
+    const { data: maxOrder } = await supabase
+        .from('activities')
+        .select('"Ordem de disparo"')
+        .eq('Segmento', segmento)
+        .order('Ordem de disparo', { ascending: false })
+        .limit(1);
+
+    const nextOrder = (maxOrder?.[0]?.['Ordem de disparo'] || 0) + 1;
+
+    // 3. Montar ActivityRow completo
+    // Mapeamento Input -> DB
+    const activityRow: Partial<ActivityRow> = {
+        // IDs e Controle
+        prog_gaas: true, // FLAG IMPORTANTE: Identifica origem GaaS
+        status: validated.status,
+
+        // Dados do Form
+        BU: validated.bu,
+        jornada: validated.jornada,
+        'Activity name / Taxonomia': validated.activityName,
+        'Data de Disparo': validated.dataInicio,
+        'Data Fim': validated.dataFim,
+        Segmento: segmento,
+
+        // Opcionais
+        'Perfil de Crédito': validated.perfilCredito || null,
+        Oferta: validated.oferta || null,
+        Promocional: validated.promocional || null,
+        'Oferta 2': validated.oferta2 || null,
+        'Promocional 2': validated.promocional2 || null,
+
+        // Calculados
+        'Ordem de disparo': nextOrder,
+
+        // Timestamps gerenciados pelo BD ou aqui
+        updated_at: new Date().toISOString(),
+    };
+
+    // 4. INSERT
+    const { data, error } = await supabase
+        .from('activities')
+        .insert(activityRow)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
+export const updateActivity = async (
+    id: string,
+    updates: Partial<ActivityRow>
+): Promise<ActivityRow> => {
+    const { data, error } = await supabase
+        .from('activities')
+        .update({
+            ...updates,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
+export const deleteActivity = async (id: string): Promise<void> => {
+    const { error } = await supabase
+        .from('activities')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+};
+
+export const publishActivity = async (id: string): Promise<ActivityRow> => {
+    return updateActivity(id, { status: 'Scheduled' });
+};
+
+export const getActivitiesBySegment = async (
+    segmento: string
+): Promise<ActivityRow[]> => {
+    const { data, error } = await supabase
+        .from('activities')
+        .select('*')
+        .eq('Segmento', segmento)
+        .order('Data de Disparo', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+};
+
+/**
+ * Busca todas as atividades (Históricas + Programadas)
+ * Usado na carga inicial do App
+ */
+export const getAllActivities = async (): Promise<ActivityRow[]> => {
+    const { data, error } = await supabase
+        .from('activities')
+        .select('*')
+        .order('Data de Disparo', { ascending: false })
+        .limit(10000);
+
+    if (error) throw error;
+    return data || [];
+};
+
+// ... existing code ...
+
+/**
+ * Sincroniza dados do Framework (Excel/CSV) com o Banco de Dados
+ * Estratégia:
+ * 1. Remove todos os registros históricos (prog_gaas = false)
+ * 2. Insere os novos dados do CSV
+ */
+export const syncFrameworkActivities = async (
+    frameworkActivities: any[]
+): Promise<void> => {
+    // 1. Limpar Histórico antigo (prog_gaas = false)
+    // Isso preserva os agendamentos futuros criados no App (prog_gaas = true)
+    const { error: deleteError } = await supabase
+        .from('activities')
+        .delete()
+        .eq('prog_gaas', false);
+
+    if (deleteError) {
+        console.error('Erro ao limpar dados antigos:', deleteError);
+        throw new Error('Falha ao limpar histórico antigo.');
+    }
+
+    if (frameworkActivities.length === 0) return;
+
+    // 2. Mapear para Formato SQL (Aspas e Tipos)
+    const sqlBatch = frameworkActivities.map(a => {
+        // Helper to parse numbers safely
+        const parseNum = (val: any) => {
+            if (typeof val === 'number') return val;
+            if (!val) return 0;
+            // Remove R$, %, spaces
+            /* 
+             * OBS: O Worker já faz parse parcial, mas 'a.raw' tem o dado bruto.
+             *      'a.kpis' tem o dado limpo.
+             *      Vamos usar 'a.kpis' onde possível, ou limpar de 'a.raw'.
+             */
+            let s = String(val).replace(/[R$\s%]/g, '');
+            // BR Format handling (1.000,00)
+            if (s.includes(',') && s.includes('.')) {
+                s = s.replace(/\./g, '').replace(',', '.'); // 1.000,00 -> 1000.00
+            } else if (s.includes(',')) {
+                s = s.replace(',', '.'); // 10,5 -> 10.5
+            }
+            return parseFloat(s) || 0;
+        };
+
+        return {
+            // Controle Interno
+            prog_gaas: false,
+            status: 'Realizado', // Histórico assume realizado/importado
+
+            // Core IDs
+            // Mapeando o ID "slug" do CSV para o campo de Taxonomia
+            "Activity name / Taxonomia": a.id || a.raw?.['Activity name / Taxonomia'],
+
+            "Data de Disparo": a.dataDisparo ? new Date(a.dataDisparo).toISOString() : null,
+            "Data Fim": a.raw?.['Data Fim'] ? new Date(a.raw['Data Fim']).toISOString() : null,
+
+            "BU": a.bu,
+            "Canal": a.canal,
+            "Safra": a.safraKey || a.raw?.['Safra'],
+
+            // Segmentação
+            "Parceiro": a.parceiro,
+            "SIGLA_Parceiro": a.raw?.['SIGLA'],
+            "Segmento": a.segmento,
+            "SIGLA_Segmento": a.raw?.['SIGLA.1'],
+            "Subgrupos": a.raw?.['Subgrupos'],
+            "Etapa de aquisição": a.raw?.['Etapa de aquisição'],
+            "Perfil de Crédito": a.raw?.['Perfil de Crédito'],
+
+            // Ofertas
+            "Produto": a.raw?.['Produto'],
+            "Oferta": a.oferta,
+            "Promocional": a.raw?.['Promocional'],
+            "SIGLA_Oferta": a.raw?.['SIGLA.2'],
+            "Oferta 2": a.raw?.['Oferta 2'],
+            "Promocional 2": a.raw?.['Promocional 2'],
+            "Ordem de disparo": typeof a.ordemDisparo === 'number' ? a.ordemDisparo : tryParseInt(a.raw?.['Ordem de disparo']),
+
+            // Métricas (Priorizar KPIs já calculados pelo Worker)
+            "Base Total": a.kpis?.baseEnviada ?? parseNum(a.raw?.['Base Total']),
+            "Base Acionável": a.kpis?.baseEntregue ?? parseNum(a.raw?.['Base Acionável']),
+            "% Otimização de base": parseNum(a.raw?.['% Otimização de base']),
+
+            // Financeiro
+            "Custo Unitário Oferta": parseNum(a.raw?.['Custo Unitário Oferta']),
+            "Custo Total da Oferta": parseNum(a.raw?.['Custo Total da Oferta']),
+            "Custo unitário do canal": parseNum(a.raw?.['Custo unitário do canal']),
+            "Custo total canal": parseNum(a.raw?.['Custo total canal']),
+            "Custo Total Campanha": a.kpis?.custoTotal ?? parseNum(a.raw?.['Custo Total Campanha']),
+            "CAC": a.kpis?.cac ?? parseNum(a.raw?.['CAC']),
+
+            // Taxas
+            "Taxa de Entrega": a.kpis?.taxaEntrega ?? parseNum(a.raw?.['Taxa de Entrega']),
+            "Taxa de Abertura": a.kpis?.taxaAbertura ?? parseNum(a.raw?.['Taxa de Abertura']),
+            "Taxa de Clique": parseNum(a.raw?.['Taxa de Clique']),
+            "Taxa de Proposta": a.kpis?.taxaPropostas ?? parseNum(a.raw?.['Taxa de Proposta']),
+            "Taxa de Aprovação": a.kpis?.taxaAprovacao ?? parseNum(a.raw?.['Taxa de Aprovação']),
+            "Taxa de Finalização": a.kpis?.taxaFinalizacao ?? parseNum(a.raw?.['Taxa de Finalização']),
+            "Taxa de Conversão": a.kpis?.taxaConversao ?? parseNum(a.raw?.['Taxa de Conversão']),
+
+            // Volumes
+            "Cartões Gerados": a.kpis?.cartoes ?? parseNum(a.raw?.['Cartões Gerados']),
+            "Aprovados": a.kpis?.aprovados ?? parseNum(a.raw?.['Aprovados']),
+            "Propostas": a.kpis?.propostas ?? parseNum(a.raw?.['Propostas']),
+            "Emissões Independentes": 0, // Ajustar se tiver coluna
+            "Emissões Assistidas": 0
+        };
+    });
+
+    // 3. Insert Batch (Chunked to avoid size limits)
+    const CHUNK_SIZE = 500;
+    for (let i = 0; i < sqlBatch.length; i += CHUNK_SIZE) {
+        const chunk = sqlBatch.slice(i, i + CHUNK_SIZE);
+        const { error } = await supabase.from('activities').insert(chunk);
+        if (error) {
+            console.error('Erro inserindo lote:', error);
+            throw new Error(`Erro ao sincronizar lote ${i / CHUNK_SIZE + 1}: ${error.message}`);
+        }
+    }
+};
+
+function tryParseInt(val: any): number | null {
+    const parsed = parseInt(val);
+    return isNaN(parsed) ? null : parsed;
+}
+
+export const activityService = {
+    saveActivity,
+    updateActivity,
+    deleteActivity,
+    publishActivity,
+    getActivitiesBySegment,
+    getAllActivities,
+    syncFrameworkActivities // Export new function
+};

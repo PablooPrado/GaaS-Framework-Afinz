@@ -13,9 +13,10 @@ interface DashboardLayoutProps {
     data: CalendarData;
     onActivityUpdate?: (activityId: string, newDate: Date) => void;
     onDayClick?: (date: Date) => void;
+    onProgramDispatch?: () => void;
 }
 
-export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayClick }) => {
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayClick, onProgramDispatch }) => {
     const [displayDate, setDisplayDate] = React.useState(new Date());
     const { goals, b2cData } = useAppStore();
     const { startDate, endDate, compareEnabled, setPeriod } = usePeriod();
@@ -78,7 +79,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
                 </div>
 
                 {/* Programar Disparo Button */}
-                <button className="w-full py-2 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 font-medium flex items-center justify-center gap-2 transition-colors text-sm">
+                <button
+                    onClick={onProgramDispatch}
+                    className="w-full py-2 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 font-medium flex items-center justify-center gap-2 transition-colors text-sm"
+                >
                     <Send size={16} />
                     Programar disparo
                 </button>

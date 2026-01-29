@@ -12,7 +12,7 @@ export const useFrameworkData = (): {
   loading: boolean;
   error: string | null;
   totalActivities: number;
-  processCSV: (file: File) => void;
+  processCSV: (file: File) => Promise<any>;
   loadSimulatedData: () => void;
   debugHeaders: string[];
 } => {
@@ -36,74 +36,80 @@ export const useFrameworkData = (): {
     return grouped;
   }, [storeActivities]);
 
-  const processCSV = useCallback((file: File) => {
-    console.log('🔄 Iniciando processamento do CSV (Worker):', file.name);
-    setLoading(true);
-    setError(null);
-    setDebugHeaders([]);
+  const processCSV = useCallback((file: File): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      console.log('🔄 Iniciando processamento do CSV (Worker):', file.name);
+      setLoading(true);
+      setError(null);
+      setDebugHeaders([]);
 
-    const worker = new CsvWorker();
-    const reader = new FileReader();
+      const worker = new CsvWorker();
+      const reader = new FileReader();
 
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const msg: WorkerMessage = { type: 'PARSE_FRAMEWORK_CSV', fileContent: text };
-      worker.postMessage(msg);
-    };
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        const msg: WorkerMessage = { type: 'PARSE_FRAMEWORK_CSV', fileContent: text };
+        worker.postMessage(msg);
+      };
 
-    reader.onerror = () => {
-      setError('Erro ao ler arquivo.');
-      setLoading(false);
-      worker.terminate();
-    };
+      reader.onerror = () => {
+        const err = 'Erro ao ler arquivo.';
+        setError(err);
+        setLoading(false);
+        worker.terminate();
+        reject(new Error(err));
+      };
 
-    worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
-      const { type } = e.data;
+      worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
+        const { type } = e.data;
 
-      if (type === 'SUCCESS') {
-        const result = (e.data as any).data; // { rows, activities }
-        console.log(`✅ Worker Finalizado: ${result.activities.length} atividades`);
+        if (type === 'SUCCESS') {
+          const result = (e.data as any).data; // { rows, activities }
+          console.log(`✅ Worker Finalizado: ${result.activities.length} atividades`);
 
-        // Fix: Hydrate dates that are serialized as strings during worker transfer
-        // Use parseDate to ensure we get Local Midnight (avoiding timezone shift to prev day)
-        const hydratedActivities = result.activities.map((a: any) => {
-          const d = (typeof a.dataDisparo === 'string' ? parseDate(a.dataDisparo) : a.dataDisparo) || new Date(a.dataDisparo);
+          // Fix: Hydrate dates that are serialized as strings during worker transfer
+          const hydratedActivities = result.activities.map((a: any) => {
+            const d = (typeof a.dataDisparo === 'string' ? parseDate(a.dataDisparo) : a.dataDisparo) || new Date(a.dataDisparo);
 
-          // Heuristic Fix for Timezone Shift:
-          // If hours are 21:00 (typical of UTC midnight displayed in Brazil), shift to Next Day 00:00
-          if (d instanceof Date && !isNaN(d.getTime()) && d.getHours() === 21) {
-            d.setDate(d.getDate() + 1);
-            d.setHours(0);
+            // Heuristic Fix for Timezone Shift
+            if (d instanceof Date && !isNaN(d.getTime()) && d.getHours() === 21) {
+              d.setDate(d.getDate() + 1);
+              d.setHours(0);
+            }
+            return {
+              ...a,
+              dataDisparo: d
+            };
+          });
+
+          if (result.warnings && result.warnings.length > 0) {
+            console.warn('Import Warnings:', result.warnings);
+            alert(`⚠️ ATENÇÃO: ${result.warnings.length} linhas foram ignoradas!\nProvável erro de data/formato.\n\nErros:\n${result.warnings.slice(0, 3).join('\n')}`);
           }
-          return {
-            ...a,
-            dataDisparo: d
-          };
-        });
 
-        if (result.warnings && result.warnings.length > 0) {
-          console.warn('Import Warnings:', result.warnings);
-          // Alert user so they know rows are missing
-          alert(`⚠️ ATENÇÃO: ${result.warnings.length} linhas foram ignoradas!\nProvável erro de data/formato.\n\nErros:\n${result.warnings.slice(0, 3).join('\n')}`);
+          setFrameworkData(result.rows, hydratedActivities);
+          setLoading(false);
+          resolve(hydratedActivities); // RESOLVE WITH DATA
+
+        } else if (type === 'ERROR') {
+          const err = (e.data as any).error;
+          setError(err);
+          setLoading(false);
+          reject(new Error(err));
         }
+        worker.terminate();
+      };
 
-        setFrameworkData(result.rows, hydratedActivities);
-        // Optionally setDebugHeaders if worker returns them? (We didn't pass them back in worker logic, but that's fine for now)
+      worker.onerror = (err) => {
+        const errorMsg = 'Erro no Worker: ' + err.message;
+        setError(errorMsg);
         setLoading(false);
-      } else if (type === 'ERROR') {
-        setError((e.data as any).error);
-        setLoading(false);
-      }
-      worker.terminate();
-    };
+        worker.terminate();
+        reject(new Error(errorMsg));
+      };
 
-    worker.onerror = (err) => {
-      setError('Erro no Worker: ' + err.message);
-      setLoading(false);
-      worker.terminate();
-    };
-
-    reader.readAsText(file);
+      reader.readAsText(file);
+    });
   }, [setFrameworkData]);
 
   // CLOUD SYNC EFFECT (Refactored to Supabase)

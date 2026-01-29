@@ -5,82 +5,83 @@ import { DailyAdMetrics } from '../schemas/paid-media';
 import { B2CDataRow } from '../types/b2c';
 
 // Helper to map SQL row to Activity
-const mapSqlToActivity = (row: any): Activity => {
+export const mapSqlToActivity = (row: any): Activity => {
     // Reconstruct Raw Object (for compatibility)
+    // The DB returns keys exactly as defined in the CREATE TABLE (Human Readable)
     const raw: FrameworkRow = {
-        'Activity name / Taxonomia': row.activity_id,
-        'Data de Disparo': row.data_disparo,
-        'Data Fim': row.data_fim,
-        'BU': row.bu,
-        'Canal': row.canal,
-        'Segmento': row.segmento,
-        'SIGLA.1': row.segmento_sigla,
-        'Subgrupos': row.subgrupo,
-        'Jornada': row.jornada,
-        'Etapa de aquisição': row.etapa_aquisicao,
-        'Ordem de disparo': row.ordem_disparo,
-        'Parceiro': row.parceiro,
-        'SIGLA': row.parceiro_sigla,
-        'Safra': row.safra,
-        'Perfil de Crédito': row.perfil_credito,
-        'Produto': row.produto,
-        'Oferta': row.oferta,
-        'SIGLA.2': row.oferta_sigla,
-        'Oferta 2': row.oferta_2,
-        'Promocional': row.promocional,
-        'Promocional 2': row.promocional_2,
-        'Disparado?': row.disparado,
-        'Base Total': row.base_total,
-        'Base Acionável': row.base_acionavel,
-        '% Otimização de base': row.optimizacao_base,
-        'Base Enviada': row.base_enviada,
-        'Custo Unitário Oferta': row.custo_unitario_oferta,
-        'Custo Total da Oferta': row.custo_total_oferta,
-        'Custo unitário do canal': row.custo_unitario_canal,
-        'Custo total canal': row.custo_total_canal,
-        'Custo Total Campanha': row.custo_total_campanha,
+        'Activity name / Taxonomia': row['Activity name / Taxonomia'],
+        'Data de Disparo': row['Data de Disparo'],
+        'Data Fim': row['Data Fim'],
+        'BU': row['BU'],
+        'Canal': row['Canal'],
+        'Segmento': row['Segmento'],
+        'SIGLA.1': row['SIGLA_Segmento'],
+        'Subgrupos': row['Subgrupos'],
+        'Jornada': row['jornada'], // Note: 'jornada' is lowercase in SQL schema
+        'Etapa de aquisição': row['Etapa de aquisição'],
+        'Ordem de disparo': row['Ordem de disparo'],
+        'Parceiro': row['Parceiro'],
+        'SIGLA': row['SIGLA_Parceiro'],
+        'Safra': row['Safra'],
+        'Perfil de Crédito': row['Perfil de Crédito'],
+        'Produto': row['Produto'],
+        'Oferta': row['Oferta'],
+        'SIGLA.2': row['SIGLA_Oferta'],
+        'Oferta 2': row['Oferta 2'],
+        'Promocional': row['Promocional'],
+        'Promocional 2': row['Promocional 2'],
+        'Disparado?': row['status'] === 'Realizado' ? 'Sim' : 'Não', // Infer or use if column existed
+        'Base Total': row['Base Total'],
+        'Base Acionável': row['Base Acionável'],
+        '% Otimização de base': row['% Otimização de base'],
+        'Base Enviada': row['Base Total'], // Fallback or mapping?
+        'Custo Unitário Oferta': row['Custo Unitário Oferta'],
+        'Custo Total da Oferta': row['Custo Total da Oferta'],
+        'Custo unitário do canal': row['Custo unitário do canal'],
+        'Custo total canal': row['Custo total canal'],
+        'Custo Total Campanha': row['Custo Total Campanha'],
         // Rates
-        'Taxa de Entrega': row.taxa_entrega,
-        'Taxa de Abertura': row.taxa_abertura,
-        'Taxa de Clique': row.taxa_clique,
-        'Taxa de Proposta': row.taxa_proposta,
-        'Taxa de Aprovação': row.taxa_aprovacao,
-        'Taxa de Finalização': row.taxa_finalizacao,
-        'Taxa de Conversão': row.taxa_conversao,
+        'Taxa de Entrega': row['Taxa de Entrega'],
+        'Taxa de Abertura': row['Taxa de Abertura'],
+        'Taxa de Clique': row['Taxa de Clique'],
+        'Taxa de Proposta': row['Taxa de Proposta'],
+        'Taxa de Aprovação': row['Taxa de Aprovação'],
+        'Taxa de Finalização': row['Taxa de Finalização'],
+        'Taxa de Conversão': row['Taxa de Conversão'],
         // KPIs
-        'Propostas': row.propostas,
-        'Aprovados': row.aprovados,
-        'Cartões Gerados': row.cartoes_gerados,
-        'CAC': row.cac,
+        'Propostas': row['Propostas'],
+        'Aprovados': row['Aprovados'],
+        'Cartões Gerados': row['Cartões Gerados'],
+        'CAC': row['CAC'],
     };
 
     return {
-        id: row.activity_id,
-        dataDisparo: new Date(row.data_disparo),
-        canal: row.canal,
-        bu: row.bu,
-        segmento: row.segmento,
-        parceiro: row.parceiro,
-        jornada: row.jornada,
-        ordemDisparo: Number(row.ordem_disparo) || undefined,
-        oferta: row.oferta,
-        promocional: row.promocional,
-        safraKey: row.safra, // Ensure this matches logic? typically YYYY-MM
+        id: row['Activity name / Taxonomia'] || row.id,
+        dataDisparo: new Date(row['Data de Disparo']),
+        canal: row['Canal'],
+        bu: row['BU'],
+        segmento: row['Segmento'],
+        parceiro: row['Parceiro'],
+        jornada: row['jornada'],
+        ordemDisparo: Number(row['Ordem de disparo']) || undefined,
+        oferta: row['Oferta'],
+        promocional: row['Promocional'],
+        safraKey: row['Safra'],
         kpis: {
-            baseEnviada: row.base_enviada,
-            baseEntregue: null,
-            taxaEntrega: row.taxa_entrega,
-            propostas: row.propostas,
-            taxaPropostas: row.taxa_proposta,
-            aprovados: row.aprovados,
-            taxaAprovacao: row.taxa_aprovacao,
-            emissoes: row.emissoes,
-            taxaFinalizacao: row.taxa_finalizacao,
-            taxaConversao: row.taxa_conversao,
-            taxaAbertura: row.taxa_abertura,
-            cartoes: row.cartoes_gerados,
-            cac: row.cac,
-            custoTotal: row.custo_total
+            baseEnviada: row['Base Total'],
+            baseEntregue: row['Base Acionável'],
+            taxaEntrega: row['Taxa de Entrega'],
+            propostas: row['Propostas'],
+            taxaPropostas: row['Taxa de Proposta'],
+            aprovados: row['Aprovados'],
+            taxaAprovacao: row['Taxa de Aprovação'],
+            emissoes: row['Cartões Gerados'],
+            taxaFinalizacao: row['Taxa de Finalização'],
+            taxaConversao: row['Taxa de Conversão'],
+            taxaAbertura: row['Taxa de Abertura'],
+            cartoes: row['Cartões Gerados'],
+            cac: row['CAC'],
+            custoTotal: row['Custo Total Campanha']
         },
         raw
     };
@@ -89,12 +90,13 @@ const mapSqlToActivity = (row: any): Activity => {
 export const dataService = {
     async fetchActivities(): Promise<Activity[]> {
         // Order by date desc
+        // Use quotes to support columns with spaces
         const { data, error } = await supabase
             .from('activities')
             .select('*')
             //.eq('filename', 'migration_v3_full') // Optional: constrain to latest? Or just take all?
             // User might want to append new data later.
-            .order('data_disparo', { ascending: false });
+            .order('"Data de Disparo"', { ascending: false });
 
         if (error) throw error;
         return (data || []).map(mapSqlToActivity);
