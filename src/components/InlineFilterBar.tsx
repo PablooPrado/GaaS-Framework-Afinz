@@ -116,7 +116,14 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
                     </div>
                     <div className="max-h-64 overflow-y-auto space-y-1 custom-scrollbar">
                         {items.map(item => (
-                            <label key={item} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-slate-800 rounded-lg transition group/item">
+                            <label
+                                key={item}
+                                onClick={(e) => {
+                                    e.preventDefault(); // Prevent double toggling if label triggers input (though no input here)
+                                    toggleItem(field, item);
+                                }}
+                                className="flex items-center gap-3 cursor-pointer p-2 hover:bg-slate-800 rounded-lg transition group/item"
+                            >
                                 <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${(filters[field] as string[]).includes(item)
                                     ? 'bg-slate-600 border-slate-500' // Minimalist check
                                     : 'border-slate-600 group-hover/item:border-slate-500'

@@ -14,7 +14,10 @@ interface KPIOverviewProps {
 export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousActivities = [], b2cData = [] }) => {
     const { viewSettings } = useAppStore();
     const showB2C = viewSettings.filtrosGlobais.bu.length === 0 || viewSettings.filtrosGlobais.bu.includes('B2C');
-    const showCRM = viewSettings.filtrosGlobais.bu.length === 0 || viewSettings.filtrosGlobais.bu.includes('CRM'); // Assuming 'CRM' or standard BU
+    const showCRM = viewSettings.filtrosGlobais.bu.length === 0 ||
+        viewSettings.filtrosGlobais.bu.includes('CRM') ||
+        viewSettings.filtrosGlobais.bu.includes('Plurix') ||
+        viewSettings.filtrosGlobais.bu.includes('B2B2C');
 
     const calculateMetrics = (acts: Activity[], b2c: B2CDataRow[] = []) => {
         // CRM Metrics (from Activities)
@@ -24,11 +27,17 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
         let aprovados = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.aprovados || 0), 0) : 0;
         let emissoes = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.emissoes || 0), 0) : 0;
         let custoTotal = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.custoTotal || 0), 0) : 0;
-        let cartoes = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.cartoes || 0), 0);
+        let cartoes = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.cartoes || 0), 0) : 0;
 
         // B2C Metrics (from b2cData)
-        // B2C Metrics (from b2cData)
-        if (showB2C && b2c.length > 0) {
+        // Only include B2C data if we are NOT filtering by specific CRM fields (Segment, Partner, Journey, Channel)
+        // because B2C data is pre-aggregated and doesn't support these filters.
+        const hasGranularFilters = viewSettings.filtrosGlobais.segmentos.length > 0 ||
+            viewSettings.filtrosGlobais.parceiros.length > 0 ||
+            viewSettings.filtrosGlobais.jornadas.length > 0 ||
+            viewSettings.filtrosGlobais.canais.length > 0;
+
+        if (showB2C && b2c.length > 0 && !hasGranularFilters) {
             // CRM metrics are already calculated above. 
             // We ADD B2C metrics to them (Combined View) or if CRM filtered out, it starts at 0.
 

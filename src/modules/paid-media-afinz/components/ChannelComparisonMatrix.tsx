@@ -81,7 +81,6 @@ export const ChannelComparisonMatrix: React.FC<ChannelComparisonMatrixProps> = (
         }
 
         return (
-        return (
             <tr className="border-b border-slate-100 last:border-0 hover:bg-orange-50/50 transition-colors group">
                 <td className="py-4 px-4 font-medium text-slate-600 bg-white group-hover:bg-orange-50/50">{label}</td>
 
@@ -112,7 +111,6 @@ export const ChannelComparisonMatrix: React.FC<ChannelComparisonMatrixProps> = (
     const fmtCPA = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }).format(v);
     const fmtNum = (v: number) => new Intl.NumberFormat('pt-BR').format(v);
 
-    return (
     return (
         <div className="bg-white rounded-xl border border-orange-100 shadow-sm overflow-hidden">
             <div className="p-6 pb-4 border-b border-orange-100 flex justify-between items-center bg-orange-50/30">

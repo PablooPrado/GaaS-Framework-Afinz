@@ -27,6 +27,8 @@ export const GoalsManager: React.FC = () => {
     const [formState, setFormState] = useState({
         cartoes_meta: currentGoal.cartoes_meta || 0,
         b2c_meta: currentGoal.b2c_meta || 0,
+        plurix_meta: currentGoal.plurix_meta || 0,
+        b2b2c_meta: currentGoal.b2b2c_meta || 0,
         cac_max: currentGoal.cac_max || 0
     });
 
@@ -36,6 +38,8 @@ export const GoalsManager: React.FC = () => {
         setFormState({
             cartoes_meta: goal?.cartoes_meta || 0,
             b2c_meta: goal?.b2c_meta || 0,
+            plurix_meta: goal?.plurix_meta || 0,
+            b2b2c_meta: goal?.b2b2c_meta || 0,
             cac_max: goal?.cac_max || 0
         });
     }, [currentMonthKey, goals]);
@@ -49,6 +53,8 @@ export const GoalsManager: React.FC = () => {
                 mes: currentMonthKey,
                 cartoes_meta: Number(formState.cartoes_meta),
                 b2c_meta: Number(formState.b2c_meta),
+                plurix_meta: Number(formState.plurix_meta),
+                b2b2c_meta: Number(formState.b2b2c_meta),
                 cac_max: Number(formState.cac_max)
             });
             setGoals(newGoals);
@@ -146,17 +152,70 @@ export const GoalsManager: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="mt-6 flex justify-end">
-                    <button
-                        onClick={handleSave}
-                        disabled={loading}
-                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg font-bold transition-all shadow-lg shadow-emerald-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <Save size={16} />
-                        {loading ? 'Salvando...' : 'Salvar Metas'}
-                    </button>
+                {/* Meta Plurix */}
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                        Meta Plurix
+                        <span className="bg-purple-500/20 text-purple-400 text-[9px] px-1.5 py-0.5 rounded">BU</span>
+                    </label>
+                    <div className="relative group">
+                        <Calculator size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
+                        <input
+                            type="number"
+                            value={formState.plurix_meta || 0}
+                            onChange={e => setFormState({ ...formState, plurix_meta: Number(e.target.value) })}
+                            className="w-full bg-slate-950/50 border border-slate-700 rounded-lg py-2 pl-9 pr-4 text-white font-mono focus:outline-none focus:border-purple-500 transition-all placeholder-slate-600"
+                            placeholder="0"
+                        />
+                    </div>
+                </div>
+
+                {/* Meta B2B2C */}
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                        Meta B2B2C
+                        <span className="bg-emerald-500/20 text-emerald-400 text-[9px] px-1.5 py-0.5 rounded">BU</span>
+                    </label>
+                    <div className="relative group">
+                        <Calculator size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+                        <input
+                            type="number"
+                            value={formState.b2b2c_meta || 0}
+                            onChange={e => setFormState({ ...formState, b2b2c_meta: Number(e.target.value) })}
+                            className="w-full bg-slate-950/50 border border-slate-700 rounded-lg py-2 pl-9 pr-4 text-white font-mono focus:outline-none focus:border-emerald-500 transition-all placeholder-slate-600"
+                            placeholder="0"
+                        />
+                    </div>
+                </div>
+
+                {/* CAC Max */}
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase">CAC Máximo (R$)</label>
+                    <div className="relative group">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-amber-400 transition-colors text-xs font-bold">R$</span>
+                        <input
+                            type="number"
+                            value={formState.cac_max}
+                            onChange={e => setFormState({ ...formState, cac_max: Number(e.target.value) })}
+                            className="w-full bg-slate-950/50 border border-slate-700 rounded-lg py-2 pl-9 pr-4 text-white font-mono focus:outline-none focus:border-amber-500 transition-all placeholder-slate-600"
+                            placeholder="0.00"
+                            step="0.01"
+                        />
+                    </div>
                 </div>
             </div>
+
+            <div className="mt-6 flex justify-end">
+                <button
+                    onClick={handleSave}
+                    disabled={loading}
+                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg font-bold transition-all shadow-lg shadow-emerald-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <Save size={16} />
+                    {loading ? 'Salvando...' : 'Salvar Metas'}
+                </button>
+            </div>
         </div>
+
     );
 };

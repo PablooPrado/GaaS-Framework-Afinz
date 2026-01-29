@@ -4,7 +4,7 @@ import { Mail, CheckCircle, AlertCircle, Loader2, ArrowRight, ShieldCheck } from
 import afinzIconBlue from '../assets/afinz-icon-blue.png';
 
 export const LoginView: React.FC = () => {
-    const { signInWithEmail, loading } = useAuth();
+    const { signInWithEmail, signInAsDev, loading } = useAuth();
     const [emailInput, setEmailInput] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [sent, setSent] = useState(false);
@@ -103,6 +103,18 @@ export const LoginView: React.FC = () => {
                             </button>
                         </form>
                     )}
+
+                    {/* Developer Login Bypass */}
+                    <div className="mt-6 pt-6 border-t border-white/5">
+                        <button
+                            type="button"
+                            onClick={() => signInAsDev()}
+                            className="text-xs font-bold text-slate-500 hover:text-emerald-400 transition-colors uppercase tracking-widest flex items-center justify-center gap-2 mx-auto"
+                        >
+                            <ShieldCheck size={14} />
+                            Entrar como Desenvolvedor (Bypass)
+                        </button>
+                    </div>
 
                     <p className="mt-8 text-xs text-slate-500 flex items-center justify-center gap-1.5 opacity-60">
                         <ShieldCheck size={12} />

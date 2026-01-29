@@ -51,8 +51,20 @@ function App() {
     bu: selectedBUs
   }), [storeFilters, startDate, endDate, selectedBUs]);
 
+  // Optimize: Only run heavy filter logic if NOT in Framework View or other independent views
+  const isFrameworkView = activeTab === 'framework';
+  const isMidiaPaga = activeTab === 'midia-paga';
+  const shouldRunFilters = !isFrameworkView && !isMidiaPaga;
+
   // These hooks now use the new FilterState structure
-  const { filteredData: advancedFilteredData, availableCanais, availableJornadas, availableSegmentos, availableParceiros, countByCanal, countByJornada, countBySegmento, countByParceiro } = useAdvancedFilters(data, filters);
+  // Conditional execution dummy for hooks to obey Rules of Hooks? No, hooks must run.
+  // We can pass empty data or memoize the result based on activeTab.
+
+  const { filteredData: advancedFilteredData, availableCanais, availableJornadas, availableSegmentos, availableParceiros, countByCanal, countByJornada, countBySegmento, countByParceiro } = useAdvancedFilters(
+    shouldRunFilters ? data : {}, // Pass empty object if not needed to skip processing
+    filters
+  );
+
   const { filteredData } = useCalendarFilter(advancedFilteredData, filters);
 
   // Calculate previous period filters for trend analysis
@@ -80,9 +92,15 @@ function App() {
     dataFim: ''
   }), [filters]);
 
-  const { filteredData: launchPlannerData } = useAdvancedFilters(data, launchPlannerFilters);
+  const { filteredData: launchPlannerData } = useAdvancedFilters(
+    activeTab === 'launch' ? data : {}, // Only process for Launch Planner
+    launchPlannerFilters
+  );
 
-  const { filteredData: previousFilteredData } = useCalendarFilter(advancedFilteredData, previousFilters);
+  const { filteredData: previousFilteredData } = useCalendarFilter(
+    shouldRunFilters ? advancedFilteredData : {},
+    previousFilters
+  );
 
   const resultados = useResultadosMetrics(filteredData);
 

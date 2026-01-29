@@ -55,21 +55,34 @@ export const LaunchPlannerKPIs: React.FC<LaunchPlannerKPIsProps> = ({ activities
         // Determine context: B2C (Total) or CRM (Launch Planner only)
         // If B2C is selected (or nothing selected, defaulting to B2C view), use Total.
         // If CRM is explicitly selected, use CRM.
-        const showTotal = !isBUSelected('CRM') && !isBUSelected('B2B2C') && !isBUSelected('Plurix');
+        const showTotal = !isBUSelected('CRM' as any) && !isBUSelected('B2B2C') && !isBUSelected('Plurix');
 
         let totalCards = 0;
         let goalCards = 0;
+        let label = 'Meta';
         const currentGoal = goals.find(g => g.mes === currentMonth);
 
-        if (showTotal) {
+        if (isBUSelected('Plurix')) {
+            // Plurix Only
+            totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
+            goalCards = currentGoal?.plurix_meta || 0;
+            label = 'Meta (Plurix)';
+        } else if (isBUSelected('B2B2C')) {
+            // B2B2C Only
+            totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
+            goalCards = currentGoal?.b2b2c_meta || 0;
+            label = 'Meta (B2B2C)';
+        } else if (showTotal) {
             // Use Total B2C Data from Daily Analysis
             totalCards = dailyAnalysis.reduce((sum, d) => sum + d.emissoes_b2c_total, 0);
             goalCards = currentGoal?.b2c_meta || 0;
+            label = 'Meta (Total)';
         } else {
-            // CRM Only
+            // CRM Only (Launch Planner specific)
             // Fallback to activities sum if simpler, or use dailyAnalysis.emissoes_crm
             totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
             goalCards = currentGoal?.cartoes_meta || 0;
+            label = 'Meta (CRM)';
         }
 
         const goalProgress = goalCards > 0 ? (totalCards / goalCards) * 100 : 0;
@@ -78,7 +91,7 @@ export const LaunchPlannerKPIs: React.FC<LaunchPlannerKPIsProps> = ({ activities
             totalCards,
             goalCards,
             goalProgress,
-            label: showTotal ? 'Meta (Total)' : 'Meta (CRM)'
+            label
         };
     }, [activities, goals, currentMonth, dailyAnalysis, isBUSelected]);
 

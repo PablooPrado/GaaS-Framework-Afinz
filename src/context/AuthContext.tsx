@@ -8,6 +8,7 @@ interface AuthContextType {
     loading: boolean;
     signInWithEmail: (email: string) => Promise<void>;
     signOut: () => Promise<void>;
+    signInAsDev: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -48,10 +49,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const signOut = async () => {
         await supabase.auth.signOut();
+        // Clear dev user if any
+        if (user?.id === 'dev-user') {
+            setUser(null);
+            setSession(null);
+        }
+    };
+
+    const signInAsDev = async () => {
+        // Mock session for development
+        const devUser = {
+            id: 'dev-user',
+            aud: 'authenticated',
+            role: 'authenticated',
+            email: 'dev@local.host',
+            email_confirmed_at: new Date().toISOString(),
+            phone: '',
+            confirmed_at: new Date().toISOString(),
+            last_sign_in_at: new Date().toISOString(),
+            app_metadata: { provider: 'email', providers: ['email'] },
+            user_metadata: {},
+            identities: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        } as User;
+
+        const devSession = {
+            access_token: 'mock-token',
+            token_type: 'bearer',
+            expires_in: 3600,
+            refresh_token: 'mock-refresh',
+            user: devUser,
+        } as Session;
+
+        setUser(devUser);
+        setSession(devSession);
     };
 
     return (
-        <AuthContext.Provider value={{ user, session, loading, signInWithEmail, signOut }}>
+        <AuthContext.Provider value={{ user, session, loading, signInWithEmail, signOut, signInAsDev }}>
             {children}
         </AuthContext.Provider>
     );

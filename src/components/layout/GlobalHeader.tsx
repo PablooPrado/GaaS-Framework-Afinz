@@ -119,6 +119,8 @@ export const GlobalHeader: React.FC = () => {
                     </div>
                 </div>
 
+
+
                 {/* Search */}
                 <div className="hidden md:flex items-center bg-white/5 border border-white/10 rounded-full px-4 py-1.5 w-64 transition-all focus-within:w-80 focus-within:bg-white/10 focus-within:border-blue-500/50">
                     <Search size={16} className="text-slate-500 mr-2" />

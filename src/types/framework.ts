@@ -80,6 +80,8 @@ export interface Goal {
   b2c_meta?: number;     // Meta B2C Total (CRM + Direct)
   aprovacoes_meta?: number;
   cac_max?: number;
+  plurix_meta?: number;
+  b2b2c_meta?: number;
 }
 
 export interface JournalEntry {
