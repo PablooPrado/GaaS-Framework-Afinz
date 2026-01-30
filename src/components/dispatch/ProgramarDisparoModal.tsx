@@ -34,7 +34,7 @@ interface ProgramarDisparoModalProps {
 
 /**
  * Modal para criar/editar atividades (GaaS) Unificado
- * Redesign Minimalista "Warm Gray"
+ * Redesign Dark Mode Integrado
  */
 export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
     isOpen,
@@ -403,37 +403,37 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm transition-opacity duration-300" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300" onClick={onClose} />
 
             {/* Modal Container */}
-            <div className="relative w-full max-w-5xl h-[95vh] md:h-[90vh] flex flex-col bg-[#FAFAF9] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-stone-200">
+            <div className="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-[#0f172a] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-700/50 ring-1 ring-white/5">
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-5 bg-white border-b border-stone-100 shrink-0">
+                <div className="flex items-center justify-between px-6 py-5 bg-[#0f172a] border-b border-slate-800 shrink-0">
                     <div>
-                        <h2 className="text-xl font-bold text-stone-900 tracking-tight flex items-center gap-2">
-                            {editingActivity ? <CheckCircle2 className="text-amber-500" size={20} /> : <Calendar className="text-amber-500" size={20} />}
+                        <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                            {editingActivity ? <CheckCircle2 className="text-blue-500" size={20} /> : <Calendar className="text-blue-500" size={20} />}
                             {editingActivity ? 'Editar Disparo' : 'Novo Disparo'}
                         </h2>
-                        <p className="text-xs text-stone-500 mt-1 ml-7">
+                        <p className="text-xs text-slate-400 mt-1 ml-7">
                             {editingActivity ? 'Atualize as informações do disparo' : 'Preencha os dados abaixo para programar'}
                         </p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-50 rounded-full transition-colors"
+                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors"
                     >
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Body - Scrollable */}
-                <div id="modal-content" className="flex-1 overflow-y-auto p-6 md:p-8 scroll-smooth">
+                <div id="modal-content" className="flex-1 overflow-y-auto p-5 md:p-6 scroll-smooth scrollbar-thin scrollbar-track-slate-900 scrollbar-thumb-slate-700">
 
                     {errors.form && (
-                        <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                        <div className="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-xl text-red-300 text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
                             <AlertCircle size={18} />
                             {errors.form}
                         </div>
@@ -471,7 +471,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                             value={formData.activityName}
                                             onChange={(e) => handleChange('activityName', e.target.value)}
                                             placeholder="campanha_exemplo_2026"
-                                            className="font-mono text-xs bg-stone-50"
+                                            className="font-mono text-xs bg-slate-950/30 border-slate-800 text-slate-300"
                                             error={errors.activityName}
                                         />
                                     </div>
@@ -546,13 +546,13 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                     {/* Readonly Fields */}
                                     <div className="col-span-1">
                                         <Label label="Safra (Auto)" />
-                                        <div className="px-3 py-2.5 bg-stone-100 border border-stone-200 rounded-lg text-sm text-stone-500 font-medium">
+                                        <div className="px-3 py-2.5 bg-slate-900/50 border border-slate-800 rounded-lg text-sm text-slate-500 font-medium">
                                             {formData.safra || '-'}
                                         </div>
                                     </div>
                                     <div className="col-span-1">
                                         <Label label="Ordem (Auto)" />
-                                        <div className="px-3 py-2.5 bg-stone-100 border border-stone-200 rounded-lg text-sm text-stone-500 font-medium">
+                                        <div className="px-3 py-2.5 bg-slate-900/50 border border-slate-800 rounded-lg text-sm text-slate-500 font-medium">
                                             {formData.ordemDisparo || '-'}
                                         </div>
                                     </div>
@@ -592,16 +592,16 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                         <datalist id="promocionais-list">{historicalOptions.promocionais.map(p => <option key={p} value={p} />)}</datalist>
                                     </div>
 
-                                    {/* Secondary Offers (Collapsed look but actually visible for simplicity, or we can use small gap) */}
-                                    <div className="col-span-2 pt-2 border-t border-stone-100 grid grid-cols-2 gap-4">
+                                    {/* Secondary Offers */}
+                                    <div className="col-span-2 pt-4 border-t border-slate-800 grid grid-cols-2 gap-4">
                                         <div className="col-span-1">
                                             <Label label="Oferta Secundária" tooltip="Teste A/B" />
-                                            <Input list="ofertas2-list" value={formData.oferta2} onChange={(e) => handleChange('oferta2', e.target.value)} placeholder="Opcional" className="bg-stone-50" />
+                                            <Input list="ofertas2-list" value={formData.oferta2} onChange={(e) => handleChange('oferta2', e.target.value)} placeholder="Opcional" className="bg-slate-900/30" />
                                             <datalist id="ofertas2-list">{historicalOptions.ofertas2.map(o => <option key={o} value={o} />)}</datalist>
                                         </div>
                                         <div className="col-span-1">
                                             <Label label="Promo Secundário" />
-                                            <Input list="promocionais2-list" value={formData.promocional2} onChange={(e) => handleChange('promocional2', e.target.value)} placeholder="Opcional" className="bg-stone-50" />
+                                            <Input list="promocionais2-list" value={formData.promocional2} onChange={(e) => handleChange('promocional2', e.target.value)} placeholder="Opcional" className="bg-slate-900/30" />
                                             <datalist id="promocionais2-list">{historicalOptions.promocionais2.map(p => <option key={p} value={p} />)}</datalist>
                                         </div>
                                     </div>
@@ -609,7 +609,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                             </SectionCard>
 
                             {/* Card 4: Investimento */}
-                            <SectionCard title="Investimento & Volume" icon={<DollarSign size={16} />} headerClassName="text-emerald-700 bg-emerald-50/50">
+                            <SectionCard title="Investimento & Volume" icon={<DollarSign size={16} />} headerClassName="text-emerald-400 border-emerald-500/20">
 
                                 <div className="mb-4">
                                     <Label label="Volume da Base" tooltip="Quantidade de clientes" />
@@ -618,22 +618,22 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                         value={formData.baseVolume}
                                         onChange={(e) => handleChange('baseVolume', e.target.value)}
                                         placeholder="Ex: 50000"
-                                        className="text-lg font-medium text-emerald-900 border-emerald-200 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                        className="text-lg font-medium text-emerald-400 border-emerald-500/30 focus:border-emerald-500 bg-emerald-950/20"
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-3 bg-emerald-50/30 p-3 rounded-lg border border-emerald-100">
+                                <div className="grid grid-cols-3 gap-3 bg-emerald-950/20 p-3 rounded-lg border border-emerald-500/20">
                                     <div>
                                         <Label label="Custo U. Oferta" />
-                                        <Input type="number" step="0.01" value={formData.custoUnitarioOferta} onChange={(e) => handleChange('custoUnitarioOferta', e.target.value)} className="text-xs h-8" placeholder="0.00" />
+                                        <Input type="number" step="0.01" value={formData.custoUnitarioOferta} onChange={(e) => handleChange('custoUnitarioOferta', e.target.value)} className="text-xs h-8 bg-slate-900/80" placeholder="0.00" />
                                     </div>
                                     <div>
                                         <Label label="Custo U. Canal" />
-                                        <Input type="number" step="0.001" value={formData.custoUnitarioCanal} onChange={(e) => handleChange('custoUnitarioCanal', e.target.value)} className="text-xs h-8" placeholder="0.000" />
+                                        <Input type="number" step="0.001" value={formData.custoUnitarioCanal} onChange={(e) => handleChange('custoUnitarioCanal', e.target.value)} className="text-xs h-8 bg-slate-900/80" placeholder="0.000" />
                                     </div>
                                     <div>
                                         <Label label="Total Campanha" />
-                                        <div className="h-8 flex items-center px-2 bg-emerald-100/50 border border-emerald-200 rounded text-xs font-bold text-emerald-800">
+                                        <div className="h-8 flex items-center px-2 bg-emerald-500/10 border border-emerald-500/30 rounded text-xs font-bold text-emerald-400">
                                             R$ {Number(formData.custoTotalCampanha).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </div>
                                     </div>
@@ -641,8 +641,8 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                             </SectionCard>
 
                             {/* Card 5: AI Projections */}
-                            <div className="bg-indigo-50/30 p-5 rounded-xl border border-indigo-100 shadow-sm">
-                                <h3 className="text-sm font-bold text-indigo-700 flex items-center gap-2 mb-4 uppercase tracking-wide">
+                            <div className="bg-indigo-950/20 p-5 rounded-xl border border-indigo-500/20 shadow-sm">
+                                <h3 className="text-sm font-bold text-indigo-400 flex items-center gap-2 mb-4 uppercase tracking-wide">
                                     <TrendingUp size={16} />
                                     Projeção IA
                                 </h3>
@@ -659,12 +659,12 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 bg-white border-t border-stone-200 flex justify-between items-center shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.02)]">
+                <div className="px-6 py-4 bg-[#0f172a] border-t border-slate-800 flex justify-between items-center shrink-0 shadow-lg z-10">
                     <div>
                         {editingActivity && (
                             <button
                                 onClick={handleDelete}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                             >
                                 <Trash2 size={16} />
                                 <span className="hidden md:inline">Excluir Disparo</span>
@@ -675,21 +675,21 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                     <div className="flex items-center gap-3">
                         <button
                             onClick={onClose}
-                            className="px-5 py-2.5 text-stone-500 hover:text-stone-800 font-medium text-sm transition-colors"
+                            className="px-5 py-2.5 text-slate-400 hover:text-white font-medium text-sm transition-colors"
                         >
                             Cancelar
                         </button>
                         <button
                             onClick={() => handleSubmit('Rascunho')}
                             disabled={loading}
-                            className="px-5 py-2.5 bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 rounded-lg font-medium text-sm transition-all shadow-sm disabled:opacity-50"
+                            className="px-5 py-2.5 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 rounded-lg font-medium text-sm transition-all shadow-sm disabled:opacity-50"
                         >
                             {loading ? '...' : 'Salvar Rascunho'}
                         </button>
                         <button
                             onClick={() => handleSubmit('Scheduled')}
                             disabled={loading}
-                            className="px-8 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-sm shadow-lg shadow-amber-500/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none flex items-center gap-2"
+                            className="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm shadow-lg shadow-blue-500/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none flex items-center gap-2"
                         >
                             <CheckCircle2 size={16} />
                             {loading ? 'Processando...' : 'Agendar Disparo'}
@@ -705,42 +705,42 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
 // --- Helper Components ---
 
 const Label = ({ label, required, tooltip }: { label: string, required?: boolean, tooltip?: string }) => (
-    <label className="flex items-center gap-1.5 text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">
+    <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
         {label}
-        {required && <span className="text-amber-500">*</span>}
-        {tooltip && <span title={tooltip} className="text-stone-300 hover:text-stone-500 cursor-help transition-colors"><Info size={12} /></span>}
+        {required && <span className="text-blue-500">*</span>}
+        {tooltip && <span title={tooltip} className="text-slate-600 hover:text-slate-400 cursor-help transition-colors"><Info size={12} /></span>}
     </label>
 );
 
 const Input = ({ className = "", error, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { error?: string }) => (
     <div className="relative">
         <input
-            className={`w-full px-4 py-2.5 bg-white border rounded-lg text-sm text-stone-900 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-500/10 transition-all ${error ? 'border-red-400 focus:border-red-500 ring-2 ring-red-500/10' : 'border-stone-200 focus:border-amber-500'} ${className}`}
+            className={`w-full px-4 py-2.5 bg-slate-800/50 border rounded-lg text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all ${error ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-blue-500'} ${className}`}
             {...props}
         />
-        {error && <span className="absolute -bottom-4 left-0 text-[10px] text-red-500 font-medium animate-pulse">{error}</span>}
+        {error && <span className="absolute -bottom-4 left-0 text-[10px] text-red-400 font-medium animate-pulse">{error}</span>}
     </div>
 );
 
 const Select = ({ className = "", error, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { error?: string }) => (
     <div className="relative">
         <select
-            className={`w-full px-4 py-2.5 bg-white border rounded-lg text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500/10 transition-all appearance-none cursor-pointer ${error ? 'border-red-400 focus:border-red-500' : 'border-stone-200 focus:border-amber-500'} ${className}`}
+            className={`w-full px-4 py-2.5 bg-slate-800/50 border rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all appearance-none cursor-pointer ${error ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-blue-500'} ${className}`}
             {...props}
         >
             {children}
         </select>
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
             <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m1 1 4 4 4-4" /></svg>
         </div>
-        {error && <span className="absolute -bottom-4 left-0 text-[10px] text-red-500 font-medium">{error}</span>}
+        {error && <span className="absolute -bottom-4 left-0 text-[10px] text-red-400 font-medium">{error}</span>}
     </div>
 );
 
-const SectionCard = ({ title, icon, children, headerClassName = "text-stone-800" }: { title: string, icon: React.ReactNode, children: React.ReactNode, headerClassName?: string }) => (
-    <section className="bg-white p-6 rounded-xl shadow-sm border border-stone-100 flex flex-col gap-5 hover:shadow-md transition-shadow duration-300">
-        <div className={`flex items-center gap-2 pb-3 border-b border-stone-100 ${headerClassName}`}>
-            <div className="opacity-70">{icon}</div>
+const SectionCard = ({ title, icon, children, headerClassName = "text-slate-300" }: { title: string, icon: React.ReactNode, children: React.ReactNode, headerClassName?: string }) => (
+    <section className="bg-slate-800/40 p-5 rounded-xl border border-slate-700/50 flex flex-col gap-5 hover:border-slate-600/50 transition-colors duration-300">
+        <div className={`flex items-center gap-2 pb-3 border-b border-slate-700/50 ${headerClassName}`}>
+            <div className="opacity-70 text-slate-400">{icon}</div>
             <h3 className="text-sm font-bold uppercase tracking-wider">{title}</h3>
         </div>
         <div className="space-y-4">
@@ -750,19 +750,19 @@ const SectionCard = ({ title, icon, children, headerClassName = "text-stone-800"
 );
 
 const MetricCard = ({ label, value, prefix = "", suffix = "", isInt = false, confidence }: { label: string, value?: number, prefix?: string, suffix?: string, isInt?: boolean, confidence?: number }) => (
-    <div className="bg-white border border-indigo-100 rounded-lg p-3 shadow-sm flex flex-col items-center justify-center text-center">
-        <span className="text-[10px] uppercase font-bold text-indigo-300 mb-1">{label}</span>
-        <div className="text-lg font-bold text-indigo-900">
+    <div className="bg-slate-900/50 border border-indigo-500/10 rounded-lg p-3 shadow-sm flex flex-col items-center justify-center text-center">
+        <span className="text-[10px] uppercase font-bold text-indigo-400 mb-1">{label}</span>
+        <div className="text-lg font-bold text-indigo-200">
             {value !== undefined ? (
                 <>
-                    <span className="text-xs text-indigo-400 mr-0.5">{prefix}</span>
+                    <span className="text-xs text-indigo-500 mr-0.5">{prefix}</span>
                     {isInt ? Math.round(value).toLocaleString() : value.toFixed(2)}
-                    <span className="text-xs text-indigo-400 ml-0.5">{suffix}</span>
+                    <span className="text-xs text-indigo-500 ml-0.5">{suffix}</span>
                 </>
             ) : '-'}
         </div>
         {confidence && (
-            <div className="mt-1 px-1.5 py-0.5 bg-indigo-50 rounded text-[9px] font-bold text-indigo-500">
+            <div className="mt-1 px-1.5 py-0.5 bg-indigo-500/10 rounded text-[9px] font-bold text-indigo-400">
                 {confidence}% conf.
             </div>
         )}
