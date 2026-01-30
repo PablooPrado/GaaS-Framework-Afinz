@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Calendar, Tag, User, Info, Trash2, TrendingUp, AlertCircle } from 'lucide-react';
+import { ActivityFormSchema, ActivityFormInput } from '../../schemas/ActivityFormSchema';
+import { activityService } from '../../services/activityService';
+import { ActivityRow, ActivityStatus } from '../../types/activity';
+import { useAppStore } from '../../store/useAppStore';
 
 interface ProgramarDisparoModalProps {
     isOpen: boolean;

@@ -69,12 +69,34 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({
                 {/* List */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {filteredActivities.map((activity) => {
-                        // ... anomaly logic preserved ...
-                        const isAnomaly = false; // logic would be here
+                        const rawCartoes = String(activity.raw['Cartões Gerados'] || '').toLowerCase().trim();
+                        const isPending = rawCartoes.includes('aguardando') || rawCartoes.includes('confirmar');
+                        const rawDisparado = String(activity.raw['Disparado?'] || '').toLowerCase().trim();
+                        const isDisparado = ['sim', 's', 'yes', 'y', 'enviado', 'ok', 'true', '1'].includes(rawDisparado);
+                        const isNoSent = isDisparado && (activity.kpis.baseEnviada || 0) === 0;
+                        const showEditButton = onEdit && isNoSent;
 
                         return (
                             <div key={activity.id} className="bg-slate-800/50 border rounded-lg p-3 transition border-slate-700/50">
-                                {/* ... header logic preserved ... */}
+                                <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1">
+                                        <h3 className="text-sm font-bold text-slate-100 mb-1">{activity.id}</h3>
+                                        <div className="flex flex-wrap gap-2 text-xs">
+                                            <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded">{activity.bu}</span>
+                                            <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded">{activity.canal}</span>
+                                            {isPending && <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded">Pendente</span>}
+                                        </div>
+                                    </div>
+                                    {showEditButton && (
+                                        <button
+                                            onClick={() => onEdit(activity)}
+                                            className="p-1.5 hover:bg-slate-700 rounded transition text-slate-400 hover:text-blue-400"
+                                            title="Editar disparo"
+                                        >
+                                            <Edit2 size={14} />
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-2">
                                     <div className="bg-slate-900/50 p-2 rounded">
                                         <div className="text-[10px] text-slate-500 mb-0.5 flex items-center gap-1">
