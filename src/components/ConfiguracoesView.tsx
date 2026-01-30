@@ -58,15 +58,21 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
 
             // AUTO-SYNC: If framework, parse and sync immediately
             if (slot === 'framework') {
+                console.log('🔄 Iniciando parse do CSV...');
                 const data = await processCSV(file);
+                console.log(`✅ CSV parseado: ${data.length} atividades`);
+
+                console.log('📡 Iniciando sincronização com Supabase...');
                 await activityService.syncFrameworkActivities(data);
+                console.log('✅ Sincronização concluída!');
+
                 setMsg({ type: 'success', text: 'Upload e Sincronização com Banco de Dados realizados!' });
             } else {
                 setMsg({ type: 'success', text: 'Upload realizado com sucesso!' });
             }
 
         } catch (e: any) {
-            console.error(e);
+            console.error('❌ Erro durante upload/sincronização:', e);
             setMsg({ type: 'error', text: 'Falha: ' + e.message });
         } finally {
             setUploading(false);
@@ -102,8 +108,13 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
             // 2. Parse based on slot
             if (slot === 'framework') {
                 // Parse AND Sync to DB
+                console.log('🔄 Restaurando Framework CSV...');
                 const data = await processCSV(file);
+                console.log(`✅ CSV parseado: ${data.length} atividades`);
+
+                console.log('📡 Sincronizando com Supabase...');
                 await activityService.syncFrameworkActivities(data);
+                console.log('✅ Sincronização concluída!');
             } else if (slot === 'b2c') {
                 const { data } = await parseB2CCSV(file);
                 setB2CData(data);
@@ -114,7 +125,7 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
 
             setMsg({ type: 'success', text: 'Dados restaurados e sincronizados!' });
         } catch (e: any) {
-            console.error(e);
+            console.error('❌ Erro ao restaurar:', e);
             setMsg({ type: 'error', text: 'Erro ao restaurar: ' + e.message });
         } finally {
             setRestoring(false);
