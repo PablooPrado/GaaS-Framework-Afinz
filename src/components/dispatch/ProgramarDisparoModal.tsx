@@ -436,7 +436,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-slate-800 rounded-xl shadow-2xl w-full max-w-7xl m-4 border border-slate-700">
+            <div className="relative bg-slate-800 rounded-xl shadow-2xl w-full max-w-6xl m-4 border border-slate-700">
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-slate-700">
@@ -454,7 +454,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                     </div>
                 )}
 
-                <div id="modal-content" className="p-6 grid grid-cols-1 md:grid-cols-4 gap-5 max-h-[80vh] overflow-y-auto">
+                <div id="modal-content" className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 max-h-[80vh] overflow-y-auto">
                     {/* Column 1: Identificação */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">
