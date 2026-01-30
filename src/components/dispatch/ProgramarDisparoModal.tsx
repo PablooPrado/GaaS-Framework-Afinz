@@ -18,6 +18,11 @@ import {
     calcularCustoTotalCampanha,
     calcularCACPrevisto
 } from '../../constants/frameworkFields';
+import {
+    calculateProjections,
+    ProjectionResult,
+    suggestFieldsBasedOnHistory
+} from '../../utils/intelligentSuggestions';
 
 interface ProgramarDisparoModalProps {
     isOpen: boolean;
@@ -124,6 +129,10 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
     });
 
     const [selectedSegmento, setSelectedSegmento] = useState(activeSegmento);
+
+    // Estado para Engines de IA
+    const [projections, setProjections] = useState<Record<string, ProjectionResult>>({});
+    const [aiFilledFields, setAiFilledFields] = useState<Set<string>>(new Set());
 
     // Preencher form se editando
     useEffect(() => {
@@ -268,6 +277,29 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
             }));
         }
     }, [formData.baseVolume, formData.custoUnitarioOferta, formData.custoUnitarioCanal]);
+
+    // PROJEÇÕES IA: Calcular quando campos-chave mudam
+    useEffect(() => {
+        if (formData.bu && selectedSegmento && activities.length > 0 && !editingActivity) {
+            try {
+                const projectionInput = {
+                    bu: formData.bu,
+                    segmento: selectedSegmento,
+                    perfilCredito: formData.perfilCredito,
+                    canal: formData.canal,
+                    baseVolume: Number(formData.baseVolume) || undefined
+                };
+
+                const results = calculateProjections(activities, projectionInput);
+                setProjections(results);
+            } catch (error) {
+                console.error('Erro ao calcular projeções:', error);
+                setProjections({});
+            }
+        } else {
+            setProjections({});
+        }
+    }, [formData.bu, selectedSegmento, formData.perfilCredito, formData.canal, formData.baseVolume, activities, editingActivity]);
 
     const handleChange = (field: keyof ActivityFormInput, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -801,82 +833,152 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                             <TrendingUp size={14} /> Projeção <span title="Engine de IA que busca disparos similares (BU + Segmento + Perfil Crédito + Canal) nos últimos 90 dias e projeta métricas com base em médias/medianas ponderadas por volume e decaimento temporal"><Info size={14} className="text-indigo-400/50 cursor-help" /></span>
                         </h3>
 
-                        <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-4 space-y-3">
-                            <div className="flex items-center justify-between">
-                                <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-2">
-                                    Analytics Engine <span title="Motor científico que analisa o desempenho das jornadas passadas"><Info size={10} className="text-indigo-500/50" /></span>
-                                </h4>
-                                <div className="text-[8px] bg-slate-950 text-slate-500 px-1.5 py-0.5 rounded-full border border-slate-800 font-mono">
-                                    GAAS v2.4
-                                </div>
-                            </div>
-
-                            {!formData.jornada ? (
-                                <div className="py-8 text-center space-y-2">
+                        <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-3 space-y-2.5">
+                            {Object.keys(projections).length === 0 ? (
+                                <div className="py-6 text-center space-y-2">
                                     <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center mx-auto opacity-50">
                                         <TrendingUp size={14} className="text-slate-600" />
                                     </div>
                                     <p className="text-[10px] text-slate-500 italic px-4 leading-relaxed">
-                                        Aguardando a definição de uma **Jornada** para gerar sugestões preditivas...
+                                        Preencha **BU** e **Segmento** para gerar projeções baseadas em dados históricos...
                                     </p>
                                 </div>
                             ) : (
-                                <div className="space-y-3">
-                                    {historicalOptions.jornadas.filter(j =>
-                                        formData.jornada && j.toLowerCase().includes(formData.jornada.toLowerCase())
-                                    ).slice(0, 2).map(match => {
-                                        const matches = activities.filter(a => a.jornada === match);
-                                        const historicalMatch = matches[0];
-                                        if (!historicalMatch) return null;
+                                <>
+                                    {/* Header de info do match */}
+                                    <div className="flex items-center justify-between pb-2 border-b border-indigo-500/20">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${projections.taxaConversao?.method === 'exact' ? 'bg-emerald-500' :
+                                                    projections.taxaConversao?.method === 'partial' ? 'bg-yellow-500' :
+                                                        'bg-orange-500'
+                                                }`} />
+                                            <span className="text-[9px] text-slate-400 font-bold uppercase">
+                                                {projections.taxaConversao?.method === 'exact' && '✓ Match Exato (100%)'}
+                                                {projections.taxaConversao?.method === 'partial' && '≈ Match Parcial (70%)'}
+                                                {projections.taxaConversao?.method === 'fallback' && '~ Fallback (50%)'}
+                                            </span>
+                                        </div>
+                                        <span className="text-[8px] text-slate-500 font-mono">
+                                            {projections.taxaConversao?.sampleSize || 0} disparos
+                                        </span>
+                                    </div>
 
-                                        const avgConv = matches.reduce((sum, a) => sum + (a.kpis?.taxaConversao || 0), 0) / matches.length;
-                                        const baseVol = Number(formData.baseVolume) || 0;
-                                        const predictedCards = Math.round(baseVol * (avgConv / 100));
-
-                                        return (
-                                            <button
-                                                key={match}
-                                                onClick={() => {
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        jornada: match,
-                                                        parceiro: historicalMatch.parceiro || prev.parceiro,
-                                                        perfilCredito: historicalMatch.raw?.['Perfil de Crédito'] || prev.perfilCredito,
-                                                        etapaAquisicao: historicalMatch.raw?.['Etapa de aquisição'] || prev.etapaAquisicao,
-                                                        produto: historicalMatch.raw?.['Produto'] || prev.produto,
-                                                        oferta: historicalMatch.oferta || prev.oferta,
-                                                        bu: historicalMatch.bu as any,
-                                                    }));
-                                                    setSelectedSegmento(historicalMatch.segmento);
-                                                }}
-                                                className="w-full text-left bg-indigo-500/5 hover:bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-xl transition-all group"
-                                            >
-                                                <div className="flex justify-between items-start mb-2.5">
-                                                    <span className="font-bold text-slate-200 text-xs truncate max-w-[140px] block">{match}</span>
-                                                    <span className="text-[8px] bg-indigo-500 text-white px-2 py-0.5 rounded-full font-bold uppercase">Aplicar</span>
+                                    {/* Grid de Métricas Projetadas */}
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {/* Taxa Conversão */}
+                                        {projections.taxaConversao && (
+                                            <div className="bg-black/20 border border-indigo-500/10 rounded-lg p-2">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="text-[9px] text-slate-400">Taxa Conv.</span>
+                                                    <span className="text-[8px] text-indigo-400 font-bold">
+                                                        {projections.taxaConversao.confidence}%
+                                                    </span>
                                                 </div>
-
-                                                <div className="bg-black/20 p-2.5 rounded-lg border border-white/5 mb-2.5">
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <span className="text-[9px] text-slate-500 uppercase font-bold tracking-tighter">Predição</span>
-                                                        <span className="text-[11px] text-emerald-400 font-bold">~{predictedCards} cartões</span>
-                                                    </div>
-                                                    <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
-                                                        <div className="bg-emerald-500 h-full" style={{ width: '65%' }} />
-                                                    </div>
+                                                <div className="text-lg font-bold text-indigo-300">
+                                                    {projections.taxaConversao.projectedValue.toFixed(2)}%
                                                 </div>
-
-                                                <div className="flex justify-between items-center text-[9px] text-slate-500 font-bold uppercase tracking-tight">
-                                                    <span>Histórico: {matches.length}x</span>
-                                                    <div className="flex items-center gap-1.5 text-indigo-400">
-                                                        <Info size={10} />
-                                                        <span>Confiança: {avgConv > 0.1 ? 'Alta' : 'Média'}</span>
-                                                    </div>
+                                                <div className="text-[8px] text-slate-500 mt-0.5">
+                                                    {projections.taxaConversao.confidenceInterval.min.toFixed(1)}% - {projections.taxaConversao.confidenceInterval.max.toFixed(1)}%
                                                 </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* CAC */}
+                                        {projections.cac && (
+                                            <div className="bg-black/20 border border-indigo-500/10 rounded-lg p-2">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="text-[9px] text-slate-400">CAC</span>
+                                                    <span className="text-[8px] text-indigo-400 font-bold">
+                                                        {projections.cac.confidence}%
+                                                    </span>
+                                                </div>
+                                                <div className="text-lg font-bold text-indigo-300">
+                                                    R$ {projections.cac.projectedValue.toFixed(2)}
+                                                </div>
+                                                <div className="text-[8px] text-slate-500 mt-0.5">
+                                                    R$ {projections.cac.confidenceInterval.min.toFixed(2)} - {projections.cac.confidenceInterval.max.toFixed(2)}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Cartões */}
+                                        {projections.cartoesGerados && (
+                                            <div className="bg-black/20 border border-indigo-500/10 rounded-lg p-2">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="text-[9px] text-slate-400">Cartões</span>
+                                                    <span className="text-[8px] text-indigo-400 font-bold">
+                                                        {projections.cartoesGerados.confidence}%
+                                                    </span>
+                                                </div>
+                                                <div className="text-lg font-bold text-indigo-300">
+                                                    {Math.round(projections.cartoesGerados.projectedValue).toLocaleString()}
+                                                </div>
+                                                <div className="text-[8px] text-slate-500 mt-0.5">
+                                                    {Math.round(projections.cartoesGerados.confidenceInterval.min).toLocaleString()} - {Math.round(projections.cartoesGerados.confidenceInterval.max).toLocaleString()}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Taxa Entrega */}
+                                        {projections.taxaEntrega && (
+                                            <div className="bg-black/20 border border-indigo-500/10 rounded-lg p-2">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="text-[9px] text-slate-400">Tx. Entrega</span>
+                                                    <span className="text-[8px] text-indigo-400 font-bold">
+                                                        {projections.taxaEntrega.confidence}%
+                                                    </span>
+                                                </div>
+                                                <div className="text-base font-bold text-indigo-300">
+                                                    {projections.taxaEntrega.projectedValue.toFixed(1)}%
+                                                </div>
+                                                <div className="text-[8px] text-slate-500 mt-0.5">
+                                                    {projections.taxaEntrega.confidenceInterval.min.toFixed(1)}% - {projections.taxaEntrega.confidenceInterval.max.toFixed(1)}%
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Taxa Abertura */}
+                                        {projections.taxaAbertura && (
+                                            <div className="bg-black/20 border border-indigo-500/10 rounded-lg p-2">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="text-[9px] text-slate-400">Tx. Abertura</span>
+                                                    <span className="text-[8px] text-indigo-400 font-bold">
+                                                        {projections.taxaAbertura.confidence}%
+                                                    </span>
+                                                </div>
+                                                <div className="text-base font-bold text-indigo-300">
+                                                    {projections.taxaAbertura.projectedValue.toFixed(1)}%
+                                                </div>
+                                                <div className="text-[8px] text-slate-500 mt-0.5">
+                                                    {projections.taxaAbertura.confidenceInterval.min.toFixed(1)}% - {projections.taxaAbertura.confidenceInterval.max.toFixed(1)}%
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Propostas */}
+                                        {projections.propostas && (
+                                            <div className="bg-black/20 border border-indigo-500/10 rounded-lg p-2">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="text-[9px] text-slate-400">Propostas</span>
+                                                    <span className="text-[8px] text-indigo-400 font-bold">
+                                                        {projections.propostas.confidence}%
+                                                    </span>
+                                                </div>
+                                                <div className="text-base font-bold text-indigo-300">
+                                                    {Math.round(projections.propostas.projectedValue).toLocaleString()}
+                                                </div>
+                                                <div className="text-[8px] text-slate-500 mt-0.5">
+                                                    {Math.round(projections.propostas.confidenceInterval.min).toLocaleString()} - {Math.round(projections.propostas.confidenceInterval.max).toLocaleString()}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Legenda */}
+                                    <div className="text-[8px] text-slate-600 border-t border-indigo-500/10 pt-2">
+                                        💡 Projeções baseadas em similaridade (BU+Segmento+Perfil+Canal), decaimento temporal (90d) e ponderação por volume
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>

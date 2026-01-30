@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { CalendarData } from '../types/framework';
 import { formatDateKey, parseDate } from '../utils/formatters';
 import { useAppStore } from '../store/useAppStore';
@@ -20,7 +20,7 @@ export const useFrameworkData = (): {
   const [loading, setLoading] = useState(true); // Start true to prevent flash
   const [error, setError] = useState<string | null>(null);
   const [debugHeaders, setDebugHeaders] = useState<string[]>([]);
-  const [synced, setSynced] = useState(false);
+  const syncedRef = useRef(false); // Use ref instead of state to prevent re-renders
 
   const totalActivities = storeActivities.length;
 
@@ -114,7 +114,11 @@ export const useFrameworkData = (): {
 
   // CLOUD SYNC EFFECT (Refactored to Supabase)
   useEffect(() => {
+    // Prevent multiple executions using ref
+    if (syncedRef.current) return;
+
     const loadFromSupabase = async () => {
+      syncedRef.current = true; // Mark as started immediately
 
       // 1. Wait for Persist Hydration (Fix Race Condition)
       if (useAppStore.persist && !useAppStore.persist.hasHydrated()) {
@@ -135,10 +139,6 @@ export const useFrameworkData = (): {
         setLoading(false);
       }
 
-      // Avoid double fetching (if already in progress)
-      if (synced) return;
-      setSynced(true);
-
       try {
         console.log('📡 Conectando ao Supabase para buscar dados...');
         import('../services/dataService').then(async ({ dataService }) => {
@@ -151,8 +151,18 @@ export const useFrameworkData = (): {
 
           console.log(`✅ Dados Carregados: ${fetchedActivities.length} Atividades, ${fetchedB2C.length} B2C, ${fetchedPaid.length} Media, ${fetchedGoals.length} Metas.`);
 
-          // Reconstruct "rows" from raw data for compatibility
-          const rows = fetchedActivities.map(a => a.raw || {});
+          // CRITICAL FIX: Only update if Supabase has data OR if store is empty
+          // This prevents overwriting CSV uploads with empty Supabase data
+          const { activities: currentActivities } = useAppStore.getState();
+
+          if (fetchedActivities.length > 0 || currentActivities.length === 0) {
+            // Reconstruct "rows" from raw data for compatibility
+            const rows = fetchedActivities.map(a => a.raw || {});
+            setFrameworkData(rows as any[], fetchedActivities);
+            console.log('✅ Store atualizado com dados do Supabase');
+          } else {
+            console.log('⏭️ Supabase vazio, mantendo dados existentes do CSV upload');
+          }
 
           let finalB2C = fetchedB2C;
           // FALLBACK: If Supabase B2C is empty, try Storage (Legacy)
@@ -187,7 +197,7 @@ export const useFrameworkData = (): {
             }
           }
 
-          setFrameworkData(rows as any[], fetchedActivities);
+          // Always update B2C, Paid Media, and Goals
           setB2CData(finalB2C);
           setPaidMediaData(fetchedPaid);
           useAppStore.getState().setGoals(fetchedGoals); // Sync goals
@@ -208,7 +218,7 @@ export const useFrameworkData = (): {
     };
 
     loadFromSupabase();
-  }, [setFrameworkData, synced]);
+  }, [setFrameworkData]); // Removed synced from dependencies
 
   const loadSimulatedData = useCallback(() => {
     try {
