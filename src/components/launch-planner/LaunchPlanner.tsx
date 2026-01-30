@@ -8,6 +8,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { ActivityRow } from '../../types/activity';
 import { isSameDay, format } from 'date-fns';
 import { mapSqlToActivity } from '../../services/dataService';
+import { activityService } from '../../services/activityService';
 
 
 interface LaunchPlannerProps {
@@ -69,6 +70,33 @@ export const LaunchPlanner: React.FC<LaunchPlannerProps> = ({ data, onActivityUp
         setEditingActivity(null);
     };
 
+    const handleConfirmDraft = async (activity: Activity) => {
+        try {
+            // Get the database ID from raw data
+            const dbId = activity.raw.id || activity.raw['id'];
+            if (!dbId) {
+                console.error('Cannot confirm draft: missing database ID');
+                return;
+            }
+
+            // Update status to Scheduled in database
+            await activityService.confirmDraft(dbId);
+
+            // Update in store with proper type
+            const updatedActivity: Activity = {
+                ...activity,
+                status: 'Scheduled' as const
+            };
+            addActivity(updatedActivity);
+
+            // Refresh the modal
+            setSelectedDate(null);
+            setTimeout(() => setSelectedDate(activity.dataDisparo), 100);
+        } catch (error) {
+            console.error('Error confirming draft:', error);
+        }
+    };
+
     return (
         <>
             <DashboardLayout
@@ -87,6 +115,7 @@ export const LaunchPlanner: React.FC<LaunchPlannerProps> = ({ data, onActivityUp
                     activities={getActivitiesForDate(selectedDate)}
                     onClose={() => setSelectedDate(null)}
                     onEdit={handleEditActivity}
+                    onConfirmDraft={handleConfirmDraft}
                 />
             )}
 

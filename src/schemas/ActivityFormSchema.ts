@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 /**
  * Schema de Validação para Formulário de Atividades (GaaS)
+ * Atualizado para incluir todos os campos do FRAMEWORK
  */
 export const ActivityFormSchema = z.object({
     bu: z.enum(['B2C', 'B2B2C', 'Plurix']),
@@ -23,6 +24,14 @@ export const ActivityFormSchema = z.object({
     horarioDisparo: z.string()
         .regex(/^\d{2}:\d{2}$/, 'Formato: HH:MM'),
 
+    // Novos campos obrigatórios do FRAMEWORK
+    canal: z.enum(['E-mail', 'Push', 'SMS', 'WhatsApp']),
+
+    // Campos calculados automaticamente (opcionais pois são gerados)
+    safra: z.string().optional(),
+    ordemDisparo: z.number().optional(),
+
+    // Campos opcionais de segmentação
     perfilCredito: z.string().optional(),
     oferta: z.string().optional(),
     promocional: z.string().optional(),
@@ -34,6 +43,13 @@ export const ActivityFormSchema = z.object({
     etapaAquisicao: z.string().optional(),
     produto: z.string().optional(),
     baseVolume: z.string().optional(),
+
+    // Campos de custo (opcionais)
+    custoUnitarioOferta: z.string().optional(),
+    custoTotalOferta: z.string().optional(),
+    custoUnitarioCanal: z.string().optional(),
+    custoTotalCanal: z.string().optional(),
+    custoTotalCampanha: z.string().optional(),
 
     status: z.enum(['Rascunho', 'Scheduled', 'Enviado', 'Realizado']).default('Rascunho'),
 })

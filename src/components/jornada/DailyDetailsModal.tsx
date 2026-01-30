@@ -1,6 +1,6 @@
 import React from 'react';
 import { Activity, AnomalyType } from '../../types/framework';
-import { X, Edit2, Info } from 'lucide-react'; // AlertCircle, CheckCircle
+import { X, Edit2, Info, Check } from 'lucide-react'; // AlertCircle, CheckCircle
 
 interface DailyDetailsModalProps {
     date: Date | null;
@@ -8,6 +8,7 @@ interface DailyDetailsModalProps {
     anomalyFilters?: AnomalyType[];
     onClose: () => void;
     onEdit?: (activity: Activity) => void;
+    onConfirmDraft?: (activity: Activity) => void;
     titleOverride?: string;
 }
 
@@ -17,6 +18,7 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({
     anomalyFilters = [],
     onClose,
     onEdit,
+    onConfirmDraft,
     titleOverride
 }) => {
     if (!date && !titleOverride) return null;
@@ -71,13 +73,21 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({
                     {filteredActivities.map((activity) => {
                         const rawCartoes = String(activity.raw['Cartões Gerados'] || '').toLowerCase().trim();
                         const isPending = rawCartoes.includes('aguardando') || rawCartoes.includes('confirmar');
-                        const rawDisparado = String(activity.raw['Disparado?'] || '').toLowerCase().trim();
-                        const isDisparado = ['sim', 's', 'yes', 'y', 'enviado', 'ok', 'true', '1'].includes(rawDisparado);
-                        const isNoSent = isDisparado && (activity.kpis.baseEnviada || 0) === 0;
-                        const showEditButton = onEdit && isNoSent;
+
+                        // Detect draft status
+                        const activityStatus = activity.raw['status'] || activity.raw['Status'] || 'Realizado';
+                        const isDraft = activityStatus === 'Rascunho';
+
+                        // BU Colors
+                        const buColors = {
+                            'B2C': 'border-blue-500/50 bg-blue-500/5',
+                            'B2B2C': 'border-purple-500/50 bg-purple-500/5',
+                            'Plurix': 'border-green-500/50 bg-green-500/5'
+                        };
+                        const cardBorderColor = isDraft ? 'border-slate-700/50' : (buColors[activity.bu as keyof typeof buColors] || 'border-slate-700/50');
 
                         return (
-                            <div key={activity.id} className="bg-slate-800/50 border rounded-lg p-3 transition border-slate-700/50">
+                            <div key={activity.id} className={`bg-slate-800/50 border rounded-lg p-3 transition ${cardBorderColor}`}>
                                 <div className="flex items-start justify-between mb-2">
                                     <div className="flex-1">
                                         <h3 className="text-sm font-bold text-slate-100 mb-1">{activity.id}</h3>
@@ -85,17 +95,31 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({
                                             <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded">{activity.bu}</span>
                                             <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded">{activity.canal}</span>
                                             {isPending && <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded">Pendente</span>}
+                                            {isDraft && <span className="px-2 py-0.5 bg-slate-500/20 text-slate-400 rounded">Rascunho</span>}
                                         </div>
                                     </div>
-                                    {showEditButton && (
-                                        <button
-                                            onClick={() => onEdit(activity)}
-                                            className="p-1.5 hover:bg-slate-700 rounded transition text-slate-400 hover:text-blue-400"
-                                            title="Editar disparo"
-                                        >
-                                            <Edit2 size={14} />
-                                        </button>
-                                    )}
+                                    <div className="flex items-center gap-1">
+                                        {/* Confirm Button (only for drafts) */}
+                                        {isDraft && onConfirmDraft && (
+                                            <button
+                                                onClick={() => onConfirmDraft(activity)}
+                                                className="p-1.5 hover:bg-green-900/30 rounded transition text-green-500 hover:text-green-400 border border-green-500/30"
+                                                title="Confirmar disparo"
+                                            >
+                                                <Check size={14} />
+                                            </button>
+                                        )}
+                                        {/* Edit Button (ALL dispatches) */}
+                                        {onEdit && (
+                                            <button
+                                                onClick={() => onEdit(activity)}
+                                                className="p-1.5 hover:bg-slate-700 rounded transition text-slate-400 hover:text-blue-400"
+                                                title="Editar disparo"
+                                            >
+                                                <Edit2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-2">
                                     <div className="bg-slate-900/50 p-2 rounded">

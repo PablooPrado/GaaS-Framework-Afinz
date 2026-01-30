@@ -1,9 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Calendar, Tag, User, Info, Trash2, TrendingUp, AlertCircle } from 'lucide-react';
+import { X, Calendar, Tag, User, Info, Trash2, TrendingUp, AlertCircle, DollarSign } from 'lucide-react';
 import { ActivityFormSchema, ActivityFormInput } from '../../schemas/ActivityFormSchema';
 import { activityService } from '../../services/activityService';
 import { ActivityRow, ActivityStatus } from '../../types/activity';
 import { useAppStore } from '../../store/useAppStore';
+import {
+    CANAIS,
+    PRODUTOS,
+    ETAPAS_AQUISICAO,
+    CUSTO_UNITARIO_CANAL,
+    CUSTO_UNITARIO_OFERTA,
+    generateSafra,
+    calculateOrdemDisparo,
+    suggestActivityName,
+    calcularCustoTotalOferta,
+    calcularCustoTotalCanal,
+    calcularCustoTotalCampanha,
+    calcularCACPrevisto
+} from '../../constants/frameworkFields';
 
 interface ProgramarDisparoModalProps {
     isOpen: boolean;
@@ -42,11 +56,13 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         const subgrupos = new Set<string>();
         const etapasAquisicao = new Set<string>();
         const produtos = new Set<string>();
+        const canais = new Set<string>();
 
         activities.forEach(activity => {
             if (activity.segmento) segmentos.add(activity.segmento);
             if (activity.jornada) jornadas.add(activity.jornada);
             if (activity.oferta) ofertas.add(activity.oferta);
+            if (activity['Canal']) canais.add(activity['Canal']);
 
             // Fallback to raw for fields not mapped to top-level or extensions
             if (activity.raw) {
@@ -73,6 +89,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
             subgrupos: Array.from(subgrupos).sort(),
             etapasAquisicao: Array.from(etapasAquisicao).sort(),
             produtos: Array.from(produtos).sort(),
+            canais: Array.from(canais).sort(),
         };
     }, [activities]);
 
@@ -83,6 +100,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         dataInicio: '',
         dataFim: '',
         horarioDisparo: '10:00',
+        canal: '' as any, // Novo campo obrigatório
         perfilCredito: '',
         oferta: '',
         promocional: '',
@@ -91,8 +109,17 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         parceiro: '',
         subgrupo: '',
         etapaAquisicao: '',
-        produto: '',
-        baseVolume: '', // Novo campo
+        produto: 'Classic', // Novo campo com padrão
+        baseVolume: '',
+        // Campos auto-calculados
+        safra: '',
+        ordemDisparo: 1,
+        // Campos de custo
+        custoUnitarioOferta: '',
+        custoTotalOferta: '',
+        custoUnitarioCanal: '',
+        custoTotalCanal: '',
+        custoTotalCampanha: '',
         status: 'Rascunho',
     });
 
@@ -108,6 +135,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                 dataInicio: editingActivity['Data de Disparo'],
                 dataFim: editingActivity['Data Fim'],
                 horarioDisparo: '10:00', // TODO: Save time specifically if needed
+                canal: (editingActivity.Canal || '') as any,
                 perfilCredito: editingActivity['Perfil de Crédito'] || '',
                 oferta: editingActivity.Oferta || '',
                 promocional: editingActivity.Promocional || '',
@@ -116,8 +144,10 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                 parceiro: editingActivity.Parceiro || '',
                 subgrupo: editingActivity.Subgrupos || '',
                 etapaAquisicao: editingActivity['Etapa de aquisição'] || '',
-                produto: editingActivity.Produto || '',
+                produto: editingActivity.Produto || 'Classic',
                 baseVolume: String(editingActivity['Base Total'] || ''),
+                safra: editingActivity.Safra || '',
+                ordemDisparo: editingActivity['Ordem de disparo'] || 1,
                 status: editingActivity.status,
             });
             setSelectedSegmento(editingActivity.Segmento);
@@ -130,6 +160,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                 dataInicio: '',
                 dataFim: '',
                 horarioDisparo: '10:00',
+                canal: '' as any,
                 perfilCredito: '',
                 oferta: '',
                 promocional: '',
@@ -138,8 +169,15 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                 parceiro: '',
                 subgrupo: '',
                 etapaAquisicao: '',
-                produto: '',
+                produto: 'Classic',
                 baseVolume: '',
+                safra: '',
+                ordemDisparo: 1,
+                custoUnitarioOferta: '',
+                custoTotalOferta: '',
+                custoUnitarioCanal: '',
+                custoTotalCanal: '',
+                custoTotalCampanha: '',
                 status: 'Rascunho',
             });
             setSelectedSegmento(activeSegmento);
@@ -156,6 +194,80 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
             setFormData(prev => ({ ...prev, dataFim: endDate }));
         }
     }, [formData.dataInicio, editingActivity]);
+
+    // AUTO-CÁLCULO: Safra (baseado em Data Início)
+    useEffect(() => {
+        if (formData.dataInicio) {
+            const safra = generateSafra(formData.dataInicio);
+            setFormData(prev => ({ ...prev, safra }));
+        }
+    }, [formData.dataInicio]);
+
+    // AUTO-CÁLCULO: Ordem de Disparo (baseado em jornada + data)
+    useEffect(() => {
+        if (formData.jornada && formData.dataInicio && !editingActivity) {
+            const ordem = calculateOrdemDisparo(formData.jornada, formData.dataInicio, activities);
+            setFormData(prev => ({ ...prev, ordemDisparo: ordem }));
+        }
+    }, [formData.jornada, formData.dataInicio, activities, editingActivity]);
+
+    // AUTO-SUGESTÃO: Activity Name (quando campos-chave mudam)
+    useEffect(() => {
+        if (formData.bu && selectedSegmento && formData.jornada && formData.safra && formData.ordemDisparo && !editingActivity) {
+            const suggestedName = suggestActivityName(
+                formData.bu,
+                selectedSegmento,
+                formData.jornada,
+                formData.ordemDisparo || 1,
+                formData.safra
+            );
+            if (suggestedName && !formData.activityName) {
+                setFormData(prev => ({ ...prev, activityName: suggestedName }));
+            }
+        }
+    }, [formData.bu, selectedSegmento, formData.jornada, formData.safra, formData.ordemDisparo, editingActivity]);
+
+    // AUTO-CÁLCULO: Custo Unitário do Canal (quando canal muda)
+    useEffect(() => {
+        if (formData.canal && CUSTO_UNITARIO_CANAL[formData.canal]) {
+            const custoUnit = CUSTO_UNITARIO_CANAL[formData.canal];
+            setFormData(prev => ({
+                ...prev,
+                custoUnitarioCanal: String(custoUnit.toFixed(3))
+            }));
+        }
+    }, [formData.canal]);
+
+    // AUTO-CÁLCULO: Custo Unitário da Oferta (quando oferta muda)
+    useEffect(() => {
+        if (formData.oferta && CUSTO_UNITARIO_OFERTA[formData.oferta]) {
+            const custoUnit = CUSTO_UNITARIO_OFERTA[formData.oferta];
+            setFormData(prev => ({
+                ...prev,
+                custoUnitarioOferta: String(custoUnit.toFixed(2))
+            }));
+        }
+    }, [formData.oferta]);
+
+    // AUTO-CÁLCULO: Custos Totais (quando unitários ou base mudam)
+    useEffect(() => {
+        const baseVol = Number(formData.baseVolume) || 0;
+        const custoUnitOferta = Number(formData.custoUnitarioOferta) || 0;
+        const custoUnitCanal = Number(formData.custoUnitarioCanal) || 0;
+
+        if (baseVol > 0) {
+            const custoTotalOf = calcularCustoTotalOferta(custoUnitOferta, baseVol);
+            const custoTotalCan = calcularCustoTotalCanal(custoUnitCanal, baseVol);
+            const custoTotalCamp = calcularCustoTotalCampanha(custoTotalOf, custoTotalCan);
+
+            setFormData(prev => ({
+                ...prev,
+                custoTotalOferta: String(custoTotalOf.toFixed(2)),
+                custoTotalCanal: String(custoTotalCan.toFixed(2)),
+                custoTotalCampanha: String(custoTotalCamp.toFixed(2)),
+            }));
+        }
+    }, [formData.baseVolume, formData.custoUnitarioOferta, formData.custoUnitarioCanal]);
 
     const handleChange = (field: keyof ActivityFormInput, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -259,7 +371,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-slate-800 rounded-xl shadow-2xl w-full max-w-4xl m-4 border border-slate-700">
+            <div className="relative bg-slate-800 rounded-xl shadow-2xl w-full max-w-7xl m-4 border border-slate-700">
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-slate-700">
@@ -277,7 +389,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                     </div>
                 )}
 
-                <div id="modal-content" className="p-5 grid grid-cols-1 md:grid-cols-3 gap-8 max-h-[75vh] overflow-y-auto">
+                <div id="modal-content" className="p-5 grid grid-cols-1 md:grid-cols-4 gap-6 max-h-[80vh] overflow-y-auto">
                     {/* Column 1: Identificação */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">

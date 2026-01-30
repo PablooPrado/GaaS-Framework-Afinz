@@ -102,6 +102,13 @@ export const publishActivity = async (id: string): Promise<ActivityRow> => {
     return updateActivity(id, { status: 'Scheduled' });
 };
 
+/**
+ * Confirma um rascunho, alterando o status para "Scheduled" (Programado)
+ */
+export const confirmDraft = async (id: string): Promise<ActivityRow> => {
+    return updateActivity(id, { status: 'Scheduled' });
+};
+
 export const getActivitiesBySegment = async (
     segmento: string
 ): Promise<ActivityRow[]> => {
@@ -264,6 +271,7 @@ export const activityService = {
     updateActivity,
     deleteActivity,
     publishActivity,
+    confirmDraft,
     getActivitiesBySegment,
     getAllActivities,
     syncFrameworkActivities // Export new function
