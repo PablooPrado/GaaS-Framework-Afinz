@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useFilters } from '../../context/FilterContext';
 import { ProjectionBox } from '../ProjectionBox';
-import { ResponsiveContainer, ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay, getDate, getDaysInMonth } from 'date-fns';
+import { ResponsiveContainer, ComposedChart, Line, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay, getDate, getDaysInMonth, parseISO, startOfDay, endOfDay, startOfWeek } from 'date-fns';
 
 import { Target as TargetIcon } from 'lucide-react';
 import { CreateTargetModal } from '../Modals/CreateTargetModal';
@@ -19,8 +19,10 @@ const MetricsChart: React.FC<{
     color: string,
     title: string,
     isCurrency?: boolean,
-    projectionKey?: string
-}> = ({ data, dataKey, color, title, isCurrency, projectionKey }) => {
+    granularity: 'day' | 'week' | 'month'
+}> = ({ data, dataKey, color, title, isCurrency, granularity }) => {
+    const isBar = granularity !== 'day';
+
     return (
         <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
             <h4 className="text-md font-bold text-slate-700 mb-4">{title}</h4>
@@ -47,33 +49,34 @@ const MetricsChart: React.FC<{
                         />
                         <Tooltip
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            cursor={{ fill: '#F1F5F9' }}
                             formatter={(val: any) =>
                                 isCurrency
                                     ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
                                     : new Intl.NumberFormat('pt-BR').format(val)
                             }
                         />
-                        <Legend />
-                        <Area
-                            type="monotone"
-                            dataKey={dataKey}
-                            stroke={color}
-                            fill={color}
-                            fillOpacity={0.1}
-                            name="Atual"
-                            strokeWidth={2}
-                        />
-                        {projectionKey && (
-                            <Line
+
+                        {isBar ? (
+                            <Bar
+                                dataKey={dataKey}
+                                fill={color}
+                                name="Atual"
+                                radius={[4, 4, 0, 0]}
+                                maxBarSize={60}
+                            />
+                        ) : (
+                            <Area
                                 type="monotone"
-                                dataKey={projectionKey}
+                                dataKey={dataKey}
                                 stroke={color}
-                                strokeDasharray="5 5"
-                                name="Projeção"
-                                dot={false}
-                                strokeOpacity={0.6}
+                                fill={color}
+                                fillOpacity={0.1}
+                                name="Atual"
+                                strokeWidth={2}
                             />
                         )}
+
                     </ComposedChart>
                 </ResponsiveContainer>
             </div>
@@ -82,131 +85,98 @@ const MetricsChart: React.FC<{
 };
 
 export const MonthlyAnalysisTab: React.FC = () => {
-    const { filteredData, filters } = useFilters();
+    const { filteredData, filters, rawData } = useFilters();
     const { add } = useTargets();
     const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
 
+    // Shared State for Synchronization
+    const [useCustomDate, setUseCustomDate] = useState(true);
+    const [customDateRange, setCustomDateRange] = useState({
+        from: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+        to: format(new Date(), 'yyyy-MM-dd')
+    });
+    const [granularity, setGranularity] = useState<'day' | 'week' | 'month'>('day');
+
     const chartData = useMemo(() => {
-        if (filteredData.length === 0) return [];
+        // Determine effective range
+        const rangeStart = useCustomDate ? parseISO(customDateRange.from) : filters.dateRange.from;
+        const rangeEnd = useCustomDate ? parseISO(customDateRange.to) : filters.dateRange.to;
 
-        const targetMonthDate = filters.dateRange.to;
-        const start = startOfMonth(targetMonthDate);
-        const end = endOfMonth(targetMonthDate);
-        const today = new Date();
+        // Filter RAW data based on this range (and other filters)
+        // We use rawData to ensure we have all granular points before aggregating
+        if (!rawData) return [];
 
-        const days = eachDayOfInterval({ start, end });
+        const relevantData = rawData.filter(d => {
+            // Basic Global Filters (Channel/Objective/Campaign) should be respected
+            // Replicating FilterContext logic briefly or relying on 'filteredData' if it matches range?
+            // 'filteredData' in context assumes global range. 
+            // If useCustomDate is TRUE, we must filter rawData manually.
+            // If useCustomDate is FALSE, 'filteredData' is already filtered by date, BUT 'filteredData' might be pre-aggregated? 
+            // No, filteredData is usually raw rows filtered.
 
-        // Aggregate data by day
-        return days.map(day => {
-            const isFuture = day > today;
-            const dayStr = format(day, 'd');
-            const dayRows = filteredData.filter(d => isSameDay(new Date(d.date), day));
+            // Simplest: Filter rawData by everything
 
-            const spend = dayRows.reduce((a, b) => a + b.spend, 0);
-            const imp = dayRows.reduce((a, b) => a + b.impressions, 0);
-            const conv = dayRows.reduce((a, b) => a + b.conversions, 0);
+            const dDate = new Date(d.date);
+            if (dDate < startOfDay(rangeStart) || dDate > endOfDay(rangeEnd)) return false;
 
-            const cpm = imp ? (spend / imp) * 1000 : 0;
+            if (filters.selectedChannels.length && !filters.selectedChannels.includes(d.channel as any)) return false;
+            if (filters.selectedObjectives.length && !filters.selectedObjectives.includes(d.objective as any)) return false;
+            if (filters.selectedCampaigns.length && !filters.selectedCampaigns.includes(d.campaign)) return false;
 
-            return {
-                day: dayStr,
-                date: day,
-                spend: isFuture ? null : spend,
-                impressions: isFuture ? null : imp,
-                cpm: isFuture ? null : cpm,
-                conversions: isFuture ? null : conv,
-            };
+            return true;
         });
-    }, [filteredData, filters]); // Note: Recalculating projection points requires simpler logic here
 
-    // We need to fill "projected" keys for the chart.
-    const hydratedData = useMemo(() => {
-        if (chartData.length === 0) return [];
+        // Aggregate by Granularity
+        const aggMap = new Map<string, any>();
 
-        const filled = [...chartData];
+        relevantData.forEach(d => {
+            const dateObj = new Date(d.date);
+            let timeKey = '';
+            let displayDate = new Date();
+            let label = '';
 
-        // 1. Calculate Cumulative Past Data in chart structure (for visualization)
-        let runningSpend = 0;
-        let runningImp = 0;
-        let runningConv = 0;
-
-        const accumulated = filled.map((d) => {
-            if (d.spend !== null) {
-                runningSpend += (d.spend || 0);
-                runningImp += (d.impressions || 0);
-                runningConv += (d.conversions || 0);
-                return {
-                    ...d,
-                    spend: runningSpend,
-                    impressions: runningImp,
-                    conversions: runningConv,
-                };
+            if (granularity === 'day') {
+                timeKey = format(dateObj, 'yyyy-MM-dd');
+                displayDate = dateObj;
+                label = format(dateObj, 'dd/MM');
+            } else if (granularity === 'week') {
+                const start = startOfWeek(dateObj, { weekStartsOn: 1 });
+                timeKey = format(start, 'yyyy-MM-dd');
+                displayDate = start;
+                label = `Semana ${format(start, 'dd/MM')}`;
+            } else if (granularity === 'month') {
+                const start = startOfMonth(dateObj);
+                timeKey = format(start, 'yyyy-MM');
+                displayDate = start;
+                label = format(start, 'MMM/yy');
             }
-            return {
-                ...d,
-                spend: null,
-                impressions: null,
-                conversions: null
-            };
-        });
 
-        // 2. Calculate Slopes using Smart Pace (Engine) using RAW filteredData
-        // This ensures match with ProjectionBox
-        const targetMonthDate = filters.dateRange.to;
-
-        // Cast to satisfy type (filteredData has compatible shape)
-        const rawData = filteredData as unknown as DailyMetrics[];
-
-        const spendProj = calculateProjection(rawData, 'spend', targetMonthDate);
-        const impProj = calculateProjection(rawData, 'impressions', targetMonthDate);
-        const convProj = calculateProjection(rawData, 'conversions', targetMonthDate);
-
-        const slopeSpend = spendProj.pace;
-        const slopeImp = impProj.pace;
-        const slopeConv = convProj.pace;
-
-        // Determine cut-off based on raw data presence
-        const daysInMonth = getDaysInMonth(targetMonthDate);
-        const lastDataDay = daysInMonth - spendProj.remainingDays;
-
-        // Calculate projected constant CPM
-        const projectedDailyCPM = slopeImp > 0 ? (slopeSpend / slopeImp) * 1000 : 0;
-
-        // 3. Fill Future
-        return accumulated.map((d) => {
-            const dayNum = getDate(d.date);
-
-            if (dayNum <= lastDataDay) {
-                // Actuals
-                return {
-                    ...d,
-                    projectedSpend: d.spend,
-                    projectedImpressions: d.impressions,
-                    projectedConversions: d.conversions,
-                    projectedCPM: (d.cpm && d.cpm > 0) ? d.cpm : projectedDailyCPM // Fallback to projection if actual CPM is 0 (trailing)
-                };
-            } else {
-                // Future Projection
-                const daysAhead = dayNum - lastDataDay;
-
-                const projSpend = spendProj.current + (slopeSpend * daysAhead);
-                const projImp = impProj.current + (slopeImp * daysAhead);
-                const projConv = convProj.current + (slopeConv * daysAhead);
-
-                // Projected Daily CPM (Constant based on pace)
-                const projCPM = projectedDailyCPM;
-
-                return {
-                    ...d,
-                    projectedSpend: projSpend,
-                    projectedImpressions: projImp,
-                    projectedConversions: projConv,
-                    projectedCPM: projCPM
-                };
+            if (!aggMap.has(timeKey)) {
+                aggMap.set(timeKey, {
+                    day: label,
+                    date: displayDate,
+                    spend: 0,
+                    impressions: 0,
+                    conversions: 0,
+                });
             }
+            const item = aggMap.get(timeKey);
+            item.spend += d.spend;
+            item.impressions += d.impressions;
+            item.conversions += d.conversions;
         });
 
-    }, [chartData, filteredData, filters]);
+        // Convert key map to array and compute CPM
+        const result = Array.from(aggMap.values()).map(item => ({
+            ...item,
+            cpm: item.impressions ? (item.spend / item.impressions) * 1000 : 0
+        })).sort((a, b) => a.date.getTime() - b.date.getTime());
+
+        return result;
+
+    }, [rawData, filters, useCustomDate, customDateRange, granularity]);
+
+
 
     return (
         <div className="space-y-6 animate-fade-in relative">
@@ -226,66 +196,53 @@ export const MonthlyAnalysisTab: React.FC = () => {
 
 
             {/* Nova Seção: Gráfico Personalizado */}
-            <CustomMetricChart />
+            <CustomMetricChart
+                granularity={granularity}
+                setGranularity={setGranularity}
+                useCustomDate={useCustomDate}
+                setUseCustomDate={setUseCustomDate}
+                customDateRange={customDateRange}
+                setCustomDateRange={setCustomDateRange}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Investimento */}
-                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-                    <h4 className="text-sm font-bold text-slate-700 mb-4">Investimento Acumulado</h4>
-                    <div className="h-[250px] w-full">
-                        <MetricsChart
-                            data={hydratedData}
-                            dataKey="spend"
-                            color="#84cc16"
-                            title="Investimento"
-                            isCurrency
-                            projectionKey="projectedSpend"
-                        />
-                    </div>
-                </div>
+                <MetricsChart
+                    data={chartData}
+                    dataKey="spend"
+                    color="#84cc16"
+                    title={`Investimento ${granularity === 'day' ? 'Diário' : granularity === 'week' ? 'Semanal' : 'Mensal'}`}
+                    isCurrency
+                    granularity={granularity}
+                />
 
                 {/* Impressões */}
-                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-                    <h4 className="text-sm font-bold text-slate-700 mb-4">Impressões Acumuladas</h4>
-                    <div className="h-[250px] w-full">
-                        <MetricsChart
-                            data={hydratedData}
-                            dataKey="impressions"
-                            color="#0ea5e9"
-                            title="Impressões"
-                            projectionKey="projectedImpressions"
-                        />
-                    </div>
-                </div>
+                <MetricsChart
+                    data={chartData}
+                    dataKey="impressions"
+                    color="#0ea5e9"
+                    title={`Impressões ${granularity === 'day' ? 'Diárias' : granularity === 'week' ? 'Semanais' : 'Mensais'}`}
+                    granularity={granularity}
+                />
 
                 {/* CPM */}
-                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-                    <h4 className="text-sm font-bold text-slate-700 mb-4">CPM Diário</h4>
-                    <div className="h-[250px] w-full">
-                        <MetricsChart
-                            data={hydratedData}
-                            dataKey="cpm"
-                            color="#f97316"
-                            title="CPM"
-                            isCurrency
-                            projectionKey="projectedCPM"
-                        />
-                    </div>
-                </div>
+                <MetricsChart
+                    data={chartData}
+                    dataKey="cpm"
+                    color="#f97316"
+                    title={`CPM ${granularity === 'day' ? 'Diário' : granularity === 'week' ? 'Semanal' : 'Mensal'}`}
+                    isCurrency
+                    granularity={granularity}
+                />
 
                 {/* Conversões */}
-                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-                    <h4 className="text-sm font-bold text-slate-700 mb-4">Conversões Acumuladas</h4>
-                    <div className="h-[250px] w-full">
-                        <MetricsChart
-                            data={hydratedData}
-                            dataKey="conversions"
-                            color="#8b5cf6"
-                            title="Conversões"
-                            projectionKey="projectedConversions"
-                        />
-                    </div>
-                </div>
+                <MetricsChart
+                    data={chartData}
+                    dataKey="conversions"
+                    color="#8b5cf6"
+                    title={`Conversões ${granularity === 'day' ? 'Diárias' : granularity === 'week' ? 'Semanais' : 'Mensais'}`}
+                    granularity={granularity}
+                />
             </div>
 
 

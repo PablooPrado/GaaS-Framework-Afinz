@@ -14,19 +14,39 @@ const METRICS_CONFIG = [
     { key: 'cpc', label: 'CPC', color: '#10b981', isCurrency: true, axis: 'right' }, // Emerald
     { key: 'ctr', label: 'CTR', color: '#6366f1', isCurrency: false, suffix: '%', axis: 'right' }, // Indigo
     { key: 'convRate', label: 'Taxa de Conv.', color: '#ef4444', isCurrency: false, suffix: '%', axis: 'right' }, // Red
+    { key: 'cta', label: 'Custo por Resultado', color: '#8b5cf6', isCurrency: true, axis: 'right' }, // Violet
 ];
 
-export const CustomMetricChart: React.FC = () => {
+interface CustomMetricChartProps {
+    granularity: 'day' | 'week' | 'month';
+    setGranularity: (g: 'day' | 'week' | 'month') => void;
+    useCustomDate: boolean;
+    setUseCustomDate: (b: boolean) => void;
+    customDateRange: { from: string; to: string };
+    setCustomDateRange: (range: { from: string; to: string }) => void;
+}
+
+interface CustomMetricChartProps {
+    granularity: 'day' | 'week' | 'month';
+    setGranularity: (g: 'day' | 'week' | 'month') => void;
+    useCustomDate: boolean;
+    setUseCustomDate: (b: boolean) => void;
+    customDateRange: { from: string; to: string };
+    setCustomDateRange: (range: { from: string; to: string }) => void;
+}
+
+export const CustomMetricChart: React.FC<CustomMetricChartProps> = ({
+    granularity,
+    setGranularity,
+    useCustomDate,
+    setUseCustomDate,
+    customDateRange,
+    setCustomDateRange
+}) => {
     const { rawData, filters } = useFilters();
 
     // Local State
     const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['spend', 'conversions']);
-    const [useCustomDate, setUseCustomDate] = useState(true); // Default to true
-    const [customDateRange, setCustomDateRange] = useState({
-        from: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-        to: format(new Date(), 'yyyy-MM-dd')
-    });
-    const [granularity, setGranularity] = useState<'day' | 'week' | 'month'>('day');
 
     // 1. Filter Data
     const chartData = useMemo(() => {
@@ -38,10 +58,10 @@ export const CustomMetricChart: React.FC = () => {
             const dateObj = new Date(d.date);
 
             // Channels
-            if (filters.selectedChannels.length > 0 && !filters.selectedChannels.includes(d.channel)) return false;
+            if (filters.selectedChannels.length > 0 && !filters.selectedChannels.includes(d.channel as any)) return false;
 
             // Objectives
-            if (filters.selectedObjectives.length > 0 && !filters.selectedObjectives.includes(d.objective)) return false;
+            if (filters.selectedObjectives.length > 0 && !filters.selectedObjectives.includes(d.objective as any)) return false;
 
             // Campaigns
             if (filters.selectedCampaigns.length > 0 && !filters.selectedCampaigns.includes(d.campaign)) return false;
@@ -110,6 +130,7 @@ export const CustomMetricChart: React.FC = () => {
                 cpc: item.clicks ? (item.spend / item.clicks) : 0,
                 ctr: item.impressions ? (item.clicks / item.impressions) * 100 : 0,
                 convRate: item.clicks ? (item.conversions / item.clicks) * 100 : 0,
+                cta: item.conversions ? (item.spend / item.conversions) : 0,
             };
         }).sort((a, b) => a.sortTime - b.sortTime);
 
@@ -131,24 +152,24 @@ export const CustomMetricChart: React.FC = () => {
     const hasLeftAxisMetrics = selectedMetrics.some(m => METRICS_CONFIG.find(c => c.key === m)?.axis === 'left');
 
     return (
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 shadow-sm mt-8 animate-fade-in">
+        <div className="bg-white rounded-xl border border-slate-100 p-6 shadow-sm mt-8 animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div>
-                    <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <Filter size={18} className="text-blue-500" />
                         Análise Personalizada
                     </h3>
-                    <p className="text-sm text-slate-400">Compare até 4 métricas diferentes no mesmo período</p>
+                    <p className="text-sm text-slate-500">Compare até 4 métricas diferentes no mesmo período</p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 bg-slate-900 p-2 rounded-lg border border-slate-700">
+                <div className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
                     {/* Date Toggle */}
-                    <label className="flex items-center gap-2 text-xs font-medium text-slate-400 cursor-pointer mr-2 hover:text-slate-200 transition">
+                    <label className="flex items-center gap-2 text-xs font-medium text-slate-500 cursor-pointer mr-2 hover:text-slate-900 transition">
                         <input
                             type="checkbox"
                             checked={useCustomDate}
                             onChange={(e) => setUseCustomDate(e.target.checked)}
-                            className="rounded text-blue-500 focus:ring-blue-500/20 bg-slate-800 border-slate-600"
+                            className="rounded text-blue-500 focus:ring-blue-500/20 bg-white border-slate-300"
                         />
                         Período Personalizado
                     </label>
@@ -159,26 +180,26 @@ export const CustomMetricChart: React.FC = () => {
                                 type="date"
                                 value={customDateRange.from}
                                 onChange={(e) => setCustomDateRange(prev => ({ ...prev, from: e.target.value }))}
-                                className="text-xs bg-slate-800 border-slate-600 text-slate-200 rounded px-2 py-1 focus:ring-blue-500/20 focus:border-blue-500"
+                                className="text-xs bg-white border-slate-300 text-slate-700 rounded px-2 py-1 focus:ring-blue-500/20 focus:border-blue-500"
                             />
-                            <span className="text-slate-600">-</span>
+                            <span className="text-slate-400">-</span>
                             <input
                                 type="date"
                                 value={customDateRange.to}
                                 onChange={(e) => setCustomDateRange(prev => ({ ...prev, to: e.target.value }))}
-                                className="text-xs bg-slate-800 border-slate-600 text-slate-200 rounded px-2 py-1 focus:ring-blue-500/20 focus:border-blue-500"
+                                className="text-xs bg-white border-slate-300 text-slate-700 rounded px-2 py-1 focus:ring-blue-500/20 focus:border-blue-500"
                             />
                         </div>
                     )}
                 </div>
 
                 {/* Granularity Toggle */}
-                <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-700">
+                <div className="flex bg-slate-50 p-1 rounded-lg border border-slate-100">
                     {(['day', 'week', 'month'] as const).map(g => (
                         <button
                             key={g}
                             onClick={() => setGranularity(g)}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${granularity === g ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}
+                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${granularity === g ? 'bg-white text-slate-700 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}
                         >
                             {g === 'day' ? 'Dia' : g === 'week' ? 'Semana' : 'Mês'}
                         </button>
@@ -193,13 +214,13 @@ export const CustomMetricChart: React.FC = () => {
                         key={metric.key}
                         onClick={() => handleMetricToggle(metric.key)}
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${selectedMetrics.includes(metric.key)
-                            ? 'bg-blue-500/10 border-blue-500/50 text-blue-400'
-                            : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'
+                            ? 'bg-blue-50 border-blue-200 text-blue-600'
+                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
                             }`}
                         style={{
                             borderColor: selectedMetrics.includes(metric.key) ? metric.color : undefined,
                             color: selectedMetrics.includes(metric.key) ? metric.color : undefined,
-                            backgroundColor: selectedMetrics.includes(metric.key) ? `${metric.color}20` : undefined
+                            backgroundColor: selectedMetrics.includes(metric.key) ? `${metric.color}10` : undefined
                         }}
                     >
                         {metric.label}
@@ -211,12 +232,12 @@ export const CustomMetricChart: React.FC = () => {
             <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                         <XAxis
                             dataKey="day"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#94a3b8', fontSize: 11 }}
+                            tick={{ fill: '#64748B', fontSize: 11 }}
                             dy={10}
                         />
                         <YAxis
@@ -224,7 +245,7 @@ export const CustomMetricChart: React.FC = () => {
                             orientation="left"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#94a3b8', fontSize: 11 }}
+                            tick={{ fill: '#64748B', fontSize: 11 }}
                             tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}
                             hide={!hasLeftAxisMetrics}
                         />
@@ -233,12 +254,12 @@ export const CustomMetricChart: React.FC = () => {
                             orientation="right"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#94a3b8', fontSize: 11 }}
+                            tick={{ fill: '#64748B', fontSize: 11 }}
                             hide={!hasRightAxisMetrics}
                         />
                         <Tooltip
-                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.5)' }}
-                            labelStyle={{ color: '#94a3b8', marginBottom: '0.5rem', fontWeight: 'bold' }}
+                            contentStyle={{ backgroundColor: '#ffffff', borderColor: '#E2E8F0', color: '#1E293B', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            labelStyle={{ color: '#64748B', marginBottom: '0.5rem', fontWeight: 'bold' }}
                             formatter={(value: any, name: any) => {
                                 const metric = METRICS_CONFIG.find(m => m.label === name);
                                 if (!metric) return value;

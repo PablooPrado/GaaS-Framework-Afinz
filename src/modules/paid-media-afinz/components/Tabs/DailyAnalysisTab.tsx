@@ -2,12 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { useFilters } from '../../context/FilterContext';
 import { format, getDay, startOfWeek, addDays, getDaysInMonth, startOfMonth, isSameMonth, getDate } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, TrendingUp, AlertCircle, BarChart2, Grid } from 'lucide-react';
+import { Calendar, TrendingUp, AlertCircle, BarChart2, Grid, ArrowUpDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export const DailyAnalysisTab: React.FC = () => {
     const { filteredData } = useFilters();
     const [heatmapMetric, setHeatmapMetric] = useState<'cpa' | 'roas' | 'spend'>('cpa');
+
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'date', direction: 'asc' });
 
     // 1. Prepare Daily Table Data
     // We assume filteredData is already daily-row based, but we might have multiple rows per day (Meta + Google).
@@ -34,14 +36,31 @@ export const DailyAnalysisTab: React.FC = () => {
             curr.conversions += d.conversions;
         });
 
-        return Array.from(map.values()).map(d => ({
+        const data = Array.from(map.values()).map(d => ({
             ...d,
             cpa: d.conversions ? d.spend / d.conversions : 0,
             ctr: d.impressions ? (d.clicks / d.impressions) * 100 : 0,
+            cpm: d.impressions ? (d.spend / d.impressions) * 1000 : 0,
             cpc: d.clicks ? d.spend / d.clicks : 0,
             roas: d.spend ? (d.revenue || 0) / d.spend : 0 // Placeholder
-        })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [filteredData]);
+        }));
+
+        return data.sort((a, b) => {
+            const aValue = sortConfig.key === 'date' ? new Date(a.date).getTime() : a[sortConfig.key];
+            const bValue = sortConfig.key === 'date' ? new Date(b.date).getTime() : b[sortConfig.key];
+
+            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [filteredData, sortConfig]);
+
+    const handleSort = (key: string) => {
+        setSortConfig(current => ({
+            key,
+            direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    };
 
     // 2. Weekday Analysis
     const weekdayData = useMemo(() => {
@@ -155,14 +174,28 @@ export const DailyAnalysisTab: React.FC = () => {
                     <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
                             <tr>
-                                <th className="px-6 py-3">Data</th>
-                                <th className="px-6 py-3 text-right">Inv.</th>
-                                <th className="px-6 py-3 text-right">Impr.</th>
-                                <th className="px-6 py-3 text-right">Cliques</th>
-                                <th className="px-6 py-3 text-right">Conv.</th>
-                                <th className="px-6 py-3 text-right">CTR</th>
-                                <th className="px-6 py-3 text-right">CPC</th>
-                                <th className="px-6 py-3 text-right">CPA</th>
+                                {[
+                                    { key: 'date', label: 'Data', align: 'left' },
+                                    { key: 'spend', label: 'Inv.', align: 'right' },
+                                    { key: 'impressions', label: 'Impr.', align: 'right' },
+                                    { key: 'clicks', label: 'Cliques', align: 'right' },
+                                    { key: 'conversions', label: 'Conv.', align: 'right' },
+                                    { key: 'ctr', label: 'CTR', align: 'right' },
+                                    { key: 'cpm', label: 'CPM', align: 'right' },
+                                    { key: 'cpc', label: 'CPC', align: 'right' },
+                                    { key: 'cpa', label: 'CPA', align: 'right' },
+                                ].map((col) => (
+                                    <th
+                                        key={col.key}
+                                        className={`px-6 py-3 cursor-pointer hover:bg-slate-100 transition-colors group text-${col.align}`}
+                                        onClick={() => handleSort(col.key)}
+                                    >
+                                        <div className={`flex items-center gap-1 ${col.align === 'right' ? 'justify-end' : ''}`}>
+                                            {col.label}
+                                            <ArrowUpDown size={12} className={`text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity ${sortConfig.key === col.key ? 'opacity-100 text-blue-500' : ''}`} />
+                                        </div>
+                                    </th>
+                                ))}
                                 <th className="px-6 py-3 text-center">Status</th>
                             </tr>
                         </thead>
@@ -177,6 +210,7 @@ export const DailyAnalysisTab: React.FC = () => {
                                     <td className="px-6 py-3 text-right text-slate-600">{fmtNum(row.clicks)}</td>
                                     <td className="px-6 py-3 text-right text-slate-600 font-bold">{fmtNum(row.conversions)}</td>
                                     <td className="px-6 py-3 text-right text-slate-600">{row.ctr.toFixed(2)}%</td>
+                                    <td className="px-6 py-3 text-right text-slate-600">{fmtBRL(row.cpm)}</td>
                                     <td className="px-6 py-3 text-right text-slate-600">{fmtBRL(row.cpc)}</td>
                                     <td className={`px-6 py-3 text-right font-bold ${row.cpa > avgCpa * 1.2 ? 'text-red-500' :
                                         row.cpa < avgCpa * 0.8 ? 'text-emerald-500' : 'text-slate-600'
