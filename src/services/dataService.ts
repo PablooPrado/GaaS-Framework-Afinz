@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 import { Activity, FrameworkRow } from '../types/framework';
 import { DailyAdMetrics } from '../schemas/paid-media';
 import { B2CDataRow } from '../types/b2c';
+import { parseDate } from '../utils/formatters';
 
 // Helper to map SQL row to Activity
 export const mapSqlToActivity = (row: any): Activity => {
@@ -57,7 +58,7 @@ export const mapSqlToActivity = (row: any): Activity => {
 
     return {
         id: row['Activity name / Taxonomia'] || row.id,
-        dataDisparo: new Date(row['Data de Disparo']),
+        dataDisparo: parseDate(row['Data de Disparo']) || new Date(row['Data de Disparo']), // Fallback to standard if parse fail
         canal: row['Canal'],
         bu: row['BU'],
         segmento: row['Segmento'],

@@ -103,7 +103,7 @@ export const GoalsManager: React.FC = () => {
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
                             Meta CRM (Cartões)
-                            <span className="bg-blue-500/20 text-blue-400 text-[9px] px-1.5 py-0.5 rounded">Launch Planner</span>
+                            <span className="bg-blue-500/20 text-blue-400 text-[9px] px-1.5 py-0.5 rounded">CRM</span>
                         </label>
                         <div className="relative group">
                             <Calculator size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
