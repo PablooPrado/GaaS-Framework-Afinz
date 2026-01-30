@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Calendar, Tag, User, Info, Trash2, TrendingUp, AlertCircle, DollarSign } from 'lucide-react';
+import { X, Calendar, Tag, User, Info, Trash2, TrendingUp, AlertCircle, DollarSign, CheckCircle2, Package, Target, Layers } from 'lucide-react';
 import { ActivityFormSchema, ActivityFormInput } from '../../schemas/ActivityFormSchema';
 import { activityService } from '../../services/activityService';
 import { ActivityRow, ActivityStatus } from '../../types/activity';
@@ -28,12 +28,13 @@ interface ProgramarDisparoModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: (activity: ActivityRow) => void;
-    editingActivity?: ActivityRow | null; // Renamed from editingDispatch
+    editingActivity?: ActivityRow | null;
     activeSegmento: string;
 }
 
 /**
  * Modal para criar/editar atividades (GaaS) Unificado
+ * Redesign Minimalista "Warm Gray"
  */
 export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
     isOpen,
@@ -69,7 +70,6 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
             if (activity.oferta) ofertas.add(activity.oferta);
             if (activity['Canal']) canais.add(activity['Canal']);
 
-            // Fallback to raw for fields not mapped to top-level or extensions
             if (activity.raw) {
                 if (activity.raw['Promocional']) promocionais.add(String(activity.raw['Promocional']));
                 if (activity.raw['Oferta 2']) ofertas2.add(String(activity.raw['Oferta 2']));
@@ -105,7 +105,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         dataInicio: '',
         dataFim: '',
         horarioDisparo: '10:00',
-        canal: '' as any, // Novo campo obrigatório
+        canal: '' as any,
         perfilCredito: '',
         oferta: '',
         promocional: '',
@@ -114,12 +114,10 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         parceiro: '',
         subgrupo: '',
         etapaAquisicao: '',
-        produto: 'Classic', // Novo campo com padrão
+        produto: 'Classic',
         baseVolume: '',
-        // Campos auto-calculados
         safra: '',
         ordemDisparo: 1,
-        // Campos de custo
         custoUnitarioOferta: '',
         custoTotalOferta: '',
         custoUnitarioCanal: '',
@@ -129,12 +127,10 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
     });
 
     const [selectedSegmento, setSelectedSegmento] = useState(activeSegmento);
-
-    // Estado para Engines de IA
     const [projections, setProjections] = useState<Record<string, ProjectionResult>>({});
-    const [aiFilledFields, setAiFilledFields] = useState<Set<string>>(new Set());
 
-    // Preencher form se editando
+    // --- EFFECT HOOKS (LOGIC) ---
+    // 1. Preencher form se editando
     useEffect(() => {
         if (editingActivity) {
             setFormData({
@@ -143,7 +139,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                 activityName: editingActivity['Activity name / Taxonomia'],
                 dataInicio: editingActivity['Data de Disparo'],
                 dataFim: editingActivity['Data Fim'],
-                horarioDisparo: '10:00', // TODO: Save time specifically if needed
+                horarioDisparo: editingActivity['Horário de Disparo'] || '10:00',
                 canal: (editingActivity.Canal || '') as any,
                 perfilCredito: editingActivity['Perfil de Crédito'] || '',
                 oferta: editingActivity.Oferta || '',
@@ -161,7 +157,6 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
             });
             setSelectedSegmento(editingActivity.Segmento);
         } else {
-            // Reset
             setFormData({
                 bu: '' as any,
                 jornada: '',
@@ -194,7 +189,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         }
     }, [editingActivity, isOpen, activeSegmento]);
 
-    // Auto-fill Data Fim
+    // 2. Auto-fill Data Fim
     useEffect(() => {
         if (formData.dataInicio && !editingActivity) {
             const startDate = new Date(formData.dataInicio);
@@ -204,7 +199,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         }
     }, [formData.dataInicio, editingActivity]);
 
-    // AUTO-CÁLCULO: Safra (baseado em Data Início)
+    // 3. Auto-cálculo Safra
     useEffect(() => {
         if (formData.dataInicio) {
             const safra = generateSafra(formData.dataInicio);
@@ -212,7 +207,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         }
     }, [formData.dataInicio]);
 
-    // AUTO-CÁLCULO: Ordem de Disparo (baseado em jornada + data)
+    // 4. Auto-cálculo Ordem de Disparo
     useEffect(() => {
         if (formData.jornada && formData.dataInicio && !editingActivity) {
             const ordem = calculateOrdemDisparo(formData.jornada, formData.dataInicio, activities);
@@ -220,7 +215,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         }
     }, [formData.jornada, formData.dataInicio, activities, editingActivity]);
 
-    // AUTO-SUGESTÃO: Activity Name (quando campos-chave mudam)
+    // 5. Auto-sugestão Activity Name
     useEffect(() => {
         if (formData.bu && selectedSegmento && formData.jornada && formData.safra && formData.ordemDisparo && !editingActivity) {
             const suggestedName = suggestActivityName(
@@ -236,29 +231,20 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         }
     }, [formData.bu, selectedSegmento, formData.jornada, formData.safra, formData.ordemDisparo, editingActivity]);
 
-    // AUTO-CÁLCULO: Custo Unitário do Canal (quando canal muda)
+    // 6 & 7. Custos Unitários
     useEffect(() => {
         if (formData.canal && CUSTO_UNITARIO_CANAL[formData.canal]) {
-            const custoUnit = CUSTO_UNITARIO_CANAL[formData.canal];
-            setFormData(prev => ({
-                ...prev,
-                custoUnitarioCanal: String(custoUnit.toFixed(3))
-            }));
+            setFormData(prev => ({ ...prev, custoUnitarioCanal: String(CUSTO_UNITARIO_CANAL[formData.canal].toFixed(3)) }));
         }
     }, [formData.canal]);
 
-    // AUTO-CÁLCULO: Custo Unitário da Oferta (quando oferta muda)
     useEffect(() => {
         if (formData.oferta && CUSTO_UNITARIO_OFERTA[formData.oferta]) {
-            const custoUnit = CUSTO_UNITARIO_OFERTA[formData.oferta];
-            setFormData(prev => ({
-                ...prev,
-                custoUnitarioOferta: String(custoUnit.toFixed(2))
-            }));
+            setFormData(prev => ({ ...prev, custoUnitarioOferta: String(CUSTO_UNITARIO_OFERTA[formData.oferta].toFixed(2)) }));
         }
     }, [formData.oferta]);
 
-    // AUTO-CÁLCULO: Custos Totais (quando unitários ou base mudam)
+    // 8. Custos Totais
     useEffect(() => {
         const baseVol = Number(formData.baseVolume) || 0;
         const custoUnitOferta = Number(formData.custoUnitarioOferta) || 0;
@@ -278,9 +264,9 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         }
     }, [formData.baseVolume, formData.custoUnitarioOferta, formData.custoUnitarioCanal]);
 
-    // PROJEÇÕES IA: Calcular quando campos-chave mudam
+    // 9. Projeções IA
     useEffect(() => {
-        if (formData.bu && selectedSegmento && activities.length > 0 && !editingActivity) {
+        if (formData.bu && selectedSegmento && activities.length > 0) {
             try {
                 const projectionInput = {
                     bu: formData.bu,
@@ -289,7 +275,6 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                     canal: formData.canal,
                     baseVolume: Number(formData.baseVolume) || undefined
                 };
-
                 const results = calculateProjections(activities, projectionInput);
                 setProjections(results);
             } catch (error) {
@@ -299,9 +284,9 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         } else {
             setProjections({});
         }
-    }, [formData.bu, selectedSegmento, formData.perfilCredito, formData.canal, formData.baseVolume, activities, editingActivity]);
+    }, [formData.bu, selectedSegmento, formData.perfilCredito, formData.canal, formData.baseVolume, activities]);
 
-    // SUGESTÕES AUTOMÁTICAS: Preencher campos baseado no histórico
+    // 10. Sugestões Históricas
     useEffect(() => {
         if (!editingActivity && formData.bu && selectedSegmento && formData.jornada && activities.length > 0) {
             try {
@@ -311,28 +296,21 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                     jornada: formData.jornada,
                     parceiro: formData.parceiro || undefined
                 });
-
-                // Auto-preencher campos vazios
                 setFormData(prev => ({
                     ...prev,
-                    // Subgrupo
                     subgrupo: prev.subgrupo || (suggestions.subgrupo?.[0]?.value ? String(suggestions.subgrupo[0].value) : ''),
-                    // Ofertas
                     oferta: prev.oferta || (suggestions.oferta?.[0]?.value ? String(suggestions.oferta[0].value) : ''),
                     promocional: prev.promocional || (suggestions.promocional?.[0]?.value ? String(suggestions.promocional[0].value) : ''),
-                    // Ofertas secundárias
                     oferta2: prev.oferta2 || (suggestions.oferta2?.[0]?.value ? String(suggestions.oferta2[0].value) : ''),
                     promocional2: prev.promocional2 || (suggestions.promocional2?.[0]?.value ? String(suggestions.promocional2[0].value) : ''),
-                    // Perfil Crédito
                     perfilCredito: prev.perfilCredito || (suggestions.perfilCredito?.[0]?.value ? String(suggestions.perfilCredito[0].value) : '')
                 }));
-
-                console.log('✨ Sugestões IA aplicadas:', suggestions);
             } catch (error) {
                 console.error('Erro ao gerar sugestões:', error);
             }
         }
     }, [formData.bu, selectedSegmento, formData.jornada, formData.parceiro, activities, editingActivity]);
+
 
     const handleChange = (field: keyof ActivityFormInput, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -355,25 +333,20 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
 
             if (!parseResult.success) {
                 const newErrors: Record<string, string> = {};
-                // Helper to safely access errors
                 parseResult.error.issues.forEach(err => {
                     const field = err.path[0] as string;
                     newErrors[field] = err.message;
                 });
                 setErrors(newErrors);
-
-                // Show general error message
                 setErrors(prev => ({ ...prev, form: 'Verifique os campos obrigatórios em vermelho.' }));
 
                 // Scroll to top of modal content
                 const modalContent = document.getElementById('modal-content');
                 if (modalContent) modalContent.scrollTo({ top: 0, behavior: 'smooth' });
-
                 return;
             }
 
             let savedActivity: ActivityRow;
-
             if (editingActivity) {
                 savedActivity = await activityService.updateActivity(
                     editingActivity.id,
@@ -383,6 +356,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                         'Activity name / Taxonomia': parseResult.data.activityName,
                         'Data de Disparo': parseResult.data.dataInicio,
                         'Data Fim': parseResult.data.dataFim,
+                        'Horário de Disparo': parseResult.data.horarioDisparo,
                         Segmento: selectedSegmento,
                         'Perfil de Crédito': parseResult.data.perfilCredito || null,
                         Oferta: parseResult.data.oferta || null,
@@ -398,18 +372,14 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                     }
                 );
             } else {
-                savedActivity = await activityService.saveActivity(
-                    parseResult.data,
-                    selectedSegmento
-                );
+                savedActivity = await activityService.saveActivity(parseResult.data, selectedSegmento);
             }
 
             onSuccess(savedActivity);
             onClose();
         } catch (error: any) {
             console.error('Erro ao salvar atividade:', error);
-            const msg = error?.message || error?.error_description || 'Erro desconhecido';
-            setErrors({ form: `Erro ao salvar: ${msg}` });
+            setErrors({ form: `Erro ao salvar: ${error?.message || 'Erro desconhecido'}` });
         } finally {
             setLoading(false);
         }
@@ -417,7 +387,6 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
 
     const handleDelete = async () => {
         if (!editingActivity || !window.confirm('Tem certeza que deseja apagar esta atividade?')) return;
-
         try {
             setLoading(true);
             await activityService.deleteActivity(editingActivity.id);
@@ -435,654 +404,367 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-slate-800 rounded-xl shadow-2xl w-full max-w-6xl m-4 border border-slate-700">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm transition-opacity duration-300" onClick={onClose} />
+
+            {/* Modal Container */}
+            <div className="relative w-full max-w-5xl h-[95vh] md:h-[90vh] flex flex-col bg-[#FAFAF9] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-stone-200">
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-slate-700">
-                    <h2 className="text-lg font-semibold text-white">
-                        {editingActivity ? 'Editar Atividade' : 'Programar Nova Atividade'}
-                    </h2>
-                    <button onClick={onClose} className="p-2 text-slate-400 hover:text-white transition-colors">
-                        <X className="w-5 h-5" />
+                <div className="flex items-center justify-between px-6 py-5 bg-white border-b border-stone-100 shrink-0">
+                    <div>
+                        <h2 className="text-xl font-bold text-stone-900 tracking-tight flex items-center gap-2">
+                            {editingActivity ? <CheckCircle2 className="text-amber-500" size={20} /> : <Calendar className="text-amber-500" size={20} />}
+                            {editingActivity ? 'Editar Disparo' : 'Novo Disparo'}
+                        </h2>
+                        <p className="text-xs text-stone-500 mt-1 ml-7">
+                            {editingActivity ? 'Atualize as informações do disparo' : 'Preencha os dados abaixo para programar'}
+                        </p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-50 rounded-full transition-colors"
+                    >
+                        <X size={20} />
                     </button>
                 </div>
 
-                {errors.form && (
-                    <div className="mx-4 mt-4 p-3 bg-red-900/30 border border-red-600 rounded-lg text-red-300 text-sm">
-                        {errors.form}
-                    </div>
-                )}
+                {/* Body - Scrollable */}
+                <div id="modal-content" className="flex-1 overflow-y-auto p-6 md:p-8 scroll-smooth">
 
-                <div id="modal-content" className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 max-h-[80vh] overflow-y-auto">
-                    {/* Column 1: Identificação */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">
-                            Identificação <span title="Informações básicas para identificar este disparo no sistema"><Info size={14} className="text-slate-500 opacity-50" /></span>
-                        </h3>
-
-                        <div className="space-y-3">
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                    BU * <span title="Unidade de Negócio responsável"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <select
-                                    value={formData.bu}
-                                    onChange={(e) => handleChange('bu', e.target.value)}
-                                    className={`w-full px-3 py-2 bg-slate-900/50 border rounded-lg text-sm text-white focus:ring-1 focus:ring-blue-500 ${errors.bu ? 'border-red-500' : 'border-slate-700 hover:border-slate-600'}`}
-                                >
-                                    <option value="">Selecione</option>
-                                    <option value="B2C">B2C</option>
-                                    <option value="B2B2C">B2B2C</option>
-                                    <option value="Plurix">Plurix</option>
-                                </select>
-                                {errors.bu && <span className="text-red-400 text-xs mt-1 block">{errors.bu}</span>}
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                    Segmento * <span title="Público alvo do disparo"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <select
-                                    value={selectedSegmento}
-                                    onChange={(e) => setSelectedSegmento(e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white hover:border-slate-600"
-                                >
-                                    <option value="">Selecione</option>
-                                    {historicalOptions.segmentos.map(seg => (
-                                        <option key={seg} value={seg}>{seg}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                    Parceiro <span title="Nome do parceiro associado (ex: Afinz, Pluxee)"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <input
-                                    list="parceiros-list"
-                                    value={formData.parceiro}
-                                    onChange={(e) => handleChange('parceiro', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                    placeholder="Ex: Afinzed..."
-                                />
-                                <datalist id="parceiros-list">
-                                    {historicalOptions.parceiros.map(p => <option key={p} value={p} />)}
-                                </datalist>
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                    Subgrupo <span title="Nível adicional de segmentação"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <input
-                                    list="subgrupos-list"
-                                    value={formData.subgrupo}
-                                    onChange={(e) => handleChange('subgrupo', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                    placeholder="Ex: Ativos, Novos..."
-                                />
-                                <datalist id="subgrupos-list">
-                                    {historicalOptions.subgrupos.map(s => <option key={s} value={s} />)}
-                                </datalist>
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                    Jornada * <span title="Fluxo de comunicação ao qual este disparo pertence"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <input
-                                    list="jornadas-list"
-                                    value={formData.jornada}
-                                    onChange={(e) => handleChange('jornada', e.target.value)}
-                                    className={`w-full px-3 py-2 bg-slate-900/50 border rounded-lg text-sm text-white ${errors.jornada ? 'border-red-500' : 'border-slate-700'}`}
-                                    placeholder="Selecione ou digite..."
-                                />
-                                <datalist id="jornadas-list">
-                                    {historicalOptions.jornadas.map(j => <option key={j} value={j} />)}
-                                </datalist>
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                    Activity Name * <span title="Nome técnico único para o disparo (taxonomia)"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.activityName}
-                                    onChange={(e) => handleChange('activityName', e.target.value)}
-                                    placeholder="campanha_reativacao_2026"
-                                    className={`w-full px-3 py-2 bg-slate-900/50 border rounded-lg text-sm text-white font-mono ${errors.activityName ? 'border-red-500' : 'border-slate-700'}`}
-                                />
-                                {errors.activityName && <span className="text-red-400 text-xs mt-1 block">{errors.activityName}</span>}
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                    Canal * <span title="Meio de comunicação utilizado para o disparo (E-mail, SMS, Push, WhatsApp)"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <select
-                                    value={formData.canal}
-                                    onChange={(e) => handleChange('canal', e.target.value)}
-                                    className={`w-full px-3 py-2 bg-slate-900/50 border rounded-lg text-sm text-white focus:ring-1 focus:ring-blue-500 ${errors.canal ? 'border-red-500' : 'border-slate-700 hover:border-slate-600'}`}
-                                >
-                                    <option value="">Selecione</option>
-                                    {/* Priorizar histórico se houver, senão usar constantes FRAMEWORK */}
-                                    {(historicalOptions.canais.length > 0 ? historicalOptions.canais : CANAIS).map(c => (
-                                        <option key={c} value={c}>{c}</option>
-                                    ))}
-                                </select>
-                                {errors.canal && <span className="text-red-400 text-xs mt-1 block">{errors.canal}</span>}
-                            </div>
+                    {errors.form && (
+                        <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                            <AlertCircle size={18} />
+                            {errors.form}
                         </div>
-                    </div>
+                    )}
 
-                    {/* Column 2: Timeline & Volume */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">
-                            Timeline & Volume <span title="Datas, horários e volume de disparos planejados"><Info size={14} className="text-slate-500 opacity-50" /></span>
-                        </h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-                        <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                        Início * <span title="Data prevista do disparo"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={formData.dataInicio}
-                                        onChange={(e) => handleChange('dataInicio', e.target.value)}
-                                        className="w-full px-2 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                        Fim * <span title="Data limite para análise de conversão"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={formData.dataFim}
-                                        onChange={(e) => handleChange('dataFim', e.target.value)}
-                                        className="w-full px-2 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                    />
-                                </div>
-                            </div>
+                        {/* LEFT COLUMN: IDENTIFICATION & SCHEDULE */}
+                        <div className="space-y-6">
 
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                    Horário <span title="Hora agendada para o envio"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <input
-                                    type="time"
-                                    value={formData.horarioDisparo}
-                                    onChange={(e) => handleChange('horarioDisparo', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                        Safra <span title="Mês/ano de agrupamento operacional (gerado automaticamente a partir da Data de Disparo)"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.safra}
-                                        readOnly
-                                        className="w-full px-3 py-2 bg-slate-900/70 border border-slate-600 rounded-lg text-sm text-slate-400 cursor-not-allowed"
-                                        placeholder="Ex: jan/26"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                        Ordem <span title="Sequência automática deste disparo dentro da jornada (calculado pelo sistema)"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={formData.ordemDisparo}
-                                        readOnly
-                                        className="w-full px-3 py-2 bg-slate-900/70 border border-slate-600 rounded-lg text-sm text-slate-400 cursor-not-allowed"
-                                    />
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    {/* Column 3: Ofertas & Produto */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">
-                            Ofertas & Produto <span title="Ofertas comerciais e configurações de produto"><Info size={14} className="text-slate-500 opacity-50" /></span>
-                        </h3>
-
-                        <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                        Oferta * <span title="Principal oferta da campanha"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                    </label>
-                                    <input
-                                        list="ofertas-list"
-                                        value={formData.oferta}
-                                        onChange={(e) => handleChange('oferta', e.target.value)}
-                                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                        placeholder="Ex: Vibe"
-                                    />
-                                    <datalist id="ofertas-list">
-                                        {historicalOptions.ofertas.map(o => <option key={o} value={o} />)}
-                                    </datalist>
-                                </div>
-                                <div>
-                                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                        Promocional <span title="Cupom ou benefício extra"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                    </label>
-                                    <input
-                                        list="promocionais-list"
-                                        value={formData.promocional}
-                                        onChange={(e) => handleChange('promocional', e.target.value)}
-                                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                        placeholder="Ex: Padrão"
-                                    />
-                                    <datalist id="promocionais-list">
-                                        {historicalOptions.promocionais.map(p => <option key={p} value={p} />)}
-                                    </datalist>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                        Oferta 2 <span title="Oferta secundária para testes A/B"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                    </label>
-                                    <input
-                                        list="ofertas2-list"
-                                        value={formData.oferta2}
-                                        onChange={(e) => handleChange('oferta2', e.target.value)}
-                                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                        placeholder="Opcional"
-                                    />
-                                    <datalist id="ofertas2-list">
-                                        {historicalOptions.ofertas2.map(o => <option key={o} value={o} />)}
-                                    </datalist>
-                                </div>
-                                <div>
-                                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                        Promocional 2 <span title="Cupom secundário para testes"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                    </label>
-                                    <input
-                                        list="promocionais2-list"
-                                        value={formData.promocional2}
-                                        onChange={(e) => handleChange('promocional2', e.target.value)}
-                                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                        placeholder="Opcional"
-                                    />
-                                    <datalist id="promocionais2-list">
-                                        {historicalOptions.promocionais2.map(p => <option key={p} value={p} />)}
-                                    </datalist>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Column 4: Configuração */}
-                    <div className="space-y-3">
-                        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">
-                            Configuração <span title="Produto, perfil e etapa do funil"><Info size={14} className="text-slate-500 opacity-50" /></span>
-                        </h3>
-
-                        <div className="space-y-3">
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                    Produto <span title="Produto financeiro oferecido (Classic é o padrão)"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <select
-                                    value={formData.produto}
-                                    onChange={(e) => handleChange('produto', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                >
-                                    <option value="">Selecione</option>
-                                    {historicalOptions.produtos.length > 0 ? (
-                                        historicalOptions.produtos.map(p => <option key={p} value={p}>{p}</option>)
-                                    ) : (
-                                        PRODUTOS.map(p => <option key={p} value={p}>{p}</option>)
-                                    )}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                    Etapa Aquisição <span title="Fase do funil de conversão (Aquisição ou Meio de Funil)"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <select
-                                    value={formData.etapaAquisicao}
-                                    onChange={(e) => handleChange('etapaAquisicao', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                >
-                                    <option value="">Selecione</option>
-                                    {historicalOptions.etapasAquisicao.length > 0 ? (
-                                        historicalOptions.etapasAquisicao.map(e => <option key={e} value={e}>{e}</option>)
-                                    ) : (
-                                        ETAPAS_AQUISICAO.map(e => <option key={e} value={e}>{e}</option>)
-                                    )}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                    Perfil Crédito <span title="Regra de aprovação/crédito aplicada"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <select
-                                    value={formData.perfilCredito}
-                                    onChange={(e) => handleChange('perfilCredito', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                >
-                                    <option value="">Selecione</option>
-                                    {historicalOptions.perfisCredito.map(p => <option key={p} value={p}>{p}</option>)}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-bold text-indigo-400">
-                                    Volume <span title="Quantidade total de clientes na base"><Info size={12} className="text-indigo-500/50 cursor-help" /></span>
-                                </label>
-                                <input
-                                    type="number"
-                                    value={formData.baseVolume}
-                                    onChange={(e) => handleChange('baseVolume', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-indigo-500/30 rounded-lg text-sm text-white"
-                                    placeholder="Ex: 50000"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Seção Expandida: Investimento (abaixo do grid) */}
-                <div className="px-6 pb-4">
-                    {/* Column 4 content moved here as expanded section */}
-                    <div className="space-y-4">
-                        {/* SEÇÃO 1: INVESTIMENTO (CUSTOS) */}
-                        <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 pb-2 border-b border-emerald-500/30 uppercase tracking-wider">
-                            <DollarSign size={14} /> Investimento <span title="Custos planejados para cálculo de ROI e CAC (opcional ao programar)"><Info size={14} className="text-emerald-400/50 cursor-help" /></span>
-                        </h3>
-
-                        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 space-y-2.5">
-                            {/* Custo Unitário Oferta */}
-                            <div>
-                                <label className="text-[10px] text-slate-400 mb-1 block flex items-center gap-1">
-                                    Custo Unit. Oferta (R$) <span title="Custo por cliente da oferta comercial (ex: R$ 0,00 / R$ 1,00 / R$ 2,00 / R$ 76,50)"><Info size={9} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={formData.custoUnitarioOferta}
-                                    onChange={(e) => handleChange('custoUnitarioOferta', e.target.value)}
-                                    className="w-full px-2 py-1.5 bg-slate-900/50 border border-slate-700 rounded text-xs text-white"
-                                    placeholder="Auto-sugerido"
-                                />
-                            </div>
-
-                            {/* Custo Total Oferta (read-only) */}
-                            <div>
-                                <label className="text-[10px] text-slate-400 mb-1 block">Custo Total Oferta (R$)</label>
-                                <input
-                                    type="text"
-                                    value={formData.custoTotalOferta ? `R$ ${Number(formData.custoTotalOferta).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
-                                    readOnly
-                                    className="w-full px-2 py-1.5 bg-slate-900/70 border border-slate-600 rounded text-xs text-emerald-400 cursor-not-allowed font-bold"
-                                    placeholder="Calculado"
-                                />
-                            </div>
-
-                            {/* Custo Unitário Canal */}
-                            <div>
-                                <label className="text-[10px] text-slate-400 mb-1 block flex items-center gap-1">
-                                    Custo Unit. Canal (R$) <span title="Custo por mensagem do canal selecionado (E-mail R$ 0,001 / SMS R$ 0,064 / WhatsApp R$ 0,420)"><Info size={9} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.001"
-                                    value={formData.custoUnitarioCanal}
-                                    onChange={(e) => handleChange('custoUnitarioCanal', e.target.value)}
-                                    className="w-full px-2 py-1.5 bg-slate-900/50 border border-slate-700 rounded text-xs text-white"
-                                    placeholder="Auto-sugerido"
-                                />
-                            </div>
-
-                            {/* Custo Total Canal (read-only) */}
-                            <div>
-                                <label className="text-[10px] text-slate-400 mb-1 block">Custo Total Canal (R$)</label>
-                                <input
-                                    type="text"
-                                    value={formData.custoTotalCanal ? `R$ ${Number(formData.custoTotalCanal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
-                                    readOnly
-                                    className="w-full px-2 py-1.5 bg-slate-900/70 border border-slate-600 rounded text-xs text-emerald-400 cursor-not-allowed font-bold"
-                                    placeholder="Calculado"
-                                />
-                            </div>
-
-                            {/* Custo Total Campanha (read-only, destaque) */}
-                            <div className="pt-2 border-t border-slate-700">
-                                <label className="text-[10px] text-emerald-400 mb-1 block font-bold">Custo Total Campanha (R$)</label>
-                                <input
-                                    type="text"
-                                    value={formData.custoTotalCampanha ? `R$ ${Number(formData.custoTotalCampanha).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
-                                    readOnly
-                                    className="w-full px-2 py-2 bg-emerald-500/10 border border-emerald-500 rounded text-sm text-emerald-300 cursor-not-allowed font-bold text-center"
-                                    placeholder="R$ 0,00"
-                                />
-                            </div>
-
-                            {/* CAC Previsto */}
-                            <div>
-                                <label className="text-[10px] text-slate-400 mb-1 block flex items-center gap-1">
-                                    CAC Previsto <span title="Custo de Aquisição por Cartão previsto (Custo Total ÷ Cartões esperados)"><Info size={9} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <div className="text-emerald-400 text-lg font-bold text-center py-2 bg-slate-900/50 rounded border border-emerald-500/20">
-                                    R$ {calcularCACPrevisto(
-                                        Number(formData.custoTotalCampanha) || 0,
-                                        Math.round((Number(formData.baseVolume) || 0) * 0.05) // Assumindo 5% taxa conversão padrão
-                                    ).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* SEÇÃO 2: PROJEÇÃO (renomeado de Inteligência) */}
-                        <h3 className="text-sm font-bold text-indigo-400 flex items-center gap-2 pb-2 border-b border-indigo-500/30 uppercase tracking-wider mt-6">
-                            <TrendingUp size={14} /> Projeção <span title="Engine de IA que busca disparos similares (BU + Segmento + Perfil Crédito + Canal) nos últimos 90 dias e projeta métricas com base em médias/medianas ponderadas por volume e decaimento temporal"><Info size={14} className="text-indigo-400/50 cursor-help" /></span>
-                        </h3>
-
-                        <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-3 space-y-2.5">
-                            {Object.keys(projections).length === 0 ? (
-                                <div className="py-6 text-center space-y-2">
-                                    <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center mx-auto opacity-50">
-                                        <TrendingUp size={14} className="text-slate-600" />
+                            {/* Card 1: Informações Principais */}
+                            <SectionCard title="Identificação" icon={<Tag size={16} />}>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="col-span-1">
+                                        <Label label="BU" required tooltip="Unidade de Negócio" />
+                                        <Select value={formData.bu} onChange={(e) => handleChange('bu', e.target.value)} error={errors.bu}>
+                                            <option value="">Selecione</option>
+                                            <option value="B2C">B2C</option>
+                                            <option value="B2B2C">B2B2C</option>
+                                            <option value="Plurix">Plurix</option>
+                                        </Select>
                                     </div>
-                                    <p className="text-[10px] text-slate-500 italic px-4 leading-relaxed">
-                                        Preencha **BU** e **Segmento** para gerar projeções baseadas em dados históricos...
-                                    </p>
+                                    <div className="col-span-1">
+                                        <Label label="Segmento" required tooltip="Público alvo" />
+                                        <Select value={selectedSegmento} onChange={(e) => setSelectedSegmento(e.target.value)}>
+                                            <option value="">Selecione</option>
+                                            {historicalOptions.segmentos.map(s => <option key={s} value={s}>{s}</option>)}
+                                        </Select>
+                                    </div>
+
+                                    {/* Activity Name - Full Width */}
+                                    <div className="col-span-2">
+                                        <Label label="Nome da Atividade" required tooltip="Taxonomia única" />
+                                        <Input
+                                            value={formData.activityName}
+                                            onChange={(e) => handleChange('activityName', e.target.value)}
+                                            placeholder="campanha_exemplo_2026"
+                                            className="font-mono text-xs bg-stone-50"
+                                            error={errors.activityName}
+                                        />
+                                    </div>
+
+                                    {/* Parceiro & Subgrupo */}
+                                    <div className="col-span-1">
+                                        <Label label="Parceiro" tooltip="Ex: Afinz, Pluxee" />
+                                        <Input
+                                            list="parceiros-list"
+                                            value={formData.parceiro}
+                                            onChange={(e) => handleChange('parceiro', e.target.value)}
+                                            placeholder="Opcional"
+                                        />
+                                        <datalist id="parceiros-list">
+                                            {historicalOptions.parceiros.map(p => <option key={p} value={p} />)}
+                                        </datalist>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <Label label="Subgrupo" tooltip="Segmentação fina" />
+                                        <Input
+                                            list="subgrupos-list"
+                                            value={formData.subgrupo}
+                                            onChange={(e) => handleChange('subgrupo', e.target.value)}
+                                            placeholder="Opcional"
+                                        />
+                                        <datalist id="subgrupos-list">
+                                            {historicalOptions.subgrupos.map(s => <option key={s} value={s} />)}
+                                        </datalist>
+                                    </div>
+
+                                    {/* Jornada & Canal */}
+                                    <div className="col-span-1">
+                                        <Label label="Jornada" required />
+                                        <Input
+                                            list="jornadas-list"
+                                            value={formData.jornada}
+                                            onChange={(e) => handleChange('jornada', e.target.value)}
+                                            error={errors.jornada}
+                                        />
+                                        <datalist id="jornadas-list">
+                                            {historicalOptions.jornadas.map(j => <option key={j} value={j} />)}
+                                        </datalist>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <Label label="Canal" required />
+                                        <Select value={formData.canal} onChange={(e) => handleChange('canal', e.target.value)} error={errors.canal}>
+                                            <option value="">Selecione</option>
+                                            {(historicalOptions.canais.length > 0 ? historicalOptions.canais : CANAIS).map(c => (
+                                                <option key={c} value={c}>{c}</option>
+                                            ))}
+                                        </Select>
+                                    </div>
                                 </div>
-                            ) : (
-                                <>
-                                    {/* Header de info do match */}
-                                    <div className="flex items-center justify-between pb-2 border-b border-indigo-500/20">
-                                        <div className="flex items-center gap-1.5">
-                                            <div className={`w-1.5 h-1.5 rounded-full ${projections.taxaConversao?.method === 'exact' ? 'bg-emerald-500' :
-                                                projections.taxaConversao?.method === 'partial' ? 'bg-yellow-500' :
-                                                    'bg-orange-500'
-                                                }`} />
-                                            <span className="text-[9px] text-slate-400 font-bold uppercase">
-                                                {projections.taxaConversao?.method === 'exact' && '✓ Match Exato (100%)'}
-                                                {projections.taxaConversao?.method === 'partial' && '≈ Match Parcial (70%)'}
-                                                {projections.taxaConversao?.method === 'fallback' && '~ Fallback (50%)'}
-                                            </span>
+                            </SectionCard>
+
+                            {/* Card 2: Timeline */}
+                            <SectionCard title="Cronograma" icon={<Calendar size={16} />}>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="col-span-1">
+                                        <Label label="Data Início" required />
+                                        <Input type="date" value={formData.dataInicio} onChange={(e) => handleChange('dataInicio', e.target.value)} />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <Label label="Data Fim" required />
+                                        <Input type="date" value={formData.dataFim} onChange={(e) => handleChange('dataFim', e.target.value)} />
+                                    </div>
+                                    <div className="col-span-1">
+                                        <Label label="Horário" />
+                                        <Input type="time" value={formData.horarioDisparo} onChange={(e) => handleChange('horarioDisparo', e.target.value)} />
+                                    </div>
+
+                                    {/* Readonly Fields */}
+                                    <div className="col-span-1">
+                                        <Label label="Safra (Auto)" />
+                                        <div className="px-3 py-2.5 bg-stone-100 border border-stone-200 rounded-lg text-sm text-stone-500 font-medium">
+                                            {formData.safra || '-'}
                                         </div>
-                                        <span className="text-[8px] text-slate-500 font-mono">
-                                            {projections.taxaConversao?.sampleSize || 0} disparos
-                                        </span>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <Label label="Ordem (Auto)" />
+                                        <div className="px-3 py-2.5 bg-stone-100 border border-stone-200 rounded-lg text-sm text-stone-500 font-medium">
+                                            {formData.ordemDisparo || '-'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </SectionCard>
+                        </div>
+
+                        {/* RIGHT COLUMN: CONFIG, OFFERS, INVESTMENT */}
+                        <div className="space-y-6">
+
+                            {/* Card 3: Configuração do Produto */}
+                            <SectionCard title="Produto & Oferta" icon={<Package size={16} />}>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="col-span-1">
+                                        <Label label="Produto" required />
+                                        <Select value={formData.produto} onChange={(e) => handleChange('produto', e.target.value)}>
+                                            <option value="">Selecione</option>
+                                            {(historicalOptions.produtos.length > 0 ? historicalOptions.produtos : PRODUTOS).map(p => <option key={p} value={p}>{p}</option>)}
+                                        </Select>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <Label label="Perfil Crédito" />
+                                        <Select value={formData.perfilCredito} onChange={(e) => handleChange('perfilCredito', e.target.value)}>
+                                            <option value="">Selecione</option>
+                                            {historicalOptions.perfisCredito.map(p => <option key={p} value={p}>{p}</option>)}
+                                        </Select>
                                     </div>
 
-                                    {/* Grid de Métricas Projetadas */}
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {/* Taxa Conversão */}
-                                        {projections.taxaConversao && (
-                                            <div className="bg-black/20 border border-indigo-500/10 rounded-lg p-2">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <span className="text-[9px] text-slate-400">Taxa Conv.</span>
-                                                    <span className="text-[8px] text-indigo-400 font-bold">
-                                                        {projections.taxaConversao.confidence}%
-                                                    </span>
-                                                </div>
-                                                <div className="text-lg font-bold text-indigo-300">
-                                                    {projections.taxaConversao.projectedValue.toFixed(2)}%
-                                                </div>
-                                                <div className="text-[8px] text-slate-500 mt-0.5">
-                                                    {projections.taxaConversao.confidenceInterval.min.toFixed(1)}% - {projections.taxaConversao.confidenceInterval.max.toFixed(1)}%
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* CAC */}
-                                        {projections.cac && (
-                                            <div className="bg-black/20 border border-indigo-500/10 rounded-lg p-2">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <span className="text-[9px] text-slate-400">CAC</span>
-                                                    <span className="text-[8px] text-indigo-400 font-bold">
-                                                        {projections.cac.confidence}%
-                                                    </span>
-                                                </div>
-                                                <div className="text-lg font-bold text-indigo-300">
-                                                    R$ {projections.cac.projectedValue.toFixed(2)}
-                                                </div>
-                                                <div className="text-[8px] text-slate-500 mt-0.5">
-                                                    R$ {projections.cac.confidenceInterval.min.toFixed(2)} - {projections.cac.confidenceInterval.max.toFixed(2)}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Cartões */}
-                                        {projections.cartoesGerados && (
-                                            <div className="bg-black/20 border border-indigo-500/10 rounded-lg p-2">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <span className="text-[9px] text-slate-400">Cartões</span>
-                                                    <span className="text-[8px] text-indigo-400 font-bold">
-                                                        {projections.cartoesGerados.confidence}%
-                                                    </span>
-                                                </div>
-                                                <div className="text-lg font-bold text-indigo-300">
-                                                    {Math.round(projections.cartoesGerados.projectedValue).toLocaleString()}
-                                                </div>
-                                                <div className="text-[8px] text-slate-500 mt-0.5">
-                                                    {Math.round(projections.cartoesGerados.confidenceInterval.min).toLocaleString()} - {Math.round(projections.cartoesGerados.confidenceInterval.max).toLocaleString()}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Taxa Entrega */}
-                                        {projections.taxaEntrega && (
-                                            <div className="bg-black/20 border border-indigo-500/10 rounded-lg p-2">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <span className="text-[9px] text-slate-400">Tx. Entrega</span>
-                                                    <span className="text-[8px] text-indigo-400 font-bold">
-                                                        {projections.taxaEntrega.confidence}%
-                                                    </span>
-                                                </div>
-                                                <div className="text-base font-bold text-indigo-300">
-                                                    {projections.taxaEntrega.projectedValue.toFixed(1)}%
-                                                </div>
-                                                <div className="text-[8px] text-slate-500 mt-0.5">
-                                                    {projections.taxaEntrega.confidenceInterval.min.toFixed(1)}% - {projections.taxaEntrega.confidenceInterval.max.toFixed(1)}%
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Taxa Abertura */}
-                                        {projections.taxaAbertura && (
-                                            <div className="bg-black/20 border border-indigo-500/10 rounded-lg p-2">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <span className="text-[9px] text-slate-400">Tx. Abertura</span>
-                                                    <span className="text-[8px] text-indigo-400 font-bold">
-                                                        {projections.taxaAbertura.confidence}%
-                                                    </span>
-                                                </div>
-                                                <div className="text-base font-bold text-indigo-300">
-                                                    {projections.taxaAbertura.projectedValue.toFixed(1)}%
-                                                </div>
-                                                <div className="text-[8px] text-slate-500 mt-0.5">
-                                                    {projections.taxaAbertura.confidenceInterval.min.toFixed(1)}% - {projections.taxaAbertura.confidenceInterval.max.toFixed(1)}%
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Propostas */}
-                                        {projections.propostas && (
-                                            <div className="bg-black/20 border border-indigo-500/10 rounded-lg p-2">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <span className="text-[9px] text-slate-400">Propostas</span>
-                                                    <span className="text-[8px] text-indigo-400 font-bold">
-                                                        {projections.propostas.confidence}%
-                                                    </span>
-                                                </div>
-                                                <div className="text-base font-bold text-indigo-300">
-                                                    {Math.round(projections.propostas.projectedValue).toLocaleString()}
-                                                </div>
-                                                <div className="text-[8px] text-slate-500 mt-0.5">
-                                                    {Math.round(projections.propostas.confidenceInterval.min).toLocaleString()} - {Math.round(projections.propostas.confidenceInterval.max).toLocaleString()}
-                                                </div>
-                                            </div>
-                                        )}
+                                    <div className="col-span-1">
+                                        <Label label="Oferta Principal" required />
+                                        <Input list="ofertas-list" value={formData.oferta} onChange={(e) => handleChange('oferta', e.target.value)} />
+                                        <datalist id="ofertas-list">{historicalOptions.ofertas.map(o => <option key={o} value={o} />)}</datalist>
+                                    </div>
+                                    <div className="col-span-1">
+                                        <Label label="Promocional" />
+                                        <Input list="promocionais-list" value={formData.promocional} onChange={(e) => handleChange('promocional', e.target.value)} />
+                                        <datalist id="promocionais-list">{historicalOptions.promocionais.map(p => <option key={p} value={p} />)}</datalist>
                                     </div>
 
-                                    {/* Legenda */}
-                                    <div className="text-[8px] text-slate-600 border-t border-indigo-500/10 pt-2">
-                                        💡 Projeções baseadas em similaridade (BU+Segmento+Perfil+Canal), decaimento temporal (90d) e ponderação por volume
+                                    {/* Secondary Offers (Collapsed look but actually visible for simplicity, or we can use small gap) */}
+                                    <div className="col-span-2 pt-2 border-t border-stone-100 grid grid-cols-2 gap-4">
+                                        <div className="col-span-1">
+                                            <Label label="Oferta Secundária" tooltip="Teste A/B" />
+                                            <Input list="ofertas2-list" value={formData.oferta2} onChange={(e) => handleChange('oferta2', e.target.value)} placeholder="Opcional" className="bg-stone-50" />
+                                            <datalist id="ofertas2-list">{historicalOptions.ofertas2.map(o => <option key={o} value={o} />)}</datalist>
+                                        </div>
+                                        <div className="col-span-1">
+                                            <Label label="Promo Secundário" />
+                                            <Input list="promocionais2-list" value={formData.promocional2} onChange={(e) => handleChange('promocional2', e.target.value)} placeholder="Opcional" className="bg-stone-50" />
+                                            <datalist id="promocionais2-list">{historicalOptions.promocionais2.map(p => <option key={p} value={p} />)}</datalist>
+                                        </div>
                                     </div>
-                                </>
-                            )}
+                                </div>
+                            </SectionCard>
+
+                            {/* Card 4: Investimento */}
+                            <SectionCard title="Investimento & Volume" icon={<DollarSign size={16} />} headerClassName="text-emerald-700 bg-emerald-50/50">
+
+                                <div className="mb-4">
+                                    <Label label="Volume da Base" tooltip="Quantidade de clientes" />
+                                    <Input
+                                        type="number"
+                                        value={formData.baseVolume}
+                                        onChange={(e) => handleChange('baseVolume', e.target.value)}
+                                        placeholder="Ex: 50000"
+                                        className="text-lg font-medium text-emerald-900 border-emerald-200 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-3 bg-emerald-50/30 p-3 rounded-lg border border-emerald-100">
+                                    <div>
+                                        <Label label="Custo U. Oferta" />
+                                        <Input type="number" step="0.01" value={formData.custoUnitarioOferta} onChange={(e) => handleChange('custoUnitarioOferta', e.target.value)} className="text-xs h-8" placeholder="0.00" />
+                                    </div>
+                                    <div>
+                                        <Label label="Custo U. Canal" />
+                                        <Input type="number" step="0.001" value={formData.custoUnitarioCanal} onChange={(e) => handleChange('custoUnitarioCanal', e.target.value)} className="text-xs h-8" placeholder="0.000" />
+                                    </div>
+                                    <div>
+                                        <Label label="Total Campanha" />
+                                        <div className="h-8 flex items-center px-2 bg-emerald-100/50 border border-emerald-200 rounded text-xs font-bold text-emerald-800">
+                                            R$ {Number(formData.custoTotalCampanha).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </SectionCard>
+
+                            {/* Card 5: AI Projections */}
+                            <div className="bg-indigo-50/30 p-5 rounded-xl border border-indigo-100 shadow-sm">
+                                <h3 className="text-sm font-bold text-indigo-700 flex items-center gap-2 mb-4 uppercase tracking-wide">
+                                    <TrendingUp size={16} />
+                                    Projeção IA
+                                </h3>
+
+                                <div className="grid grid-cols-3 gap-3">
+                                    <MetricCard label="Taxa Conv." value={projections.taxaConversao?.projectedValue} suffix="%" confidence={projections.taxaConversao?.confidence} />
+                                    <MetricCard label="CAC" value={projections.cac?.projectedValue} prefix="R$ " confidence={projections.cac?.confidence} />
+                                    <MetricCard label="Cartões" value={projections.cartoesGerados?.projectedValue} isInt confidence={projections.cartoesGerados?.confidence} />
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-end gap-3 p-4 border-t border-slate-700">
-                    {editingActivity && (
-                        <button
-                            type="button"
-                            onClick={handleDelete}
-                            disabled={loading}
-                            className="flex items-center gap-1.5 px-3 py-2 text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 rounded-lg transition-all text-xs font-bold uppercase tracking-wider mr-auto"
-                        >
-                            <Trash2 size={14} />
-                            Excluir
-                        </button>
-                    )}
+                <div className="px-6 py-4 bg-white border-t border-stone-200 flex justify-between items-center shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.02)]">
+                    <div>
+                        {editingActivity && (
+                            <button
+                                onClick={handleDelete}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                            >
+                                <Trash2 size={16} />
+                                <span className="hidden md:inline">Excluir Disparo</span>
+                            </button>
+                        )}
+                    </div>
 
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-4 py-2 text-slate-400 hover:text-white transition-colors text-sm font-medium"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handleSubmit('Rascunho')}
-                        disabled={loading}
-                        className="px-5 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all disabled:opacity-50 text-sm font-bold shadow-lg shadow-black/20"
-                    >
-                        {loading ? 'Salvando...' : 'Salvar Rascunho'}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handleSubmit('Scheduled')}
-                        disabled={loading}
-                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all disabled:opacity-50 text-sm font-bold shadow-lg shadow-indigo-500/20 ring-1 ring-indigo-400/30"
-                    >
-                        {loading ? 'Agendando...' : 'Agendar & Enviar'}
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={onClose}
+                            className="px-5 py-2.5 text-stone-500 hover:text-stone-800 font-medium text-sm transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={() => handleSubmit('Rascunho')}
+                            disabled={loading}
+                            className="px-5 py-2.5 bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 rounded-lg font-medium text-sm transition-all shadow-sm disabled:opacity-50"
+                        >
+                            {loading ? '...' : 'Salvar Rascunho'}
+                        </button>
+                        <button
+                            onClick={() => handleSubmit('Scheduled')}
+                            disabled={loading}
+                            className="px-8 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-sm shadow-lg shadow-amber-500/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none flex items-center gap-2"
+                        >
+                            <CheckCircle2 size={16} />
+                            {loading ? 'Processando...' : 'Agendar Disparo'}
+                        </button>
+                    </div>
                 </div>
+
             </div>
         </div>
     );
 };
+
+// --- Helper Components ---
+
+const Label = ({ label, required, tooltip }: { label: string, required?: boolean, tooltip?: string }) => (
+    <label className="flex items-center gap-1.5 text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-1.5">
+        {label}
+        {required && <span className="text-amber-500">*</span>}
+        {tooltip && <span title={tooltip} className="text-stone-300 hover:text-stone-500 cursor-help transition-colors"><Info size={12} /></span>}
+    </label>
+);
+
+const Input = ({ className = "", error, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { error?: string }) => (
+    <div className="relative">
+        <input
+            className={`w-full px-4 py-2.5 bg-white border rounded-lg text-sm text-stone-900 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-500/10 transition-all ${error ? 'border-red-400 focus:border-red-500 ring-2 ring-red-500/10' : 'border-stone-200 focus:border-amber-500'} ${className}`}
+            {...props}
+        />
+        {error && <span className="absolute -bottom-4 left-0 text-[10px] text-red-500 font-medium animate-pulse">{error}</span>}
+    </div>
+);
+
+const Select = ({ className = "", error, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { error?: string }) => (
+    <div className="relative">
+        <select
+            className={`w-full px-4 py-2.5 bg-white border rounded-lg text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500/10 transition-all appearance-none cursor-pointer ${error ? 'border-red-400 focus:border-red-500' : 'border-stone-200 focus:border-amber-500'} ${className}`}
+            {...props}
+        >
+            {children}
+        </select>
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m1 1 4 4 4-4" /></svg>
+        </div>
+        {error && <span className="absolute -bottom-4 left-0 text-[10px] text-red-500 font-medium">{error}</span>}
+    </div>
+);
+
+const SectionCard = ({ title, icon, children, headerClassName = "text-stone-800" }: { title: string, icon: React.ReactNode, children: React.ReactNode, headerClassName?: string }) => (
+    <section className="bg-white p-6 rounded-xl shadow-sm border border-stone-100 flex flex-col gap-5 hover:shadow-md transition-shadow duration-300">
+        <div className={`flex items-center gap-2 pb-3 border-b border-stone-100 ${headerClassName}`}>
+            <div className="opacity-70">{icon}</div>
+            <h3 className="text-sm font-bold uppercase tracking-wider">{title}</h3>
+        </div>
+        <div className="space-y-4">
+            {children}
+        </div>
+    </section>
+);
+
+const MetricCard = ({ label, value, prefix = "", suffix = "", isInt = false, confidence }: { label: string, value?: number, prefix?: string, suffix?: string, isInt?: boolean, confidence?: number }) => (
+    <div className="bg-white border border-indigo-100 rounded-lg p-3 shadow-sm flex flex-col items-center justify-center text-center">
+        <span className="text-[10px] uppercase font-bold text-indigo-300 mb-1">{label}</span>
+        <div className="text-lg font-bold text-indigo-900">
+            {value !== undefined ? (
+                <>
+                    <span className="text-xs text-indigo-400 mr-0.5">{prefix}</span>
+                    {isInt ? Math.round(value).toLocaleString() : value.toFixed(2)}
+                    <span className="text-xs text-indigo-400 ml-0.5">{suffix}</span>
+                </>
+            ) : '-'}
+        </div>
+        {confidence && (
+            <div className="mt-1 px-1.5 py-0.5 bg-indigo-50 rounded text-[9px] font-bold text-indigo-500">
+                {confidence}% conf.
+            </div>
+        )}
+    </div>
+);
