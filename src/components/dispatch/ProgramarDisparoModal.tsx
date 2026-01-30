@@ -436,7 +436,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-slate-800 rounded-xl shadow-2xl w-full max-w-6xl m-4 border border-slate-700">
+            <div className="relative bg-slate-800 rounded-xl shadow-2xl w-full max-w-7xl m-4 border border-slate-700">
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-slate-700">
@@ -454,7 +454,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                     </div>
                 )}
 
-                <div id="modal-content" className="p-6 grid grid-cols-1 md:grid-cols-3 gap-8 max-h-[80vh] overflow-y-auto">
+                <div id="modal-content" className="p-6 grid grid-cols-1 md:grid-cols-4 gap-5 max-h-[80vh] overflow-y-auto">
                     {/* Column 1: Identificação */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">
@@ -609,29 +609,16 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-bold text-indigo-400">
-                                        Volume <span title="Quantidade total de clientes na base do disparo"><Info size={12} className="text-indigo-500/50 cursor-help" /></span>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={formData.baseVolume}
-                                        onChange={(e) => handleChange('baseVolume', e.target.value)}
-                                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                        Horário <span title="Hora agendada para o envio"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                    </label>
-                                    <input
-                                        type="time"
-                                        value={formData.horarioDisparo}
-                                        onChange={(e) => handleChange('horarioDisparo', e.target.value)}
-                                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                    />
-                                </div>
+                            <div>
+                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
+                                    Horário <span title="Hora agendada para o envio"><Info size={12} className="text-slate-500 cursor-help" /></span>
+                                </label>
+                                <input
+                                    type="time"
+                                    value={formData.horarioDisparo}
+                                    onChange={(e) => handleChange('horarioDisparo', e.target.value)}
+                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
+                                />
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
@@ -735,7 +722,16 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                     </datalist>
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
+                    {/* Column 4: Configuração */}
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">
+                            Configuração <span title="Produto, perfil e etapa do funil"><Info size={14} className="text-slate-500 opacity-50" /></span>
+                        </h3>
+
+                        <div className="space-y-3">
                             <div>
                                 <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
                                     Produto <span title="Produto financeiro oferecido (Classic é o padrão)"><Info size={12} className="text-slate-500 cursor-help" /></span>
@@ -784,6 +780,19 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                     <option value="">Selecione</option>
                                     {historicalOptions.perfisCredito.map(p => <option key={p} value={p}>{p}</option>)}
                                 </select>
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-bold text-indigo-400">
+                                    Volume <span title="Quantidade total de clientes na base"><Info size={12} className="text-indigo-500/50 cursor-help" /></span>
+                                </label>
+                                <input
+                                    type="number"
+                                    value={formData.baseVolume}
+                                    onChange={(e) => handleChange('baseVolume', e.target.value)}
+                                    className="w-full px-3 py-2 bg-slate-900/50 border border-indigo-500/30 rounded-lg text-sm text-white"
+                                    placeholder="Ex: 50000"
+                                />
                             </div>
                         </div>
                     </div>
