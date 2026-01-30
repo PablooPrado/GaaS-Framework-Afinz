@@ -34,7 +34,7 @@ interface ProgramarDisparoModalProps {
 
 /**
  * Modal para criar/editar atividades (GaaS) Unificado
- * Redesign Horizontal (Widescreen) - "Mais espalhado pro lado"
+ * Redesign Horizontal (5 Colunas) - "Full Panorama"
  */
 export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
     isOpen,
@@ -403,12 +403,12 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-300" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300" onClick={onClose} />
 
-            {/* Modal Container -- WIDER NOW */}
-            <div className="relative w-full max-w-[95vw] xl:max-w-7xl h-[95vh] md:h-[90vh] flex flex-col bg-[#0f172a] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-700/50 ring-1 ring-white/5">
+            {/* Modal Container -- FULL PANORAMA */}
+            <div className="relative w-full max-w-[98vw] h-[95vh] flex flex-col bg-[#0f172a] rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-700/50 ring-1 ring-white/5 mx-2">
 
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 bg-[#0f172a] border-b border-slate-800 shrink-0">
@@ -421,7 +421,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                 {editingActivity ? 'Editar Disparo' : 'Novo Disparo'}
                             </h2>
                             <p className="text-xs text-slate-400">
-                                {editingActivity ? 'Edite os parâmetros da atividade' : 'Preencha os dados do novo card'}
+                                {editingActivity ? 'Edite os parâmetros da atividade' : 'Preencha os dados no panorama completo'}
                             </p>
                         </div>
                     </div>
@@ -433,8 +433,8 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                     </button>
                 </div>
 
-                {/* Body - Scrollable - 3 COLUMNS */}
-                <div id="modal-content" className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth scrollbar-thin scrollbar-track-slate-900 scrollbar-thumb-slate-700">
+                {/* Body - Scrollable Horizontal if needed, but mostly fitted */}
+                <div id="modal-content" className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-5 scroll-smooth scrollbar-thin scrollbar-track-slate-900 scrollbar-thumb-slate-700">
 
                     {errors.form && (
                         <div className="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-xl text-red-300 text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
@@ -443,42 +443,44 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                         </div>
                     )}
 
-                    {/* Layout Grid: 1 Col (Mobile) -> 2 Cols (Tablet) -> 3 Cols (Widescreen) */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {/* Layout Grid: 1 Col (Mobile) -> 3 Cols (Tablet) -> 5 Cols (Ultrawide) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
 
-                        {/* COLUMN 1: ESTRATÉGIA (Identificação) */}
-                        <div className="space-y-6">
-                            <SectionCard title="Identificação" icon={<Tag size={16} />} badge="Essencial">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-1">
-                                        <Label label="BU" required tooltip="Unidade de Negócio" />
-                                        <Select value={formData.bu} onChange={(e) => handleChange('bu', e.target.value)} error={errors.bu}>
-                                            <option value="">Selecione</option>
-                                            <option value="B2C">B2C</option>
-                                            <option value="B2B2C">B2B2C</option>
-                                            <option value="Plurix">Plurix</option>
-                                        </Select>
-                                    </div>
-                                    <div className="col-span-1">
-                                        <Label label="Segmento" required tooltip="Público alvo" />
-                                        <Select value={selectedSegmento} onChange={(e) => setSelectedSegmento(e.target.value)}>
-                                            <option value="">Selecione</option>
-                                            {historicalOptions.segmentos.map(s => <option key={s} value={s}>{s}</option>)}
-                                        </Select>
+                        {/* BLOCK 1: IDENTIFICAÇÃO */}
+                        <div className="min-w-0">
+                            <SectionCard title="Identificação" icon={<Tag size={16} />} badge="1">
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <Label label="BU" required />
+                                            <Select value={formData.bu} onChange={(e) => handleChange('bu', e.target.value)} error={errors.bu}>
+                                                <option value="">...</option>
+                                                <option value="B2C">B2C</option>
+                                                <option value="B2B2C">B2B2C</option>
+                                                <option value="Plurix">Plurix</option>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label label="Seg." required />
+                                            <Select value={selectedSegmento} onChange={(e) => setSelectedSegmento(e.target.value)}>
+                                                <option value="">...</option>
+                                                {historicalOptions.segmentos.map(s => <option key={s} value={s}>{s}</option>)}
+                                            </Select>
+                                        </div>
                                     </div>
 
-                                    <div className="col-span-2">
-                                        <Label label="Nome da Atividade" required tooltip="Taxonomia única" />
+                                    <div>
+                                        <Label label="Nome da Atividade" required />
                                         <Input
                                             value={formData.activityName}
                                             onChange={(e) => handleChange('activityName', e.target.value)}
-                                            placeholder="campanha_exemplo_2026"
-                                            className="font-mono text-xs bg-slate-950/30 border-slate-800 text-slate-300"
+                                            placeholder="campanha_2026"
+                                            className="font-mono text-[10px] bg-slate-950/30 border-slate-800 text-slate-300"
                                             error={errors.activityName}
                                         />
                                     </div>
 
-                                    <div className="col-span-2 space-y-4 pt-1 border-t border-slate-700/50 mt-1">
+                                    <div className="pt-2 border-t border-slate-700/50 space-y-3">
                                         <div>
                                             <Label label="Jornada" required />
                                             <Input list="jornadas-list" value={formData.jornada} onChange={(e) => handleChange('jornada', e.target.value)} error={errors.jornada} />
@@ -495,77 +497,81 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="col-span-1">
-                                        <Label label="Parceiro" />
-                                        <Input list="parceiros-list" value={formData.parceiro} onChange={(e) => handleChange('parceiro', e.target.value)} placeholder="Opcional" />
-                                        <datalist id="parceiros-list">{historicalOptions.parceiros.map(p => <option key={p} value={p} />)}</datalist>
-                                    </div>
-                                    <div className="col-span-1">
-                                        <Label label="Subgrupo" />
-                                        <Input list="subgrupos-list" value={formData.subgrupo} onChange={(e) => handleChange('subgrupo', e.target.value)} placeholder="Opcional" />
-                                        <datalist id="subgrupos-list">{historicalOptions.subgrupos.map(s => <option key={s} value={s} />)}</datalist>
+                                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-700/50">
+                                        <div>
+                                            <Label label="Parceiro" />
+                                            <Input list="parceiros-list" value={formData.parceiro} onChange={(e) => handleChange('parceiro', e.target.value)} placeholder="-" />
+                                            <datalist id="parceiros-list">{historicalOptions.parceiros.map(p => <option key={p} value={p} />)}</datalist>
+                                        </div>
+                                        <div>
+                                            <Label label="Subgrupo" />
+                                            <Input list="subgrupos-list" value={formData.subgrupo} onChange={(e) => handleChange('subgrupo', e.target.value)} placeholder="-" />
+                                            <datalist id="subgrupos-list">{historicalOptions.subgrupos.map(s => <option key={s} value={s} />)}</datalist>
+                                        </div>
                                     </div>
                                 </div>
                             </SectionCard>
                         </div>
 
-                        {/* COLUMN 2: TÁTICA (Cronograma + Produto) */}
-                        <div className="space-y-6">
-                            {/* Card Cronograma */}
-                            <SectionCard title="Cronograma" icon={<Calendar size={16} />}>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div className="col-span-1">
-                                        <Label label="Início" required />
-                                        <Input type="date" value={formData.dataInicio} onChange={(e) => handleChange('dataInicio', e.target.value)} className="px-2" />
-                                    </div>
-                                    <div className="col-span-1">
-                                        <Label label="Fim" required />
-                                        <Input type="date" value={formData.dataFim} onChange={(e) => handleChange('dataFim', e.target.value)} className="px-2" />
-                                    </div>
-                                    <div className="col-span-1">
-                                        <Label label="Hora" />
-                                        <Input type="time" value={formData.horarioDisparo} onChange={(e) => handleChange('horarioDisparo', e.target.value)} className="px-2" />
-                                    </div>
-
-                                    <div className="col-span-1.5 pt-2">
-                                        <div className="flex items-center gap-2 p-2 bg-slate-900/50 rounded border border-slate-700">
-                                            <span className="text-[10px] uppercase text-slate-500 font-bold">Safra:</span>
-                                            <span className="text-xs text-slate-300 font-mono">{formData.safra || '-'}</span>
+                        {/* BLOCK 2: CRONOGRAMA */}
+                        <div className="min-w-0">
+                            <SectionCard title="Cronograma" icon={<Calendar size={16} />} badge="2">
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="col-span-2">
+                                            <Label label="Data Início" required />
+                                            <Input type="date" value={formData.dataInicio} onChange={(e) => handleChange('dataInicio', e.target.value)} />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <Label label="Data Fim" required />
+                                            <Input type="date" value={formData.dataFim} onChange={(e) => handleChange('dataFim', e.target.value)} />
                                         </div>
                                     </div>
-                                    <div className="col-span-1.5 pt-2">
-                                        <div className="flex items-center gap-2 p-2 bg-slate-900/50 rounded border border-slate-700">
-                                            <span className="text-[10px] uppercase text-slate-500 font-bold">Ordem:</span>
-                                            <span className="text-xs text-slate-300 font-mono">{formData.ordemDisparo || '-'}</span>
+
+                                    <div className="pt-2 border-t border-slate-700/50">
+                                        <Label label="Horário" />
+                                        <Input type="time" value={formData.horarioDisparo} onChange={(e) => handleChange('horarioDisparo', e.target.value)} />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2 pt-2">
+                                        <div className="bg-slate-900/40 p-2 rounded border border-slate-700/50">
+                                            <Label label="Safra" />
+                                            <div className="text-xs text-slate-300 font-mono text-center">{formData.safra || '-'}</div>
+                                        </div>
+                                        <div className="bg-slate-900/40 p-2 rounded border border-slate-700/50">
+                                            <Label label="Ordem" />
+                                            <div className="text-xs text-slate-300 font-mono text-center">{formData.ordemDisparo || '-'}</div>
                                         </div>
                                     </div>
                                 </div>
                             </SectionCard>
+                        </div>
 
-                            {/* Card Produto */}
-                            <SectionCard title="Produto & Oferta" icon={<Package size={16} />}>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-1">
+                        {/* BLOCK 3: PRODUTO */}
+                        <div className="min-w-0">
+                            <SectionCard title="Produto & Oferta" icon={<Package size={16} />} badge="3">
+                                <div className="space-y-4">
+                                    <div>
                                         <Label label="Produto" required />
                                         <Select value={formData.produto} onChange={(e) => handleChange('produto', e.target.value)}>
                                             <option value="">Selecione</option>
                                             {(historicalOptions.produtos.length > 0 ? historicalOptions.produtos : PRODUTOS).map(p => <option key={p} value={p}>{p}</option>)}
                                         </Select>
                                     </div>
-                                    <div className="col-span-1">
-                                        <Label label="Perfil" />
+                                    <div>
+                                        <Label label="Perfil Crédito" />
                                         <Select value={formData.perfilCredito} onChange={(e) => handleChange('perfilCredito', e.target.value)}>
                                             <option value="">Selecione</option>
                                             {historicalOptions.perfisCredito.map(p => <option key={p} value={p}>{p}</option>)}
                                         </Select>
                                     </div>
 
-                                    <div className="col-span-2">
+                                    <div className="pt-2 border-t border-slate-700/50">
                                         <Label label="Oferta Principal" required />
                                         <Input list="ofertas-list" value={formData.oferta} onChange={(e) => handleChange('oferta', e.target.value)} />
                                         <datalist id="ofertas-list">{historicalOptions.ofertas.map(o => <option key={o} value={o} />)}</datalist>
                                     </div>
-                                    <div className="col-span-2">
+                                    <div>
                                         <Label label="Promocional" />
                                         <Input list="promocionais-list" value={formData.promocional} onChange={(e) => handleChange('promocional', e.target.value)} />
                                         <datalist id="promocionais-list">{historicalOptions.promocionais.map(p => <option key={p} value={p} />)}</datalist>
@@ -574,60 +580,66 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                             </SectionCard>
                         </div>
 
-                        {/* COLUMN 3: FINANCEIRO (Investimento + IA) */}
-                        <div className="space-y-6">
-                            {/* Card Investimento */}
-                            <SectionCard title="Investimento" icon={<DollarSign size={16} />} headerClassName="text-emerald-400 border-emerald-500/20">
-                                <div className="mb-4">
-                                    <Label label="Volume da Base" />
-                                    <Input
-                                        type="number"
-                                        value={formData.baseVolume}
-                                        onChange={(e) => handleChange('baseVolume', e.target.value)}
-                                        placeholder="Ex: 50000"
-                                        className="text-lg font-medium text-emerald-400 border-emerald-500/30 bg-emerald-950/20"
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3 mb-3">
+                        {/* BLOCK 4: INVESTIMENTO */}
+                        <div className="min-w-0">
+                            <SectionCard title="Investimento" icon={<DollarSign size={16} />} headerClassName="text-emerald-400 border-emerald-500/20" badge="4">
+                                <div className="space-y-4">
                                     <div>
-                                        <Label label="Custo U. Oferta" />
-                                        <Input type="number" step="0.01" value={formData.custoUnitarioOferta} onChange={(e) => handleChange('custoUnitarioOferta', e.target.value)} className="bg-slate-900/50" placeholder="0.00" />
+                                        <Label label="Volume da Base" />
+                                        <Input
+                                            type="number"
+                                            value={formData.baseVolume}
+                                            onChange={(e) => handleChange('baseVolume', e.target.value)}
+                                            placeholder="Ex: 50000"
+                                            className="text-lg font-medium text-emerald-400 border-emerald-500/30 bg-emerald-950/20"
+                                        />
                                     </div>
-                                    <div>
-                                        <Label label="Custo U. Canal" />
-                                        <Input type="number" step="0.001" value={formData.custoUnitarioCanal} onChange={(e) => handleChange('custoUnitarioCanal', e.target.value)} className="bg-slate-900/50" placeholder="0.000" />
-                                    </div>
-                                </div>
 
-                                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-xs uppercase text-emerald-500 font-bold">Total Campanha</span>
-                                        <span className="text-sm font-bold text-emerald-300">
-                                            R$ {Number(formData.custoTotalCampanha).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                        </span>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <Label label="Custo U. Oferta" />
+                                            <Input type="number" step="0.01" value={formData.custoUnitarioOferta} onChange={(e) => handleChange('custoUnitarioOferta', e.target.value)} className="bg-slate-900/50" placeholder="0.00" />
+                                        </div>
+                                        <div>
+                                            <Label label="Custo U. Canal" />
+                                            <Input type="number" step="0.001" value={formData.custoUnitarioCanal} onChange={(e) => handleChange('custoUnitarioCanal', e.target.value)} className="bg-slate-900/50" placeholder="0.000" />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-auto pt-6">
+                                        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-center">
+                                            <span className="text-[10px] uppercase text-emerald-500 font-bold block mb-1">Total Campanha</span>
+                                            <span className="text-lg font-bold text-emerald-300 block">
+                                                R$ {Number(formData.custoTotalCampanha).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </SectionCard>
+                        </div>
 
-                            {/* Card IA */}
-                            <div className="bg-indigo-950/20 p-5 rounded-xl border border-indigo-500/20 shadow-sm flex flex-col h-fit">
-                                <h3 className="text-sm font-bold text-indigo-400 flex items-center gap-2 mb-4 uppercase tracking-wide">
-                                    <TrendingUp size={16} />
-                                    Projeção IA
-                                </h3>
-                                <div className="space-y-3">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <MetricCard label="Taxa Conv." value={projections.taxaConversao?.projectedValue} suffix="%" confidence={projections.taxaConversao?.confidence} />
-                                        <MetricCard label="CAC" value={projections.cac?.projectedValue} prefix="R$ " confidence={projections.cac?.confidence} />
-                                    </div>
+                        {/* BLOCK 5: PROJEÇÃO IA */}
+                        <div className="min-w-0">
+                            <div className="bg-indigo-950/20 p-4 rounded-xl border border-indigo-500/20 shadow-sm flex flex-col h-full hover:border-indigo-500/40 transition-colors">
+                                <div className="flex items-center justify-between pb-2 border-b border-indigo-500/20 mb-4">
+                                    <h3 className="text-xs font-bold text-indigo-400 flex items-center gap-2 uppercase tracking-wide">
+                                        <TrendingUp size={16} />
+                                        Projeção IA
+                                    </h3>
+                                    <span className="px-1.5 py-0.5 bg-indigo-500/10 rounded text-[9px] text-indigo-400 font-bold">5</span>
+                                </div>
+
+                                <div className="space-y-3 flex-1">
+                                    <MetricCard label="Taxa Conv." value={projections.taxaConversao?.projectedValue} suffix="%" confidence={projections.taxaConversao?.confidence} />
+                                    <MetricCard label="CAC Previsto" value={projections.cac?.projectedValue} prefix="R$ " confidence={projections.cac?.confidence} />
                                     <MetricCard label="Cartões Estimados" value={projections.cartoesGerados?.projectedValue} isInt confidence={projections.cartoesGerados?.confidence} />
                                 </div>
-                                <div className="mt-4 text-[10px] text-indigo-400/50 leading-relaxed text-center">
-                                    Baseado em {projections.taxaConversao?.sampleSize || 0} disparos similares nos últimos 90 dias.
+                                <div className="mt-4 text-[9px] text-indigo-400/50 leading-tight text-center border-t border-indigo-500/10 pt-2">
+                                    Baseado em {projections.taxaConversao?.sampleSize || 0} disparos.
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
@@ -678,7 +690,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
 // --- Helper Components ---
 
 const Label = ({ label, required, tooltip }: { label: string, required?: boolean, tooltip?: string }) => (
-    <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+    <label className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
         {label}
         {required && <span className="text-blue-500">*</span>}
         {tooltip && <span title={tooltip} className="text-slate-600 hover:text-slate-400 cursor-help transition-colors"><Info size={11} /></span>}
@@ -688,7 +700,7 @@ const Label = ({ label, required, tooltip }: { label: string, required?: boolean
 const Input = ({ className = "", error, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { error?: string }) => (
     <div className="relative">
         <input
-            className={`w-full px-3 py-2 bg-slate-800/50 border rounded-lg text-xs md:text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all ${error ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-blue-500'} ${className}`}
+            className={`w-full px-3 py-2 bg-slate-800/50 border rounded-lg text-xs font-medium text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all ${error ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-blue-500'} ${className}`}
             {...props}
         />
         {error && <span className="absolute -bottom-4 left-0 text-[9px] text-red-400 font-medium animate-pulse">{error}</span>}
@@ -698,7 +710,7 @@ const Input = ({ className = "", error, ...props }: React.InputHTMLAttributes<HT
 const Select = ({ className = "", error, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { error?: string }) => (
     <div className="relative">
         <select
-            className={`w-full px-3 py-2 bg-slate-800/50 border rounded-lg text-xs md:text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all appearance-none cursor-pointer ${error ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-blue-500'} ${className}`}
+            className={`w-full px-3 py-2 bg-slate-800/50 border rounded-lg text-xs font-medium text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500/50 transition-all appearance-none cursor-pointer ${error ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-blue-500'} ${className}`}
             {...props}
         >
             {children}
@@ -711,7 +723,7 @@ const Select = ({ className = "", error, children, ...props }: React.SelectHTMLA
 );
 
 const SectionCard = ({ title, icon, children, headerClassName = "text-slate-300", badge }: { title: string, icon: React.ReactNode, children: React.ReactNode, headerClassName?: string, badge?: string }) => (
-    <section className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 flex flex-col gap-4 hover:border-slate-600/50 transition-colors duration-300 h-full">
+    <section className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 flex flex-col gap-3 hover:border-slate-600/50 transition-colors duration-300 h-full">
         <div className={`flex items-center justify-between pb-2 border-b border-slate-700/50 ${headerClassName}`}>
             <div className="flex items-center gap-2">
                 <div className="opacity-70 text-slate-400">{icon}</div>
@@ -719,14 +731,14 @@ const SectionCard = ({ title, icon, children, headerClassName = "text-slate-300"
             </div>
             {badge && <span className="px-1.5 py-0.5 bg-slate-700/50 rounded text-[9px] text-slate-400 font-bold uppercase">{badge}</span>}
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3 flex-1 flex flex-col">
             {children}
         </div>
     </section>
 );
 
 const MetricCard = ({ label, value, prefix = "", suffix = "", isInt = false, confidence }: { label: string, value?: number, prefix?: string, suffix?: string, isInt?: boolean, confidence?: number }) => (
-    <div className="bg-slate-900/50 border border-indigo-500/10 rounded-lg p-2.5 shadow-sm flex flex-col items-center justify-center text-center">
+    <div className="bg-slate-900/50 border border-indigo-500/10 rounded-lg p-3 shadow-sm flex flex-col items-center justify-center text-center">
         <span className="text-[9px] uppercase font-bold text-indigo-400 mb-0.5">{label}</span>
         <div className="text-base font-bold text-indigo-200">
             {value !== undefined ? (
