@@ -301,6 +301,39 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
         }
     }, [formData.bu, selectedSegmento, formData.perfilCredito, formData.canal, formData.baseVolume, activities, editingActivity]);
 
+    // SUGESTÕES AUTOMÁTICAS: Preencher campos baseado no histórico
+    useEffect(() => {
+        if (!editingActivity && formData.bu && selectedSegmento && formData.jornada && activities.length > 0) {
+            try {
+                const suggestions = suggestFieldsBasedOnHistory(activities, {
+                    bu: formData.bu,
+                    segmento: selectedSegmento,
+                    jornada: formData.jornada,
+                    parceiro: formData.parceiro || undefined
+                });
+
+                // Auto-preencher campos vazios
+                setFormData(prev => ({
+                    ...prev,
+                    // Subgrupo
+                    subgrupo: prev.subgrupo || (suggestions.subgrupo?.[0]?.value ? String(suggestions.subgrupo[0].value) : ''),
+                    // Ofertas
+                    oferta: prev.oferta || (suggestions.oferta?.[0]?.value ? String(suggestions.oferta[0].value) : ''),
+                    promocional: prev.promocional || (suggestions.promocional?.[0]?.value ? String(suggestions.promocional[0].value) : ''),
+                    // Ofertas secundárias
+                    oferta2: prev.oferta2 || (suggestions.oferta2?.[0]?.value ? String(suggestions.oferta2[0].value) : ''),
+                    promocional2: prev.promocional2 || (suggestions.promocional2?.[0]?.value ? String(suggestions.promocional2[0].value) : ''),
+                    // Perfil Crédito
+                    perfilCredito: prev.perfilCredito || (suggestions.perfilCredito?.[0]?.value ? String(suggestions.perfilCredito[0].value) : '')
+                }));
+
+                console.log('✨ Sugestões IA aplicadas:', suggestions);
+            } catch (error) {
+                console.error('Erro ao gerar sugestões:', error);
+            }
+        }
+    }, [formData.bu, selectedSegmento, formData.jornada, formData.parceiro, activities, editingActivity]);
+
     const handleChange = (field: keyof ActivityFormInput, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
         if (errors[field]) {
@@ -403,7 +436,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-slate-800 rounded-xl shadow-2xl w-full max-w-7xl m-4 border border-slate-700">
+            <div className="relative bg-slate-800 rounded-xl shadow-2xl w-full max-w-6xl m-4 border border-slate-700">
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-slate-700">
@@ -421,7 +454,7 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                     </div>
                 )}
 
-                <div id="modal-content" className="p-5 grid grid-cols-1 md:grid-cols-4 gap-6 max-h-[80vh] overflow-y-auto">
+                <div id="modal-content" className="p-6 grid grid-cols-1 md:grid-cols-3 gap-8 max-h-[80vh] overflow-y-auto">
                     {/* Column 1: Identificação */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">
@@ -544,10 +577,10 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Column 2: Período & Ofertas */}
+                    {/* Column 2: Timeline & Volume */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">
-                            Volume & Ofertas <span title="Definição de prazos, quantidade e ofertas comerciais"><Info size={14} className="text-slate-500 opacity-50" /></span>
+                            Timeline & Volume <span title="Datas, horários e volume de disparos planejados"><Info size={14} className="text-slate-500 opacity-50" /></span>
                         </h3>
 
                         <div className="space-y-3">
@@ -627,20 +660,16 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                    Perfil Crédito <span title="Regra de aprovação/crédito aplicada"><Info size={12} className="text-slate-500 cursor-help" /></span>
-                                </label>
-                                <select
-                                    value={formData.perfilCredito}
-                                    onChange={(e) => handleChange('perfilCredito', e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
-                                >
-                                    <option value="">Selecione</option>
-                                    {historicalOptions.perfisCredito.map(p => <option key={p} value={p}>{p}</option>)}
-                                </select>
-                            </div>
+                        </div>
+                    </div>
 
+                    {/* Column 3: Ofertas & Produto */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">
+                            Ofertas & Produto <span title="Ofertas comerciais e configurações de produto"><Info size={14} className="text-slate-500 opacity-50" /></span>
+                        </h3>
+
+                        <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
@@ -651,7 +680,11 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                         value={formData.oferta}
                                         onChange={(e) => handleChange('oferta', e.target.value)}
                                         className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
+                                        placeholder="Ex: Vibe"
                                     />
+                                    <datalist id="ofertas-list">
+                                        {historicalOptions.ofertas.map(o => <option key={o} value={o} />)}
+                                    </datalist>
                                 </div>
                                 <div>
                                     <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
@@ -662,32 +695,44 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                         value={formData.promocional}
                                         onChange={(e) => handleChange('promocional', e.target.value)}
                                         className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
+                                        placeholder="Ex: Padrão"
                                     />
+                                    <datalist id="promocionais-list">
+                                        {historicalOptions.promocionais.map(p => <option key={p} value={p} />)}
+                                    </datalist>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                        Oferta 2 <span title="Oferta secundária/A|B"><Info size={12} className="text-slate-500 cursor-help" /></span>
+                                        Oferta 2 <span title="Oferta secundária para testes A/B"><Info size={12} className="text-slate-500 cursor-help" /></span>
                                     </label>
                                     <input
                                         list="ofertas2-list"
                                         value={formData.oferta2}
                                         onChange={(e) => handleChange('oferta2', e.target.value)}
                                         className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
+                                        placeholder="Opcional"
                                     />
+                                    <datalist id="ofertas2-list">
+                                        {historicalOptions.ofertas2.map(o => <option key={o} value={o} />)}
+                                    </datalist>
                                 </div>
                                 <div>
                                     <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
-                                        Promocional 2 <span title="Benefício extra da segunda oferta"><Info size={12} className="text-slate-500 cursor-help" /></span>
+                                        Promocional 2 <span title="Cupom secundário para testes"><Info size={12} className="text-slate-500 cursor-help" /></span>
                                     </label>
                                     <input
                                         list="promocionais2-list"
                                         value={formData.promocional2}
                                         onChange={(e) => handleChange('promocional2', e.target.value)}
                                         className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
+                                        placeholder="Opcional"
                                     />
+                                    <datalist id="promocionais2-list">
+                                        {historicalOptions.promocionais2.map(p => <option key={p} value={p} />)}
+                                    </datalist>
                                 </div>
                             </div>
 
@@ -726,21 +771,27 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                     )}
                                 </select>
                             </div>
+
+                            <div>
+                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
+                                    Perfil Crédito <span title="Regra de aprovação/crédito aplicada"><Info size={12} className="text-slate-500 cursor-help" /></span>
+                                </label>
+                                <select
+                                    value={formData.perfilCredito}
+                                    onChange={(e) => handleChange('perfilCredito', e.target.value)}
+                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
+                                >
+                                    <option value="">Selecione</option>
+                                    {historicalOptions.perfisCredito.map(p => <option key={p} value={p}>{p}</option>)}
+                                </select>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    {/* Column 3: Ofertas Secundárias */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">
-                            Ofertas Secundárias <span title="Testes A/B e ofertas alternativas"><Info size={14} className="text-slate-500 opacity-50" /></span>
-                        </h3>
-
-                        <div className="space-y-3">
-                            {/* Já existente no código original */}
-                        </div>
-                    </div>
-
-                    {/* Column 4: Investimento & Projeção */}
+                {/* Seção Expandida: Investimento (abaixo do grid) */}
+                <div className="px-6 pb-4">
+                    {/* Column 4 content moved here as expanded section */}
                     <div className="space-y-4">
                         {/* SEÇÃO 1: INVESTIMENTO (CUSTOS) */}
                         <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 pb-2 border-b border-emerald-500/30 uppercase tracking-wider">
@@ -849,8 +900,8 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                     <div className="flex items-center justify-between pb-2 border-b border-indigo-500/20">
                                         <div className="flex items-center gap-1.5">
                                             <div className={`w-1.5 h-1.5 rounded-full ${projections.taxaConversao?.method === 'exact' ? 'bg-emerald-500' :
-                                                    projections.taxaConversao?.method === 'partial' ? 'bg-yellow-500' :
-                                                        'bg-orange-500'
+                                                projections.taxaConversao?.method === 'partial' ? 'bg-yellow-500' :
+                                                    'bg-orange-500'
                                                 }`} />
                                             <span className="text-[9px] text-slate-400 font-bold uppercase">
                                                 {projections.taxaConversao?.method === 'exact' && '✓ Match Exato (100%)'}
