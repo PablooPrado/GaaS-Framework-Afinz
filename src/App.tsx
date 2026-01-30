@@ -154,27 +154,36 @@ function App() {
       )}
 
       <div className="flex-1 pb-10">
-        {!hasData && (
+        {/* Show loading while checking Supabase */}
+        {loading && !hasData && (
           <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
-            {!loading && (
-              <div className="max-w-md w-full bg-slate-800/50 p-8 rounded-2xl border border-slate-700 text-center">
-                <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Menu size={32} className="text-blue-400" />
-                </div>
-                <h2 className="text-xl font-bold text-white mb-2">Bem-vindo ao GaaS</h2>
-                <p className="text-slate-400 mb-8">Faça upload do seu arquivo de dados para começar a análise.</p>
-                <CSVUpload
-                  onFileSelect={processCSV}
-                  onLoadSimulatedData={loadSimulatedData}
-                  loading={loading}
-                  error={error}
-                  totalActivities={totalActivities}
-                />
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                <Menu size={32} className="text-blue-400" />
               </div>
-            )}
-            {loading && (
-              <div className="text-slate-400 animate-pulse">Sincronizando dados...</div>
-            )}
+              <h2 className="text-xl font-bold text-white mb-2">Verificando dados...</h2>
+              <p className="text-slate-400">Carregando informações do banco de dados</p>
+            </div>
+          </div>
+        )}
+
+        {/* Show upload screen only if finished loading AND no data */}
+        {!loading && !hasData && (
+          <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
+            <div className="max-w-md w-full bg-slate-800/50 p-8 rounded-2xl border border-slate-700 text-center">
+              <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Menu size={32} className="text-blue-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">Bem-vindo ao GaaS</h2>
+              <p className="text-slate-400 mb-8">Faça upload do seu arquivo de dados para começar a análise.</p>
+              <CSVUpload
+                onFileSelect={processCSV}
+                onLoadSimulatedData={loadSimulatedData}
+                loading={loading}
+                error={error}
+                totalActivities={totalActivities}
+              />
+            </div>
           </div>
         )}
 
