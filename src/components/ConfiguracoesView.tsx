@@ -175,7 +175,7 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
                                             {f.name}
                                         </p>
                                         <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                                            <span>{new Date(f.created_at).toLocaleString('pt-BR')}</span>
+                                            <span>{f.created_at && !isNaN(new Date(f.created_at).getTime()) ? new Date(f.created_at).toLocaleString('pt-BR') : '-'}</span>
                                             <span>•</span>
                                             <span>{(f.metadata?.size / 1024).toFixed(1)} KB</span>
                                         </div>

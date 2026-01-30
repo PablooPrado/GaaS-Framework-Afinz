@@ -18,7 +18,7 @@ export interface KPIs {
 }
 
 export interface Activity {
-  id: string; // Activity name
+  id: string; // Taxonomy name or UUID (see raw.id for DB primary key)
   dataDisparo: Date;
   canal: string;
   bu: BU;
@@ -30,6 +30,7 @@ export interface Activity {
   promocional?: string; // variável promocional
   // Safra/coorte do registro (normalizada como YYYY-MM)
   safraKey?: string;
+  status?: 'Rascunho' | 'Scheduled' | 'Enviado' | 'Realizado'; // Adicionado para controle visual no calendário
   kpis: KPIs;
   // Raw row data for reference/editing
   raw: FrameworkRow;
@@ -102,6 +103,7 @@ export interface ViewSettings {
   abaAtual: "launch" | "resultados" | "jornada" | "framework" | "diario" | "orientador" | "configuracoes" | "originacao-b2c" | "midia-paga";
   filtrosGlobais: FilterState;
   modoTempoJornada: "diario" | "semanal";
+  perspective: "total" | "crm" | "b2c";
 }
 
 export type AnomalyType = 'pending' | 'no_sent' | 'no_delivered' | 'no_open';

@@ -1,22 +1,28 @@
 import React, { useState } from 'react';
 import { Target, Save, ChevronLeft, ChevronRight, Calculator } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
-import { format, addMonths, subMonths, startOfMonth } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 export const GoalsManager: React.FC = () => {
     const { goals, setGoals } = useAppStore();
-    const [currentDate, setCurrentDate] = useState(startOfMonth(new Date()));
+    // Native start of month
+    const [currentDate, setCurrentDate] = useState(() => {
+        const d = new Date();
+        return new Date(d.getFullYear(), d.getMonth(), 1);
+    });
     const [loading, setLoading] = useState(false);
 
-    // Generate list of 6 months around current date
-    const months = Array.from({ length: 1 }, (_, i) => {
-        // Just showing 1 month card for the selected date for simplicity, 
-        // or maybe a grid. Let's do a single month card with navigation.
-        return currentDate;
-    });
+    // Native helpers
+    const getMonthKey = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}`;
+    };
 
-    const currentMonthKey = format(currentDate, 'yyyy-MM');
+    const addMonth = (date: Date, amount: number) => {
+        return new Date(date.getFullYear(), date.getMonth() + amount, 1);
+    };
+
+    const currentMonthKey = getMonthKey(currentDate);
     const currentGoal = goals.find(g => g.mes === currentMonthKey) || {
         mes: currentMonthKey,
         cartoes_meta: 0,
@@ -44,22 +50,33 @@ export const GoalsManager: React.FC = () => {
         });
     }, [currentMonthKey, goals]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setLoading(true);
-        // Simulate API delay
-        setTimeout(() => {
-            const newGoals = [...goals.filter(g => g.mes !== currentMonthKey)];
-            newGoals.push({
+        try {
+            const newGoalEntry = {
                 mes: currentMonthKey,
                 cartoes_meta: Number(formState.cartoes_meta),
                 b2c_meta: Number(formState.b2c_meta),
                 plurix_meta: Number(formState.plurix_meta),
                 b2b2c_meta: Number(formState.b2b2c_meta),
                 cac_max: Number(formState.cac_max)
-            });
+            };
+
+            // 1. Update Local Store
+            const newGoals = [...goals.filter(g => g.mes !== currentMonthKey)];
+            newGoals.push(newGoalEntry);
             setGoals(newGoals);
+
+            // 2. Sync to Cloud
+            const { dataService } = await import('../../services/dataService');
+            await dataService.upsertGoal(newGoalEntry);
+
+        } catch (error) {
+            console.error('Erro ao salvar meta:', error);
+            alert('Erro ao salvar meta na nuvem. Verifique sua conexão.');
+        } finally {
             setLoading(false);
-        }, 500);
+        }
     };
 
     return (
@@ -80,18 +97,18 @@ export const GoalsManager: React.FC = () => {
                 {/* Month Navigation */}
                 <div className="flex items-center justify-between mb-6">
                     <button
-                        onClick={() => setCurrentDate(subMonths(currentDate, 1))}
+                        onClick={() => setCurrentDate(addMonth(currentDate, -1))}
                         className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
                     >
                         <ChevronLeft size={20} />
                     </button>
                     <div className="text-center">
                         <h4 className="text-lg font-bold text-white capitalize">
-                            {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
+                            {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                         </h4>
                     </div>
                     <button
-                        onClick={() => setCurrentDate(addMonths(currentDate, 1))}
+                        onClick={() => setCurrentDate(addMonth(currentDate, 1))}
                         className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
                     >
                         <ChevronRight size={20} />

@@ -46,6 +46,13 @@ export const saveActivity = async (
         'Oferta 2': validated.oferta2 || null,
         'Promocional 2': validated.promocional2 || null,
 
+        // Novos campos
+        Parceiro: validated.parceiro || null,
+        Subgrupos: validated.subgrupo || null,
+        'Etapa de aquisição': validated.etapaAquisicao || null,
+        Produto: validated.produto || null,
+        'Base Total': Number(validated.baseVolume) || null,
+
         // Calculados
         'Ordem de disparo': nextOrder,
 

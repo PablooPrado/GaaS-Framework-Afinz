@@ -47,9 +47,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
 
     // Filter B2C Data for Current Period
     const currentB2CData = useMemo(() => {
-        return b2cData.filter(d =>
-            isWithinInterval(new Date(d.data), { start: startDate, end: endDate })
-        );
+        return b2cData.filter(d => {
+            const date = typeof d.data === 'string' ? new Date(d.data + 'T12:00:00') : new Date(d.data);
+            return isWithinInterval(date, { start: startDate, end: endDate });
+        });
     }, [b2cData, startDate, endDate]);
 
     // Filter for Previous Period (Comparison)
@@ -90,6 +91,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
 
             {/* Right Column: KPIs & Goals Preview */}
             <div className="flex-1 flex flex-col overflow-y-auto pr-1 gap-3">
+                <div className="flex items-center justify-between mb-1">
+                    {/* Perspective Switcher removed by request */}
+                </div>
+
                 {/* Detailed KPIs Grid */}
                 <div>
                     <h3 className="text-xs font-bold text-slate-400 uppercase mb-1.5 flex justify-between items-center">
@@ -110,7 +115,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
                 {/* Goals Preview (Replacing Funnel) */}
                 <div className="flex-1">
                     <h3 className="text-xs font-bold text-slate-400 uppercase mb-1.5 flex items-center gap-2">
-                        <span>🎯</span> Metas & Resultados
+                        Metas & Resultados
                     </h3>
                     <LaunchPlannerKPIs
                         activities={currentPeriodActivities}

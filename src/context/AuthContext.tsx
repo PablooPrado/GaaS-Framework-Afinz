@@ -40,8 +40,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { error } = await supabase.auth.signInWithOtp({
             email,
             options: {
-                // If using Magic Link, this redirects back to the app
-                emailRedirectTo: window.location.origin,
+                // If using Magic Link, this redirects back to the app, preserving the subpath
+                emailRedirectTo: window.location.href,
             },
         });
         if (error) throw error;

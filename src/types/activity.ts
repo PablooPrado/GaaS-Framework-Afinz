@@ -90,6 +90,13 @@ export type ActivityFormInput = {
     oferta2?: string;
     promocional2?: string;
 
+    // Novos campos solicitados
+    parceiro?: string;
+    subgrupo?: string;
+    etapaAquisicao?: string;
+    produto?: string;
+    baseVolume?: string;
+
     // Status (controle)
     status: ActivityStatus;
 };

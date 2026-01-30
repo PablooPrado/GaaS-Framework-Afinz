@@ -45,9 +45,9 @@ export const NAV_CONFIG: NavGroup[] = [
         ]
     },
     {
-        title: 'SISTEMA',
+        title: 'FRAMEWORK',
         items: [
-            { id: 'framework', label: 'Framework', icon: LayoutDashboard },
+            { id: 'framework', label: 'Campanhas', icon: LayoutDashboard },
         ]
     }
 ];

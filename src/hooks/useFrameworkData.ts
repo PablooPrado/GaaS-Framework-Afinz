@@ -129,29 +129,27 @@ export const useFrameworkData = (): {
 
       const { activities, b2cData, setB2CData, setPaidMediaData } = useAppStore.getState();
 
-      // Cache First Strategy: If we have data (especially activities), don't re-fetch immediately
-      // This prevents overwriting the just-uploaded CSV if migration hasn't run yet.
-      // Cache First Strategy: If we have BOTH activities and B2C data, don't re-fetch immediately
-      // This prevents overwriting the just-uploaded CSV if migration hasn't run yet.
-      if (activities.length > 0 && b2cData.length > 0) {
+      // Cache First + Stale-While-Revalidate Strategy
+      // If we have data, show it immediately (setLoading false), but CONTINUING to fetch fresh data
+      if (activities.length > 0) {
         setLoading(false);
-        return;
       }
 
-      // Avoid double fetching
+      // Avoid double fetching (if already in progress)
       if (synced) return;
       setSynced(true);
 
       try {
         console.log('📡 Conectando ao Supabase para buscar dados...');
         import('../services/dataService').then(async ({ dataService }) => {
-          const [fetchedActivities, fetchedB2C, fetchedPaid] = await Promise.all([
+          const [fetchedActivities, fetchedB2C, fetchedPaid, fetchedGoals] = await Promise.all([
             dataService.fetchActivities(),
             dataService.fetchB2CMetrics(),
-            dataService.fetchPaidMedia()
+            dataService.fetchPaidMedia(),
+            dataService.fetchGoals()
           ]);
 
-          console.log(`✅ Dados Carregados: ${fetchedActivities.length} Atividades, ${fetchedB2C.length} B2C, ${fetchedPaid.length} Media.`);
+          console.log(`✅ Dados Carregados: ${fetchedActivities.length} Atividades, ${fetchedB2C.length} B2C, ${fetchedPaid.length} Media, ${fetchedGoals.length} Metas.`);
 
           // Reconstruct "rows" from raw data for compatibility
           const rows = fetchedActivities.map(a => a.raw || {});
@@ -189,9 +187,10 @@ export const useFrameworkData = (): {
             }
           }
 
-          setFrameworkData(rows, fetchedActivities);
+          setFrameworkData(rows as any[], fetchedActivities);
           setB2CData(finalB2C);
           setPaidMediaData(fetchedPaid);
+          useAppStore.getState().setGoals(fetchedGoals); // Sync goals
           setLoading(false);
         }).catch(err => {
           console.error('Erro ao importar dataService:', err);

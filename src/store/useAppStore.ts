@@ -36,6 +36,7 @@ interface AppState {
     updateJournalEntry: (id: string, entry: Partial<JournalEntry>) => void;
     updateActivity: (id: string, updates: Partial<Activity>) => void;
     addActivity: (activity: Activity) => void;
+    removeActivity: (activityId: string) => void;
 
     // Filter Actions
     setGlobalFilters: (filters: Partial<FilterState>) => void;
@@ -44,6 +45,7 @@ interface AppState {
     // Navigation Actions
     setTab: (tab: ViewSettings['abaAtual']) => void;
     setPeriodo: (inicio: string, fim: string) => void;
+    setPerspective: (perspective: ViewSettings['perspective']) => void;
 
     // B2C Actions
     b2cData: B2CDataRow[];
@@ -82,8 +84,13 @@ export const useAppStore = create<AppState>()(
                 periodo: { inicio: '', fim: '' }, // Should be initialized with current month
                 abaAtual: 'launch',
                 filtrosGlobais: INITIAL_FILTERS,
-                modoTempoJornada: 'diario'
+                modoTempoJornada: 'diario',
+                perspective: 'crm'
             },
+
+            setPerspective: (perspective) => set((state) => ({
+                viewSettings: { ...state.viewSettings, perspective }
+            })),
 
             setFrameworkData: (data, activities) => set({ frameworkData: data, activities }),
 
@@ -102,7 +109,11 @@ export const useAppStore = create<AppState>()(
             })),
 
             addActivity: (activity) => set((state) => ({
-                activities: [activity, ...state.activities]
+                activities: [...state.activities.filter(a => a.id !== activity.id), activity]
+            })),
+
+            removeActivity: (activityId) => set((state) => ({
+                activities: state.activities.filter(a => a.id !== activityId)
             })),
 
             setGlobalFilters: (filters) => set((state) => ({
@@ -155,7 +166,7 @@ export const useAppStore = create<AppState>()(
                 b2cData: state.b2cData,
                 paidMediaData: state.paidMediaData,
                 budgets: state.budgets,
-                viewSettings: { ...state.viewSettings, abaAtual: 'launch' }, // Reset tab to launch on reload but keep prefs
+                viewSettings: { ...state.viewSettings, abaAtual: 'launch', perspective: 'crm' }, // Reverte para launch e CRM ao iniciar
                 alertConfig: state.alertConfig
             }),
             onRehydrateStorage: () => (state) => {

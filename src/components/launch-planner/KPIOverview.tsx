@@ -13,11 +13,10 @@ interface KPIOverviewProps {
 
 export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousActivities = [], b2cData = [] }) => {
     const { viewSettings } = useAppStore();
-    const showB2C = viewSettings.filtrosGlobais.bu.length === 0 || viewSettings.filtrosGlobais.bu.includes('B2C');
-    const showCRM = viewSettings.filtrosGlobais.bu.length === 0 ||
-        viewSettings.filtrosGlobais.bu.includes('CRM') ||
-        viewSettings.filtrosGlobais.bu.includes('Plurix') ||
-        viewSettings.filtrosGlobais.bu.includes('B2B2C');
+    const perspective = viewSettings.perspective;
+
+    const showB2C = perspective === 'total' || perspective === 'b2c';
+    const showCRM = perspective === 'total' || perspective === 'crm';
 
     const calculateMetrics = (acts: Activity[], b2c: B2CDataRow[] = []) => {
         // CRM Metrics (from Activities)
@@ -42,12 +41,18 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
             // We ADD B2C metrics to them (Combined View) or if CRM filtered out, it starts at 0.
 
             // Fix: Parse numbers safely
-            propostas += b2c.reduce((sum, d) => sum + (Number(d.propostas_b2c_total) || 0), 0);
-            emissoes += b2c.reduce((sum, d) => sum + (Number(d.emissoes_b2c_total) || 0), 0);
-            cartoes += b2c.reduce((sum, d) => sum + (Number(d.emissoes_b2c_total) || 0), 0); // Assuming emissions = cards
+            const b2cPropostas = b2c.reduce((sum, d) => sum + (Number(d.propostas_b2c_total) || 0), 0);
+            const b2cEmissoes = b2c.reduce((sum, d) => sum + (Number(d.emissoes_b2c_total) || 0), 0);
 
-            // Since we don't have explicit approved/base for B2C, we might want to infer or leave 0.
-            // Leaving as 0. 
+            propostas += b2cPropostas;
+            emissoes += b2cEmissoes;
+            cartoes += b2cEmissoes; // Assuming emissions = cards
+
+            // Align Funnel: B2C often lacks separate 'Approved' step data. 
+            // We infer 'Approved' = 'Emitted' (or 'Proposals' if we wanted pessimistic).
+            // Setting Approved = Emitted allows Taxa Finalização (Issued/Approved) to be ~100% for B2C portion, 
+            // instead of >300% (dividing B2C+CRM Issued by CRM-only Approved).
+            aprovados += b2cEmissoes;
         }
 
         // ... rates calculation ...
@@ -76,8 +81,8 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
         };
     };
 
-    const currentMetrics = useMemo(() => calculateMetrics(activities, b2cData), [activities, b2cData]);
-    const previousMetrics = useMemo(() => calculateMetrics(previousActivities, []), [previousActivities]); // TODO: Pass previousB2CData if comparison needed
+    const currentMetrics = useMemo(() => calculateMetrics(activities, b2cData), [activities, b2cData, perspective, viewSettings.filtrosGlobais]);
+    const previousMetrics = useMemo(() => calculateMetrics(previousActivities, []), [previousActivities, perspective, viewSettings.filtrosGlobais]);
 
     const getVariation = (current: number, previous: number) => {
         if (previous === 0) return 0;
@@ -87,14 +92,14 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
     const variations = {
         baseEnviada: getVariation(currentMetrics.baseEnviada, previousMetrics.baseEnviada),
         baseEntregue: getVariation(currentMetrics.baseEntregue, previousMetrics.baseEntregue),
-        taxaEntrega: currentMetrics.taxaEntrega - previousMetrics.taxaEntrega, // Percentage points for rates
+        taxaEntrega: getVariation(currentMetrics.taxaEntrega, previousMetrics.taxaEntrega),
         propostas: getVariation(currentMetrics.propostas, previousMetrics.propostas),
-        taxaPropostas: currentMetrics.taxaPropostas - previousMetrics.taxaPropostas,
+        taxaPropostas: getVariation(currentMetrics.taxaPropostas, previousMetrics.taxaPropostas),
         aprovados: getVariation(currentMetrics.aprovados, previousMetrics.aprovados),
-        taxaAprovacao: currentMetrics.taxaAprovacao - previousMetrics.taxaAprovacao,
+        taxaAprovacao: getVariation(currentMetrics.taxaAprovacao, previousMetrics.taxaAprovacao),
         emissoes: getVariation(currentMetrics.emissoes, previousMetrics.emissoes),
-        taxaEmissao: currentMetrics.taxaEmissao - previousMetrics.taxaEmissao,
-        convBase: currentMetrics.convBase - previousMetrics.convBase,
+        taxaEmissao: getVariation(currentMetrics.taxaEmissao, previousMetrics.taxaEmissao),
+        convBase: getVariation(currentMetrics.convBase, previousMetrics.convBase),
         cac: getVariation(currentMetrics.cac, previousMetrics.cac),
         custoTotal: getVariation(currentMetrics.custoTotal, previousMetrics.custoTotal)
     };
@@ -114,7 +119,7 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
                 </div>
                 {variation !== undefined && variation !== 0 && (
                     <span className={`text-[9px] font-bold ${variation > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {variation > 0 ? '↑' : '↓'} {Math.abs(variation).toFixed(1)}{suffix === '%' ? 'pp' : '%'}
+                        {variation > 0 ? '↑' : '↓'} {Math.abs(variation).toFixed(1)}%
                     </span>
                 )}
             </div>

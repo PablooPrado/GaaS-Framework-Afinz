@@ -112,7 +112,7 @@ function App() {
       case 'jornada': return 'Jornada & Disparos';
       case 'resultados': return 'Resultados';
       case 'orientador': return 'Orientador';
-      case 'framework': return 'Framework';
+      case 'framework': return 'Campanhas';
       case 'diario': return 'Diário de Bordo';
       case 'configuracoes': return 'Configurações';
       case 'midia-paga': return 'Media Analytics';

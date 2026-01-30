@@ -33,7 +33,10 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
         const activities = allActivities.filter(a => isSameDay(a.dataDisparo, day));
         const count = activities.length;
 
-        // Group by BU to determine colors
+        // Apenas o Rascunho fica em amarelo conforme pedido
+        const hasDraft = activities.some(a => a.status === 'Rascunho');
+
+        // Group by BU to determine colors (Agendados agora contam para a cor da BU aqui)
         const byBU = activities.reduce((acc, curr) => {
             acc[curr.bu] = (acc[curr.bu] || 0) + 1;
             return acc;
@@ -45,13 +48,23 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
             return acc;
         }, {} as Record<string, number>);
 
-        return { count, byBU, byBUCartoes };
+        return { count, byBU, byBUCartoes, hasDraft };
     };
 
-    const getDominantBUColor = (byBUCartoes: Record<string, number>) => {
-        if (Object.keys(byBUCartoes).length === 0) return 'bg-slate-800/30 border-slate-700/50';
+    const getDominantBUColor = (byBUCartoes: Record<string, number>, byBU: Record<string, number>) => {
+        let dominantBU: string | null = null;
 
-        const dominantBU = Object.entries(byBUCartoes).sort((a, b) => b[1] - a[1])[0][0];
+        // Priority 1: Volume of Cards (Results)
+        const totalCards = Object.values(byBUCartoes).reduce((a, b) => a + b, 0);
+
+        if (totalCards > 0) {
+            dominantBU = Object.entries(byBUCartoes).sort((a, b) => b[1] - a[1])[0][0];
+        } else if (Object.keys(byBU).length > 0) {
+            // Priority 2: Count of Activities (Scheduled/Planned)
+            dominantBU = Object.entries(byBU).sort((a, b) => b[1] - a[1])[0][0];
+        }
+
+        if (!dominantBU) return 'bg-slate-800/30 border-slate-700/50';
 
         switch (dominantBU?.toUpperCase()) {
             case 'B2C': return 'bg-blue-900/40 border-blue-700/50 hover:bg-blue-900/60 hover:border-blue-600/70';
@@ -118,13 +131,24 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
             <div className="flex-1 overflow-y-auto flex justify-center">
                 <div className="grid grid-cols-7 gap-1 w-full max-w-[560px]">
                     {calendarDays.map((day) => {
-                        const { count, byBU, byBUCartoes } = getDayMetrics(day);
+                        const { count, byBU, byBUCartoes, hasDraft } = getDayMetrics(day);
                         const isCurrentMonth = isSameMonth(day, displayDate);
                         const isToday = isSameDay(day, new Date());
                         const weekend = isWeekend(day);
 
                         const buEntries = Object.entries(byBU).sort((a, b) => b[1] - a[1]);
-                        const dominantBUColor = getDominantBUColor(byBUCartoes);
+                        const dominantBUColor = getDominantBUColor(byBUCartoes, byBU);
+
+                        // Lógica de cores conforme pedido:
+                        // 1. Rascunho -> Amarelado (Prioridade visual para destaque)
+                        // 2. Agendado / Realizado -> Cor da BU
+                        const dayStyle = hasDraft
+                            ? 'bg-amber-900/40 border-amber-600/50 hover:bg-amber-800/60 hover:border-amber-500/70'
+                            : isCurrentMonth
+                                ? weekend
+                                    ? 'bg-blue-950/30 border-blue-800/40 hover:bg-blue-950/50 hover:border-blue-700/60'
+                                    : dominantBUColor
+                                : 'bg-slate-900/20 border-slate-800/30 opacity-20';
 
                         return (
                             <div
@@ -132,12 +156,7 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
                                 onClick={() => onDayClick?.(day)}
                                 className={`
                                 relative p-1 rounded-md border transition-all cursor-pointer aspect-square overflow-hidden group
-                                ${isCurrentMonth
-                                        ? weekend
-                                            ? 'bg-blue-950/30 border-blue-800/40 hover:bg-blue-950/50 hover:border-blue-700/60'
-                                            : dominantBUColor
-                                        : 'bg-slate-900/20 border-slate-800/30 opacity-20'
-                                    }
+                                ${dayStyle}
                                 ${isToday ? 'ring-1 ring-blue-400 ring-offset-1 ring-offset-slate-900' : ''}
                             `}
                             >

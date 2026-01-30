@@ -10,6 +10,7 @@ export const mapSqlToActivity = (row: any): Activity => {
     // Reconstruct Raw Object (for compatibility)
     // The DB returns keys exactly as defined in the CREATE TABLE (Human Readable)
     const raw: FrameworkRow = {
+        id: row.id,
         'Activity name / Taxonomia': row['Activity name / Taxonomia'],
         'Data de Disparo': row['Data de Disparo'],
         'Data Fim': row['Data Fim'],
@@ -68,6 +69,7 @@ export const mapSqlToActivity = (row: any): Activity => {
         oferta: row['Oferta'],
         promocional: row['Promocional'],
         safraKey: row['Safra'],
+        status: row['status'] as any, // Cast to ActivityStatus
         kpis: {
             baseEnviada: row['Base Total'],
             baseEntregue: row['Base Acionável'],
@@ -142,5 +144,22 @@ export const dataService = {
             cpm: row.cpm,
             cpa: row.cpa
         }));
+    },
+
+    async fetchGoals() {
+        const { data, error } = await supabase
+            .from('goals')
+            .select('*');
+
+        if (error) throw error;
+        return data || [];
+    },
+
+    async upsertGoal(goal: any) {
+        const { error } = await supabase
+            .from('goals')
+            .upsert(goal, { onConflict: 'mes' });
+
+        if (error) throw error;
     }
 };

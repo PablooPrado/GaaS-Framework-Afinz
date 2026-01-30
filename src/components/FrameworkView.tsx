@@ -205,7 +205,7 @@ export const FrameworkView: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', 'framework_editado.csv');
+        link.setAttribute('download', 'campanhas_editado.csv');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

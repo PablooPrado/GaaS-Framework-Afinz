@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { CalendarData, FilterState } from '../../types/framework';
+import { CalendarData, FilterState, Activity } from '../../types/framework';
 import { DashboardLayout } from './DashboardLayout';
 import { DailyDetailsModal } from '../jornada/DailyDetailsModal';
 import { ProgramarDisparoModal } from '../dispatch/ProgramarDisparoModal';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { useAppStore } from '../../store/useAppStore';
 import { ActivityRow } from '../../types/activity';
-import { isSameDay } from 'date-fns';
+import { isSameDay, format } from 'date-fns';
 import { mapSqlToActivity } from '../../services/dataService';
 
 
@@ -31,6 +31,24 @@ export const LaunchPlanner: React.FC<LaunchPlannerProps> = ({ data, onActivityUp
 
     const handleDayClick = (date: Date) => {
         setSelectedDate(date);
+    };
+
+    const handleEditActivity = (activity: Activity) => {
+        // Map Activity/FrameworkRow back to ActivityRow for the modal
+        // We use the raw data from the activity
+        const activityRow: ActivityRow = {
+            ...activity.raw,
+            id: activity.raw.id || activity.id,
+            BU: activity.bu,
+            jornada: activity.jornada,
+            'Activity name / Taxonomia': activity.id,
+            'Data de Disparo': format(activity.dataDisparo, 'yyyy-MM-dd'),
+            status: activity.status || 'Scheduled'
+        } as any;
+
+        setEditingActivity(activityRow);
+        setIsModalOpen(true);
+        setSelectedDate(null);
     };
 
     const getActivitiesForDate = (date: Date) => {
@@ -68,6 +86,7 @@ export const LaunchPlanner: React.FC<LaunchPlannerProps> = ({ data, onActivityUp
                     date={selectedDate}
                     activities={getActivitiesForDate(selectedDate)}
                     onClose={() => setSelectedDate(null)}
+                    onEdit={handleEditActivity}
                 />
             )}
 
