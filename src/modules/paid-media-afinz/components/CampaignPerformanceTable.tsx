@@ -140,7 +140,6 @@ export const CampaignPerformanceTable: React.FC<CampaignPerformanceTableProps> =
         cpm: false,
         cpc: false,
         cpa: true,
-        cpa: true,
         status: true,
         trend: true
     });
