@@ -56,6 +56,9 @@ export const saveActivity = async (
         // Calculados
         'Ordem de disparo': nextOrder,
 
+        // Horário de Disparo
+        'Horário de Disparo': validated.horarioDisparo || '10:00',
+
         // Timestamps gerenciados pelo BD ou aqui
         updated_at: new Date().toISOString(),
     };

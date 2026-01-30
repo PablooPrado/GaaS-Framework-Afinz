@@ -69,6 +69,9 @@ export interface ActivityRow {
     Propostas?: number;
     'Emissões Independentes'?: number;
     'Emissões Assistidas'?: number;
+
+    // Horário de Disparo
+    'Horário de Disparo'?: string; // HH:MM formato
 }
 
 // Input do Formulário (Programação)

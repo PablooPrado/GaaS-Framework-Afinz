@@ -489,6 +489,25 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                     placeholder="campanha_reativacao_2026"
                                     className={`w-full px-3 py-2 bg-slate-900/50 border rounded-lg text-sm text-white font-mono ${errors.activityName ? 'border-red-500' : 'border-slate-700'}`}
                                 />
+                                {errors.activityName && <span className="text-red-400 text-xs mt-1 block">{errors.activityName}</span>}
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
+                                    Canal * <span title="Meio de comunicação utilizado para o disparo (E-mail, SMS, Push, WhatsApp)"><Info size={12} className="text-slate-500 cursor-help" /></span>
+                                </label>
+                                <select
+                                    value={formData.canal}
+                                    onChange={(e) => handleChange('canal', e.target.value)}
+                                    className={`w-full px-3 py-2 bg-slate-900/50 border rounded-lg text-sm text-white focus:ring-1 focus:ring-blue-500 ${errors.canal ? 'border-red-500' : 'border-slate-700 hover:border-slate-600'}`}
+                                >
+                                    <option value="">Selecione</option>
+                                    {/* Priorizar histórico se houver, senão usar constantes FRAMEWORK */}
+                                    {(historicalOptions.canais.length > 0 ? historicalOptions.canais : CANAIS).map(c => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                                {errors.canal && <span className="text-red-400 text-xs mt-1 block">{errors.canal}</span>}
                             </div>
                         </div>
                     </div>
@@ -546,6 +565,32 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                         value={formData.horarioDisparo}
                                         onChange={(e) => handleChange('horarioDisparo', e.target.value)}
                                         className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
+                                        Safra <span title="Mês/ano de agrupamento operacional (gerado automaticamente a partir da Data de Disparo)"><Info size={12} className="text-slate-500 cursor-help" /></span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.safra}
+                                        readOnly
+                                        className="w-full px-3 py-2 bg-slate-900/70 border border-slate-600 rounded-lg text-sm text-slate-400 cursor-not-allowed"
+                                        placeholder="Ex: jan/26"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
+                                        Ordem <span title="Sequência automática deste disparo dentro da jornada (calculado pelo sistema)"><Info size={12} className="text-slate-500 cursor-help" /></span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={formData.ordemDisparo}
+                                        readOnly
+                                        className="w-full px-3 py-2 bg-slate-900/70 border border-slate-600 rounded-lg text-sm text-slate-400 cursor-not-allowed"
                                     />
                                 </div>
                             </div>
@@ -613,13 +658,147 @@ export const ProgramarDisparoModal: React.FC<ProgramarDisparoModalProps> = ({
                                     />
                                 </div>
                             </div>
+
+                            <div>
+                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
+                                    Produto <span title="Produto financeiro oferecido (Classic é o padrão)"><Info size={12} className="text-slate-500 cursor-help" /></span>
+                                </label>
+                                <select
+                                    value={formData.produto}
+                                    onChange={(e) => handleChange('produto', e.target.value)}
+                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
+                                >
+                                    <option value="">Selecione</option>
+                                    {historicalOptions.produtos.length > 0 ? (
+                                        historicalOptions.produtos.map(p => <option key={p} value={p}>{p}</option>)
+                                    ) : (
+                                        PRODUTOS.map(p => <option key={p} value={p}>{p}</option>)
+                                    )}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-1.5 text-xs text-slate-400 mb-1.5 font-medium">
+                                    Etapa Aquisição <span title="Fase do funil de conversão (Aquisição ou Meio de Funil)"><Info size={12} className="text-slate-500 cursor-help" /></span>
+                                </label>
+                                <select
+                                    value={formData.etapaAquisicao}
+                                    onChange={(e) => handleChange('etapaAquisicao', e.target.value)}
+                                    className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-sm text-white"
+                                >
+                                    <option value="">Selecione</option>
+                                    {historicalOptions.etapasAquisicao.length > 0 ? (
+                                        historicalOptions.etapasAquisicao.map(e => <option key={e} value={e}>{e}</option>)
+                                    ) : (
+                                        ETAPAS_AQUISICAO.map(e => <option key={e} value={e}>{e}</option>)
+                                    )}
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Column 3: Analytics / Insights */}
+                    {/* Column 3: Ofertas Secundárias */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-indigo-400 flex items-center gap-2 pb-2 border-b border-indigo-500/30 uppercase tracking-wider">
-                            Inteligência <span title="Predições baseadas em inteligência artificial e dados históricos"><Info size={14} className="text-indigo-400/50 opacity-50" /></span>
+                        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 pb-2 border-b border-slate-700 uppercase tracking-wider">
+                            Ofertas Secundárias <span title="Testes A/B e ofertas alternativas"><Info size={14} className="text-slate-500 opacity-50" /></span>
+                        </h3>
+
+                        <div className="space-y-3">
+                            {/* Já existente no código original */}
+                        </div>
+                    </div>
+
+                    {/* Column 4: Investimento & Projeção */}
+                    <div className="space-y-4">
+                        {/* SEÇÃO 1: INVESTIMENTO (CUSTOS) */}
+                        <h3 className="text-sm font-bold text-emerald-400 flex items-center gap-2 pb-2 border-b border-emerald-500/30 uppercase tracking-wider">
+                            <DollarSign size={14} /> Investimento <span title="Custos planejados para cálculo de ROI e CAC (opcional ao programar)"><Info size={14} className="text-emerald-400/50 cursor-help" /></span>
+                        </h3>
+
+                        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 space-y-2.5">
+                            {/* Custo Unitário Oferta */}
+                            <div>
+                                <label className="text-[10px] text-slate-400 mb-1 block flex items-center gap-1">
+                                    Custo Unit. Oferta (R$) <span title="Custo por cliente da oferta comercial (ex: R$ 0,00 / R$ 1,00 / R$ 2,00 / R$ 76,50)"><Info size={9} className="text-slate-500 cursor-help" /></span>
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={formData.custoUnitarioOferta}
+                                    onChange={(e) => handleChange('custoUnitarioOferta', e.target.value)}
+                                    className="w-full px-2 py-1.5 bg-slate-900/50 border border-slate-700 rounded text-xs text-white"
+                                    placeholder="Auto-sugerido"
+                                />
+                            </div>
+
+                            {/* Custo Total Oferta (read-only) */}
+                            <div>
+                                <label className="text-[10px] text-slate-400 mb-1 block">Custo Total Oferta (R$)</label>
+                                <input
+                                    type="text"
+                                    value={formData.custoTotalOferta ? `R$ ${Number(formData.custoTotalOferta).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
+                                    readOnly
+                                    className="w-full px-2 py-1.5 bg-slate-900/70 border border-slate-600 rounded text-xs text-emerald-400 cursor-not-allowed font-bold"
+                                    placeholder="Calculado"
+                                />
+                            </div>
+
+                            {/* Custo Unitário Canal */}
+                            <div>
+                                <label className="text-[10px] text-slate-400 mb-1 block flex items-center gap-1">
+                                    Custo Unit. Canal (R$) <span title="Custo por mensagem do canal selecionado (E-mail R$ 0,001 / SMS R$ 0,064 / WhatsApp R$ 0,420)"><Info size={9} className="text-slate-500 cursor-help" /></span>
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.001"
+                                    value={formData.custoUnitarioCanal}
+                                    onChange={(e) => handleChange('custoUnitarioCanal', e.target.value)}
+                                    className="w-full px-2 py-1.5 bg-slate-900/50 border border-slate-700 rounded text-xs text-white"
+                                    placeholder="Auto-sugerido"
+                                />
+                            </div>
+
+                            {/* Custo Total Canal (read-only) */}
+                            <div>
+                                <label className="text-[10px] text-slate-400 mb-1 block">Custo Total Canal (R$)</label>
+                                <input
+                                    type="text"
+                                    value={formData.custoTotalCanal ? `R$ ${Number(formData.custoTotalCanal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
+                                    readOnly
+                                    className="w-full px-2 py-1.5 bg-slate-900/70 border border-slate-600 rounded text-xs text-emerald-400 cursor-not-allowed font-bold"
+                                    placeholder="Calculado"
+                                />
+                            </div>
+
+                            {/* Custo Total Campanha (read-only, destaque) */}
+                            <div className="pt-2 border-t border-slate-700">
+                                <label className="text-[10px] text-emerald-400 mb-1 block font-bold">Custo Total Campanha (R$)</label>
+                                <input
+                                    type="text"
+                                    value={formData.custoTotalCampanha ? `R$ ${Number(formData.custoTotalCampanha).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
+                                    readOnly
+                                    className="w-full px-2 py-2 bg-emerald-500/10 border border-emerald-500 rounded text-sm text-emerald-300 cursor-not-allowed font-bold text-center"
+                                    placeholder="R$ 0,00"
+                                />
+                            </div>
+
+                            {/* CAC Previsto */}
+                            <div>
+                                <label className="text-[10px] text-slate-400 mb-1 block flex items-center gap-1">
+                                    CAC Previsto <span title="Custo de Aquisição por Cartão previsto (Custo Total ÷ Cartões esperados)"><Info size={9} className="text-slate-500 cursor-help" /></span>
+                                </label>
+                                <div className="text-emerald-400 text-lg font-bold text-center py-2 bg-slate-900/50 rounded border border-emerald-500/20">
+                                    R$ {calcularCACPrevisto(
+                                        Number(formData.custoTotalCampanha) || 0,
+                                        Math.round((Number(formData.baseVolume) || 0) * 0.05) // Assumindo 5% taxa conversão padrão
+                                    ).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* SEÇÃO 2: PROJEÇÃO (renomeado de Inteligência) */}
+                        <h3 className="text-sm font-bold text-indigo-400 flex items-center gap-2 pb-2 border-b border-indigo-500/30 uppercase tracking-wider mt-6">
+                            <TrendingUp size={14} /> Projeção <span title="Engine de IA que busca disparos similares (BU + Segmento + Perfil Crédito + Canal) nos últimos 90 dias e projeta métricas com base em médias/medianas ponderadas por volume e decaimento temporal"><Info size={14} className="text-indigo-400/50 cursor-help" /></span>
                         </h3>
 
                         <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-4 space-y-3">
