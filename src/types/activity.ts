@@ -15,7 +15,7 @@ export interface ActivityRow {
     updated_at: string;
 
     // Campos Core (Dimensões Principais)
-    BU: 'B2C' | 'B2B2C' | 'Plurix' | string;
+    BU: 'B2C' | 'B2B2C' | 'Plurix' | 'Bem Barato' | string;
     jornada: string;
     'Activity name / Taxonomia': string;
     Canal?: string;
@@ -76,7 +76,7 @@ export interface ActivityRow {
 
 // Input do Formulário (Programação)
 export type ActivityFormInput = {
-    bu: 'B2C' | 'B2B2C' | 'Plurix';
+    bu: 'B2C' | 'B2B2C' | 'Plurix' | 'Bem Barato';
     jornada: string;
     activityName: string;
     dataInicio: string;

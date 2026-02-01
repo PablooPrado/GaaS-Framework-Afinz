@@ -7,7 +7,192 @@ import { useCSVParser } from '../hooks/useCSVParser';
 import { useAppStore } from '../store/useAppStore';
 import { parseXLSX } from '../modules/paid-media-afinz/utils/fileParser';
 import { GoalsManager } from './admin/GoalsManager';
-import { activityService } from '../services/activityService';
+import { activityService, versionService } from '../services/activityService';
+
+const VersionManager: React.FC = () => {
+    const [versions, setVersions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [activating, setActivating] = useState<string | null>(null);
+    const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    const { processCSV } = useFrameworkData();
+
+    useEffect(() => {
+        loadVersions();
+    }, []);
+
+    const loadVersions = async () => {
+        setLoading(true);
+        try {
+            const list = await versionService.listVersions();
+            setVersions(list);
+        } catch (e: any) {
+            console.error(e);
+            setMsg({ type: 'error', text: 'Erro ao listar versões: ' + e.message });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        setMsg(null);
+        try {
+            // 1. Parse locally to validate and get row count
+            const data = await processCSV(file);
+            const rowCount = data.length;
+
+            // 2. Upload Version
+            await versionService.uploadVersion(file, rowCount);
+
+            await loadVersions();
+            setMsg({ type: 'success', text: 'Versão enviada com sucesso! Clique em ativar para aplicar.' });
+        } catch (e: any) {
+            console.error(e);
+            setMsg({ type: 'error', text: 'Falha no upload: ' + e.message });
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleActivate = async (version: any) => {
+        if (!confirm(`Deseja ATIVAR a versão "${version.filename}"?\n\nISSO SUBSTITUIRÁ TODOS OS DADOS ATUAIS DO FRAMEWORK NO BANCO DE DADOS.`)) return;
+
+        setActivating(version.id);
+        setMsg(null);
+        try {
+            // 1. Download Content
+            const signedUrl = await storageService.getDownloadUrl(version.storage_path);
+            const resp = await fetch(signedUrl);
+            const blob = await resp.blob();
+            const file = new File([blob], version.filename, { type: blob.type });
+
+            // 2. Parse
+            const data = await processCSV(file);
+
+            // 3. Activate
+            await versionService.activateVersion(version.id, data);
+
+            await loadVersions();
+            setMsg({ type: 'success', text: `Versão "${version.filename}" ativada com sucesso!` });
+        } catch (e: any) {
+            console.error(e);
+            setMsg({ type: 'error', text: 'Erro na ativação: ' + e.message });
+        } finally {
+            setActivating(null);
+        }
+    };
+
+    const handleDelete = async (version: any) => {
+        if (!confirm('Excluir esta versão permanentemente?')) return;
+        setLoading(true);
+        try {
+            await versionService.deleteVersion(version.id, version.storage_path);
+            await loadVersions();
+        } catch (e: any) {
+            setMsg({ type: 'error', text: e.message });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="border border-slate-700/50 bg-slate-800/30 rounded-lg overflow-hidden backdrop-blur-sm transition-all hover:border-blue-500/30">
+            <div className="bg-slate-800/50 p-4 flex justify-between items-center border-b border-slate-700/50">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400">
+                        <Database size={18} />
+                    </div>
+                    <div>
+                        <span className="font-semibold text-slate-200 text-sm block">Versões do Framework</span>
+                        <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">CSV</span>
+                    </div>
+                </div>
+                <div className="relative group">
+                    <input
+                        type="file"
+                        accept=".csv"
+                        onChange={handleUpload}
+                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                        disabled={uploading}
+                    />
+                    <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed group-hover:scale-105">
+                        {uploading ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
+                        {uploading ? 'Enviando...' : 'Nova Versão'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="p-2 max-h-64 overflow-y-auto min-h-[120px] scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                {loading && !versions.length ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-slate-500 gap-2">
+                        <Loader2 className="animate-spin" />
+                        <span className="text-xs">Carregando versões...</span>
+                    </div>
+                ) : versions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-slate-500 gap-2 dashed-border">
+                        <UploadCloud size={24} className="opacity-20" />
+                        <p className="text-xs italic">Nenhuma versão encontrada.</p>
+                        {msg?.type === 'error' && (
+                            <p className="text-[10px] text-red-400 bg-red-900/20 px-2 py-1 rounded max-w-[200px] text-center">{msg.text}</p>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-1">
+                        {versions.map((v: any) => (
+                            <div key={v.id} className={`flex items-center justify-between p-3 rounded-lg group transition-colors border ${v.is_active ? 'bg-emerald-500/10 border-emerald-500/30' : 'hover:bg-slate-700/30 border-transparent hover:border-slate-700'}`}>
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <FileText size={16} className={`${v.is_active ? 'text-emerald-400' : 'text-slate-500'} flex-shrink-0`} />
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <p className={`text-sm font-medium truncate max-w-[220px] ${v.is_active ? 'text-emerald-300' : 'text-slate-300'}`} title={v.filename}>
+                                                {v.filename}
+                                            </p>
+                                            {v.is_active && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold uppercase">Ativo</span>}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                                            <span>{new Date(v.created_at).toLocaleString('pt-BR')}</span>
+                                            <span>•</span>
+                                            <span>{v.row_count} linhas</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1 group-hover:opacity-100 transition-all">
+                                    {!v.is_active && (
+                                        <button
+                                            onClick={() => handleActivate(v)}
+                                            disabled={activating === v.id}
+                                            className="px-2 py-1 text-[10px] bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded border border-blue-500/20 transition-colors uppercase font-bold tracking-wider"
+                                        >
+                                            {activating === v.id ? 'Ativando...' : 'Ativar'}
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => handleDelete(v)}
+                                        className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                        title="Excluir"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+            {msg && (
+                <div className={`${msg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'} text-xs px-4 py-2 flex items-center gap-2 border-t`}>
+                    {msg.type === 'success' ? <CheckCircle size={12} /> : <AlertCircle size={12} />}
+                    {msg.text}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const FileManager: React.FC<{ title: string; slot: string; accept: string }> = ({ title, slot, accept }) => {
     const [files, setFiles] = useState<any[]>([]);
@@ -17,7 +202,6 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
     const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
     // Hooks for restoration
-    const { processCSV } = useFrameworkData();
     const { parseB2CCSV } = useCSVParser();
     const { setB2CData, setPaidMediaData } = useAppStore();
 
@@ -33,12 +217,9 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
             setFiles(list || []);
         } catch (e: any) {
             console.error(e);
-            // Translate common Supabase errors
             let errorText = e.message;
-            if (e.message.includes('Bucket not found')) {
-                errorText = 'Bucket "app-data" não encontrado. Crie-o no Supabase.';
-            } else if (e.message.includes('jwks')) {
-                errorText = 'Erro de Autenticação (Chave API inválida?).';
+            if (e.message?.includes?.('Bucket not found')) {
+                errorText = 'Bucket "app-data" não encontrado.';
             }
             setMsg({ type: 'error', text: errorText });
         } finally {
@@ -55,24 +236,9 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
         try {
             await storageService.uploadFile(slot, file);
             await loadFiles();
-
-            // AUTO-SYNC: If framework, parse and sync immediately
-            if (slot === 'framework') {
-                console.log('🔄 Iniciando parse do CSV...');
-                const data = await processCSV(file);
-                console.log(`✅ CSV parseado: ${data.length} atividades`);
-
-                console.log('📡 Iniciando sincronização com Supabase...');
-                await activityService.syncFrameworkActivities(data);
-                console.log('✅ Sincronização concluída!');
-
-                setMsg({ type: 'success', text: 'Upload e Sincronização com Banco de Dados realizados!' });
-            } else {
-                setMsg({ type: 'success', text: 'Upload realizado com sucesso!' });
-            }
-
+            setMsg({ type: 'success', text: 'Upload realizado com sucesso!' });
         } catch (e: any) {
-            console.error('❌ Erro durante upload/sincronização:', e);
+            console.error('❌ Erro durante upload:', e);
             setMsg({ type: 'error', text: 'Falha: ' + e.message });
         } finally {
             setUploading(false);
@@ -102,28 +268,18 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
             // 1. Fetch Blob
             const resp = await fetch(signedUrl);
             const blob = await resp.blob();
-            // Create dummy file object
             const file = new File([blob], path, { type: blob.type });
 
             // 2. Parse based on slot
-            if (slot === 'framework') {
-                // Parse AND Sync to DB
-                console.log('🔄 Restaurando Framework CSV...');
-                const data = await processCSV(file);
-                console.log(`✅ CSV parseado: ${data.length} atividades`);
-
-                console.log('📡 Sincronizando com Supabase...');
-                await activityService.syncFrameworkActivities(data);
-                console.log('✅ Sincronização concluída!');
-            } else if (slot === 'b2c') {
+            if (slot === 'b2c') {
                 const { data } = await parseB2CCSV(file);
                 setB2CData(data);
             } else if (slot === 'media') {
                 const data = await parseXLSX(file);
-                setPaidMediaData(data);
+                setPaidMediaData(data as any);
             }
 
-            setMsg({ type: 'success', text: 'Dados restaurados e sincronizados!' });
+            setMsg({ type: 'success', text: 'Dados restaurados com sucesso!' });
         } catch (e: any) {
             console.error('❌ Erro ao restaurar:', e);
             setMsg({ type: 'error', text: 'Erro ao restaurar: ' + e.message });
@@ -220,7 +376,7 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
                     {msg.text}
                 </div>
             )}
-            {msg && msg.type === 'error' && files.length > 0 && ( /* Only show error footer if lists loaded but later error occures, otherwise handled in empty state */
+            {msg && msg.type === 'error' && files.length > 0 && (
                 <div className="bg-red-500/10 text-red-400 text-xs px-4 py-2 flex items-center gap-2 border-t border-red-500/20">
                     <AlertCircle size={12} />
                     {msg.text}
@@ -373,11 +529,7 @@ export const ConfiguracoesView: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-4 relative z-10">
-                                        <FileManager
-                                            title="Framework Strategy"
-                                            slot="framework"
-                                            accept=".csv"
-                                        />
+                                        <VersionManager />
                                         <FileManager
                                             title="Histórico B2C"
                                             slot="b2c"

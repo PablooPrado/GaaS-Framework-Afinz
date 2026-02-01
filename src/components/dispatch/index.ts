@@ -17,8 +17,8 @@
  */
 
 // Modal Principal
-export { ProgramarDisparoModalV2 } from './ProgramarDisparoModalV2';
-export { ProgramarDisparoModal } from './ProgramarDisparoModal'; // Versao antiga
+// Modal Principal
+export { ProgramarDisparoModal } from './ProgramarDisparoModal';
 
 // Context
 export { DispatchFormProvider, useDispatchForm } from './context/DispatchFormContext';

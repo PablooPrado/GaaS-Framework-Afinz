@@ -31,6 +31,7 @@ interface AppState {
 
     // Actions
     setFrameworkData: (data: FrameworkRow[], activities: Activity[]) => void;
+    setActivities: (activities: Activity[]) => void; // <--- ADDED
     setGoals: (goals: Goal[]) => void;
     addJournalEntry: (entry: JournalEntry) => void;
     updateJournalEntry: (id: string, entry: Partial<JournalEntry>) => void;
@@ -93,6 +94,8 @@ export const useAppStore = create<AppState>()(
             })),
 
             setFrameworkData: (data, activities) => set({ frameworkData: data, activities }),
+
+            setActivities: (activities) => set({ activities }), // <--- ADDED IMPLEMENTATION
 
             setGoals: (goals) => set({ goals }),
 

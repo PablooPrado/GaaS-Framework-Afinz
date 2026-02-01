@@ -5,7 +5,8 @@ import { z } from 'zod';
  * Atualizado para incluir todos os campos do FRAMEWORK
  */
 export const ActivityFormSchema = z.object({
-    bu: z.enum(['B2C', 'B2B2C', 'Plurix']),
+    bu: z.enum(['B2C', 'B2B2C', 'Plurix', 'Bem Barato']),
+    segmento: z.string().min(1, 'Segmento é obrigatório'),
 
     jornada: z.string()
         .min(5, 'Mínimo 5 caracteres')
@@ -29,7 +30,7 @@ export const ActivityFormSchema = z.object({
 
     // Campos calculados automaticamente (opcionais pois são gerados)
     safra: z.string().optional(),
-    ordemDisparo: z.number().optional(),
+    ordemDisparo: z.union([z.string(), z.number()]).optional(),
 
     // Campos opcionais de segmentação
     perfilCredito: z.string().optional(),

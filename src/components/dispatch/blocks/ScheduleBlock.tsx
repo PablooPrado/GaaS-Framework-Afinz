@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar } from 'lucide-react';
 import { useDispatchForm } from '../context/DispatchFormContext';
 import { SectionCard, Label, Input, ReadonlyField } from './shared';
+// Label já importado para uso no campo Ordem editável
 
 /**
  * Bloco 2: Cronograma
@@ -49,16 +50,21 @@ export const ScheduleBlock: React.FC = () => {
 
                     {/* Divisor */}
                     <div className="border-t border-slate-700/50 pt-2">
-                        {/* Safra e Ordem - Campos calculados (readonly) */}
+                        {/* Safra (readonly) e Ordem (EDITAVEL) */}
                         <div className="grid grid-cols-2 gap-1.5">
                             <ReadonlyField
                                 label="Safra"
                                 value={formData.safra}
                             />
-                            <ReadonlyField
-                                label="Ordem"
-                                value={formData.ordemDisparo}
-                            />
+                            <div>
+                                <Label label="Ordem" />
+                                <Input
+                                    value={formData.ordemDisparo}
+                                    onChange={(e) => handleChange('ordemDisparo', e.target.value)}
+                                    placeholder="ex: 1 ou Pontual"
+                                    className="text-center font-bold text-blue-400"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

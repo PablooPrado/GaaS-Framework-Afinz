@@ -10,6 +10,9 @@ import {
     calcularCustoTotalOferta,
     calcularCustoTotalCanal,
     calcularCustoTotalCampanha,
+    BU_SEGMENTO_MAP,
+    SEGMENTO_CONTEXT_MAP,
+    OFERTA_DETALHE_MAP
 } from '../../../constants/frameworkFields';
 import {
     calculateProjections,
@@ -23,7 +26,7 @@ import type { Canal } from '../../../constants/frameworkFields';
  */
 export interface DispatchFormData {
     // Identificacao
-    bu: 'B2C' | 'B2B2C' | 'Plurix' | '';
+    bu: 'B2C' | 'B2B2C' | 'Plurix' | 'Bem Barato' | '';
     segmento: string;
     jornada: string;
     activityName: string;
@@ -36,7 +39,7 @@ export interface DispatchFormData {
     dataFim: string;
     horarioDisparo: string;
     safra: string;
-    ordemDisparo: number;
+    ordemDisparo: number | string;
 
     // Produto & Oferta
     produto: string;
@@ -60,21 +63,31 @@ export interface DispatchFormData {
 }
 
 /**
- * Opcoes historicas extraidas do banco
+ * Opcao com frequencia para Combobox
+ */
+export interface OptionWithFrequency {
+    value: string;
+    count: number;
+    isSmart?: boolean; // Se veio do Framework
+}
+
+/**
+ * Opcoes historicas extraidas do banco COM FREQUENCIA
+ * PILAR: Automatizacao por Historico - ordenado por uso
  */
 export interface HistoricalOptions {
-    segmentos: string[];
-    perfisCredito: string[];
-    ofertas: string[];
-    ofertas2: string[];
-    promocionais: string[];
-    promocionais2: string[];
-    jornadas: string[];
-    parceiros: string[];
-    subgrupos: string[];
-    etapasAquisicao: string[];
-    produtos: string[];
-    canais: string[];
+    segmentos: OptionWithFrequency[];
+    perfisCredito: OptionWithFrequency[];
+    ofertas: OptionWithFrequency[];
+    ofertas2: OptionWithFrequency[];
+    promocionais: OptionWithFrequency[];
+    promocionais2: OptionWithFrequency[];
+    jornadas: OptionWithFrequency[];
+    parceiros: OptionWithFrequency[];
+    subgrupos: OptionWithFrequency[];
+    etapasAquisicao: OptionWithFrequency[];
+    produtos: OptionWithFrequency[];
+    canais: OptionWithFrequency[];
 }
 
 /**
@@ -90,8 +103,8 @@ interface DispatchFormContextValue {
     errors: Record<string, string>;
     setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 
-    // Opcoes historicas
-    historicalOptions: HistoricalOptions;
+    // Opcoes INTELIGENTES (Framework + Historico)
+    smartOptions: HistoricalOptions;
 
     // Projecoes IA
     projections: Record<string, ProjectionResult>;
@@ -174,54 +187,128 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
     const [loading, setLoading] = useState(false);
     const [projections, setProjections] = useState<Record<string, ProjectionResult>>({});
 
-    // Buscar activities do store
+    // Buscar activities e framework data do store
     const activities = useAppStore((state) => state.activities) as ActivityRow[];
+    const frameworkData = useAppStore((state) => state.frameworkData) || [];
 
-    // Extrair opcoes historicas
+    // 1. Extrair Opcoes HISTORICAS
     const historicalOptions = useMemo<HistoricalOptions>(() => {
-        const segmentos = new Set<string>();
-        const perfisCredito = new Set<string>();
-        const ofertas = new Set<string>();
-        const ofertas2 = new Set<string>();
-        const promocionais = new Set<string>();
-        const promocionais2 = new Set<string>();
-        const jornadas = new Set<string>();
-        const parceiros = new Set<string>();
-        const subgrupos = new Set<string>();
-        const etapasAquisicao = new Set<string>();
-        const produtos = new Set<string>();
-        const canais = new Set<string>();
+        // Maps para contar frequencia de cada valor
+        const segmentosMap = new Map<string, number>();
+        const perfisMap = new Map<string, number>();
+        const ofertasMap = new Map<string, number>();
+        const ofertas2Map = new Map<string, number>();
+        const promocionaisMap = new Map<string, number>();
+        const promocionais2Map = new Map<string, number>();
+        const jornadasMap = new Map<string, number>();
+        const parceirosMap = new Map<string, number>();
+        const subgruposMap = new Map<string, number>();
+        const etapasMap = new Map<string, number>();
+        const produtosMap = new Map<string, number>();
+        const canaisMap = new Map<string, number>();
 
+        // Helper para incrementar contagem
+        const increment = (map: Map<string, number>, value: string | undefined | null) => {
+            if (value && typeof value === 'string' && value.trim()) {
+                const cleanValue = value.trim();
+                map.set(cleanValue, (map.get(cleanValue) || 0) + 1);
+            }
+        };
+
+        // Processar TODAS as activities do historico
         activities.forEach((activity: any) => {
-            if (activity.Segmento) segmentos.add(activity.Segmento);
-            if (activity.jornada) jornadas.add(activity.jornada);
-            if (activity.Oferta) ofertas.add(activity.Oferta);
-            if (activity.Canal) canais.add(activity.Canal);
-            if (activity.Promocional) promocionais.add(activity.Promocional);
-            if (activity['Oferta 2']) ofertas2.add(activity['Oferta 2']);
-            if (activity['Promocional 2']) promocionais2.add(activity['Promocional 2']);
-            if (activity['Perfil de Crédito']) perfisCredito.add(activity['Perfil de Crédito']);
-            if (activity.Parceiro) parceiros.add(activity.Parceiro);
-            if (activity.Subgrupos) subgrupos.add(activity.Subgrupos);
-            if (activity['Etapa de aquisição']) etapasAquisicao.add(activity['Etapa de aquisição']);
-            if (activity.Produto) produtos.add(activity.Produto);
+            const raw = activity.raw || activity;
+
+            // Filtragem inteligente: O historico deve ser relevante para a BU atual?
+            // Se nao tiver BU selecionada, mostra tudo.
+            // Se tiver BU selecionada, mostra apenas coisas dessa BU?
+            // NAO: O usuario pode querer copiar uma estrategia de outra BU.
+            // Mante-se global, mas o SmartOptions vai priorizar.
+
+            increment(segmentosMap, raw.Segmento);
+            increment(jornadasMap, raw.Jornada || raw.jornada);
+            increment(canaisMap, raw.Canal || raw.canal);
+            increment(parceirosMap, raw.Parceiro);
+            increment(ofertasMap, raw.Oferta);
+            increment(promocionaisMap, raw.Promocional);
+            increment(ofertas2Map, raw['Oferta 2']);
+            increment(promocionais2Map, raw['Promocional 2']);
+            increment(perfisMap, raw['Perfil de Crédito']);
+            increment(subgruposMap, raw.Subgrupos);
+            increment(etapasMap, raw['Etapa de aquisição']);
+            increment(produtosMap, raw.Produto);
         });
 
+        // Helper para converter Map em array ordenado por frequencia
+        const mapToSortedArray = (map: Map<string, number>): OptionWithFrequency[] => {
+            return Array.from(map.entries())
+                .map(([value, count]) => ({ value, count, isSmart: false }))
+                .sort((a, b) => b.count - a.count); // Mais usado primeiro
+        };
+
         return {
-            segmentos: Array.from(segmentos).sort(),
-            perfisCredito: Array.from(perfisCredito).sort(),
-            ofertas: Array.from(ofertas).sort(),
-            ofertas2: Array.from(ofertas2).sort(),
-            promocionais: Array.from(promocionais).sort(),
-            promocionais2: Array.from(promocionais2).sort(),
-            jornadas: Array.from(jornadas).sort(),
-            parceiros: Array.from(parceiros).sort(),
-            subgrupos: Array.from(subgrupos).sort(),
-            etapasAquisicao: Array.from(etapasAquisicao).sort(),
-            produtos: Array.from(produtos).sort(),
-            canais: Array.from(canais).sort(),
+            segmentos: mapToSortedArray(segmentosMap),
+            perfisCredito: mapToSortedArray(perfisMap),
+            ofertas: mapToSortedArray(ofertasMap),
+            ofertas2: mapToSortedArray(ofertas2Map),
+            promocionais: mapToSortedArray(promocionaisMap),
+            promocionais2: mapToSortedArray(promocionais2Map),
+            jornadas: mapToSortedArray(jornadasMap),
+            parceiros: mapToSortedArray(parceirosMap),
+            subgrupos: mapToSortedArray(subgruposMap),
+            etapasAquisicao: mapToSortedArray(etapasMap),
+            produtos: mapToSortedArray(produtosMap),
+            canais: mapToSortedArray(canaisMap),
         };
     }, [activities]);
+
+    // 2. Mesclar com Opcoes SMART (Framework)
+    const smartOptions = useMemo<HistoricalOptions>(() => {
+        // Helpers para mesclagem
+        const mergeOptions = (smartList: string[] | undefined, historicalList: OptionWithFrequency[]) => {
+            if (!smartList || smartList.length === 0) return historicalList;
+
+            // Converter smart em objetos OptionWithFrequency
+            const smartObjs = smartList.map(val => ({ value: val, count: 999, isSmart: true }));
+
+            // Filtrar historicos que JA estao na lista smart
+            const smartSet = new Set(smartList);
+            const pureHistorical = historicalList.filter(opt => !smartSet.has(opt.value));
+
+            // Retornar Smart primeiro + Historico depois
+            return [...smartObjs, ...pureHistorical];
+        };
+
+        // --- Lógica Hierárquica ---
+
+        // 1. Segmentos baseados na BU
+        const smartSegmentos = formData.bu ? BU_SEGMENTO_MAP[formData.bu] : [];
+
+        // 2. Parceiros/Subgrupos baseados no Segmento
+        const segmentContext = SEGMENTO_CONTEXT_MAP[formData.segmento] || {};
+        const smartParceiros = segmentContext.parceiros || [];
+        const smartSubgrupos = segmentContext.subgrupos || [];
+
+        // 3. Detalhes (Promocional) baseados na Oferta
+        const smartPromocionais = OFERTA_DETALHE_MAP[formData.oferta] || [];
+
+        // 4. Jornadas do Framework (Extrair do CSV importado, não do histórico sujo)
+        // Isso garante que apenas Jornadas "Oficiais" apareçam com estrela
+        const smartJornadas = Array.from(new Set(
+            frameworkData
+                .map(row => row.Jornada || row.jornada) // FrameworkRow usually has Capitalized keys or lowercase depending on parsing
+                .filter(Boolean)
+        )) as string[];
+
+        return {
+            ...historicalOptions,
+            segmentos: mergeOptions(smartSegmentos, historicalOptions.segmentos),
+            parceiros: mergeOptions(smartParceiros, historicalOptions.parceiros),
+            subgrupos: mergeOptions(smartSubgrupos, historicalOptions.subgrupos),
+            promocionais: mergeOptions(smartPromocionais, historicalOptions.promocionais),
+            jornadas: mergeOptions(smartJornadas, historicalOptions.jornadas),
+        };
+    }, [historicalOptions, formData.bu, formData.segmento, formData.oferta, frameworkData]);
 
     // Handler para mudanca de campo
     const handleChange = useCallback((field: keyof DispatchFormData, value: string | number) => {
@@ -304,11 +391,12 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
     // Effect 5: Auto-sugestao Activity Name
     useEffect(() => {
         if (formData.bu && formData.segmento && formData.jornada && formData.safra && formData.ordemDisparo && !editingActivity) {
+            const ordemNum = typeof formData.ordemDisparo === 'number' ? formData.ordemDisparo : 1;
             const suggestedName = suggestActivityName(
                 formData.bu,
                 formData.segmento,
                 formData.jornada,
-                formData.ordemDisparo || 1,
+                ordemNum,
                 formData.safra
             );
             if (suggestedName && !formData.activityName) {
@@ -379,44 +467,19 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
         }
     }, [formData.bu, formData.segmento, formData.perfilCredito, formData.canal, formData.baseVolume, activities]);
 
-    // Effect 10: Sugestoes Historicas
-    useEffect(() => {
-        if (!editingActivity && formData.bu && formData.segmento && formData.jornada && activities.length > 0) {
-            try {
-                const suggestions = suggestFieldsBasedOnHistory(activities as any, {
-                    bu: formData.bu,
-                    segmento: formData.segmento,
-                    jornada: formData.jornada,
-                    parceiro: formData.parceiro || undefined
-                });
-                setFormData(prev => ({
-                    ...prev,
-                    subgrupo: prev.subgrupo || (suggestions.subgrupo?.[0]?.value ? String(suggestions.subgrupo[0].value) : ''),
-                    oferta: prev.oferta || (suggestions.oferta?.[0]?.value ? String(suggestions.oferta[0].value) : ''),
-                    promocional: prev.promocional || (suggestions.promocional?.[0]?.value ? String(suggestions.promocional[0].value) : ''),
-                    oferta2: prev.oferta2 || (suggestions.oferta2?.[0]?.value ? String(suggestions.oferta2[0].value) : ''),
-                    promocional2: prev.promocional2 || (suggestions.promocional2?.[0]?.value ? String(suggestions.promocional2[0].value) : ''),
-                    perfilCredito: prev.perfilCredito || (suggestions.perfilCredito?.[0]?.value ? String(suggestions.perfilCredito[0].value) : '')
-                }));
-            } catch (error) {
-                console.error('Erro ao gerar sugestoes:', error);
-            }
-        }
-    }, [formData.bu, formData.segmento, formData.jornada, formData.parceiro, activities, editingActivity]);
-
     const value = useMemo<DispatchFormContextValue>(() => ({
         formData,
         setFormData,
         handleChange,
         errors,
         setErrors,
-        historicalOptions,
+        smartOptions, // <--- EXPORTANDO SMART OPTIONS
         projections,
         loading,
         setLoading,
         editingActivity,
         activities,
-    }), [formData, handleChange, errors, historicalOptions, projections, loading, editingActivity, activities]);
+    }), [formData, handleChange, errors, smartOptions, projections, loading, editingActivity, activities]);
 
     return (
         <DispatchFormContext.Provider value={value}>

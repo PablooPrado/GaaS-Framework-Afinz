@@ -54,7 +54,9 @@ export const saveActivity = async (
         'Base Total': Number(validated.baseVolume) || null,
 
         // Calculados
-        'Ordem de disparo': nextOrder,
+        'Ordem de disparo': validated.ordemDisparo === 'Pontual'
+            ? 1
+            : (Number(validated.ordemDisparo) || nextOrder),
 
         // Horário de Disparo
         'Horário de Disparo': validated.horarioDisparo || '10:00',
@@ -275,7 +277,86 @@ export const activityService = {
     deleteActivity,
     publishActivity,
     confirmDraft,
-    getActivitiesBySegment,
     getAllActivities,
     syncFrameworkActivities // Export new function
+};
+
+/**
+ * Service Layer para Versionamento de Framework
+ */
+export const versionService = {
+    async listVersions() {
+        const { data, error } = await supabase
+            .from('framework_versions')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    },
+
+    async uploadVersion(file: File, rowCount: number) {
+        // 1. Upload Storage (Sanitize filename to avoid "Invalid Key")
+        // Remove accents and special chars
+        const cleanName = file.name
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "") // Remove accents
+            .replace(/[^a-zA-Z0-9._-]/g, "_"); // Replace spaces/others with _
+
+        const filePath = `framework_versions/${Date.now()}_${cleanName}`;
+        const { error: uploadError } = await supabase.storage
+            .from('app-data')
+            .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // 2. Insert DB
+        const { data, error: dbError } = await supabase
+            .from('framework_versions')
+            .insert({
+                filename: file.name,
+                storage_path: filePath,
+                row_count: rowCount,
+                is_active: false // Default not active
+            })
+            .select() // Return inserted row
+            .single();
+
+        if (dbError) throw dbError;
+        return data;
+    },
+
+    async activateVersion(versionId: string, parsedData: any[]) {
+        // 1. Deactivate all others
+        await supabase
+            .from('framework_versions')
+            .update({ is_active: false })
+            .neq('id', '00000000-0000-0000-0000-000000000000'); // Safety
+
+        // 2. Activate this one
+        await supabase
+            .from('framework_versions')
+            .update({ is_active: true })
+            .eq('id', versionId);
+
+        // 3. Sync Data (Wipe & Replace)
+        await syncFrameworkActivities(parsedData);
+    },
+
+    async deleteVersion(versionId: string, storagePath: string) {
+        // 1. Delete DB
+        const { error: dbError } = await supabase
+            .from('framework_versions')
+            .delete()
+            .eq('id', versionId);
+
+        if (dbError) throw dbError;
+
+        // 2. Delete Storage
+        if (storagePath) {
+            await supabase.storage
+                .from('app-data')
+                .remove([storagePath]);
+        }
+    }
 };

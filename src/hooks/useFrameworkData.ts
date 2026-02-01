@@ -151,17 +151,17 @@ export const useFrameworkData = (): {
 
           console.log(`✅ Dados Carregados: ${fetchedActivities.length} Atividades, ${fetchedB2C.length} B2C, ${fetchedPaid.length} Media, ${fetchedGoals.length} Metas.`);
 
-          // CRITICAL FIX: Only update if Supabase has data OR if store is empty
-          // This prevents overwriting CSV uploads with empty Supabase data
-          const { activities: currentActivities } = useAppStore.getState();
+          // CRITICAL FIX: Only update activities from Supabase. 
+          // Do NOT overwrite frameworkData (the "Plan") with activities (the "History").
+          const { activities: currentActivities, setActivities } = useAppStore.getState();
 
-          if (fetchedActivities.length > 0 || currentActivities.length === 0) {
-            // Reconstruct "rows" from raw data for compatibility
-            const rows = fetchedActivities.map(a => a.raw || {});
-            setFrameworkData(rows as any[], fetchedActivities);
-            console.log('✅ Store atualizado com dados do Supabase');
+          if (fetchedActivities.length > 0) {
+            setActivities(fetchedActivities);
+            console.log('✅ Store atualizado com atividades do Supabase (Mantendo Framework Data intacto)');
+          } else if (currentActivities.length === 0) {
+            console.log('⏭️ Supabase vazio e Store vazio.');
           } else {
-            console.log('⏭️ Supabase vazio, mantendo dados existentes do CSV upload');
+            console.log('⏭️ Supabase vazio, mantendo atividades locais.');
           }
 
           let finalB2C = fetchedB2C;

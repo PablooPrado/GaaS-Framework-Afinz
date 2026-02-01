@@ -15,6 +15,8 @@ export type Produto = typeof PRODUTOS[number];
 export const ETAPAS_AQUISICAO = ['Aquisição', 'Meio_de_Funil'] as const;
 export type EtapaAquisicao = typeof ETAPAS_AQUISICAO[number];
 
+
+
 // ========================================
 // CUSTOS PADRÃO POR CANAL (baseado no FRAMEWORK)
 // ========================================
@@ -35,6 +37,43 @@ export const CUSTO_UNITARIO_OFERTA: Record<string, number> = {
     'Limite': 1.00,
     'Vibe': 2.00,
     'Anuidade': 76.50,
+};
+
+// ========================================
+// MAPAS HIERÁRQUICOS INTELIGENTES
+// ========================================
+
+/**
+ * Mapa: BU -> Possíveis Segmentos
+ */
+export const BU_SEGMENTO_MAP: Record<string, string[]> = {
+    'B2C': ['Leads_Parceiros', 'Base_Proprietaria', 'Bases_Bureaus', 'Cartonistas', 'CRM'],
+    'B2B2C': ['Cartonistas', 'CRM', 'Funcionários'],
+    'Plurix': ['Cartonistas', 'CRM', 'Funcionários'],
+    'Bem Barato': ['C_Level', 'Negados', 'Pre_Churn'],
+};
+
+/**
+ * Mapa: Segmento -> Sugestão de Parceiro/Subgrupo
+ * Se o array tiver sufixo (Parceiro) ou (Subgrupo), o UI saberá onde preencher
+ */
+export const SEGMENTO_CONTEXT_MAP: Record<string, { parceiros?: string[], subgrupos?: string[] }> = {
+    'Cartonistas': { parceiros: ['Serasa', 'Bom_Pra_Credito', 'Proprietaria'] },
+    'Leads_Parceiros': { parceiros: ['Serasa', 'Acordo Certo'] },
+    'CRM': { subgrupos: ['Ativo', 'Inativo', 'Leais', 'Frequentes', 'Novos', 'Administrativos'] },
+    'Funcionários': { subgrupos: ['Novos', 'Aprovados_nao_convertidos'] },
+    'C_Level': { subgrupos: ['Negados', 'Instabilidade'] },
+};
+
+/**
+ * Mapa: Oferta (Estratégia) -> Detalhes / Promocional (Tática)
+ */
+export const OFERTA_DETALHE_MAP: Record<string, string[]> = {
+    'Padrão': ['Em dobro', 'Upgrade', 'Uber', 'Black Friday'],
+    'Vibe': [],
+    'Limite': [],
+    'Anuidade': ['Grátis 1 ano', 'Gratis_para_sempre', 'Test_Drive_6_meses', 'Test_Drive_3_meses'],
+    'Bonificação': [],
 };
 
 // ========================================

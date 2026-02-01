@@ -1,9 +1,13 @@
-import React from 'react';
-import { Info } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Info, ChevronDown, X } from 'lucide-react';
 
 /**
  * Componentes compartilhados para os blocos do formulario de disparo
  * Design: Compacto, Desktop-first, Dark mode
+ *
+ * PILAR: Automatizacao por Historico
+ * - Combobox permite digitar OU selecionar sugestoes
+ * - Sugestoes ordenadas por frequencia no historico
  */
 
 // ========================================
@@ -204,3 +208,307 @@ export const ReadonlyField: React.FC<ReadonlyFieldProps> = ({ label, value, clas
         </div>
     </div>
 );
+
+// ========================================
+// COMBOBOX (Input Editavel + Sugestoes)
+// ========================================
+
+export interface ComboboxOption {
+    value: string;
+    count?: number; // frequencia no historico
+    isSmart?: boolean; // Sugestão inteligente oficial
+}
+
+interface ComboboxProps {
+    value: string;
+    onChange: (value: string) => void;
+    options: ComboboxOption[];
+    placeholder?: string;
+    error?: string;
+    className?: string;
+    disabled?: boolean;
+    allowClear?: boolean;
+}
+
+/**
+ * Combobox - Campo editavel com sugestoes do historico
+ *
+ * PILAR DO PROJETO: Automatizacao por Historico
+ * - Permite digitar livremente OU selecionar sugestoes
+ * - Sugestoes filtradas enquanto digita
+ * - Ordenado por frequencia (mais usado primeiro)
+ */
+export const Combobox: React.FC<ComboboxProps> = ({
+    value,
+    onChange,
+    options,
+    placeholder = 'Digite ou selecione...',
+    error,
+    className = '',
+    disabled = false,
+    allowClear = true
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [inputValue, setInputValue] = useState(value);
+    const [highlightedIndex, setHighlightedIndex] = useState(-1);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Sincronizar inputValue com value externo
+    useEffect(() => {
+        setInputValue(value);
+    }, [value]);
+
+    // Filtrar e ordenar opcoes baseado no input
+    const filteredOptions = useMemo(() => {
+        const searchTerm = inputValue.toLowerCase().trim();
+
+        let filtered = options;
+
+        // Filtrar por termo de busca
+        if (searchTerm) {
+            filtered = options.filter(opt =>
+                opt.value.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        // Ordenar: primeiro exatos, depois por Smart, depois frequencia
+        return filtered.sort((a, b) => {
+            const aLower = a.value.toLowerCase();
+            const bLower = b.value.toLowerCase();
+
+            // Match exato primeiro
+            if (aLower === searchTerm && bLower !== searchTerm) return -1;
+            if (bLower === searchTerm && aLower !== searchTerm) return 1;
+
+            // Comeca com o termo
+            if (aLower.startsWith(searchTerm) && !bLower.startsWith(searchTerm)) return -1;
+            if (bLower.startsWith(searchTerm) && !aLower.startsWith(searchTerm)) return 1;
+
+            // Smart Options (Oficiais) primeiro
+            if (a.isSmart && !b.isSmart) return -1;
+            if (!a.isSmart && b.isSmart) return 1;
+
+            // Por frequencia (mais usado primeiro)
+            const countA = a.count || 0;
+            const countB = b.count || 0;
+            if (countB !== countA) return countB - countA;
+
+            // Alfabetico
+            return aLower.localeCompare(bLower);
+        });
+    }, [options, inputValue]);
+
+    // Fechar dropdown ao clicar fora
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+                // Se fechou sem selecionar, manter o valor digitado
+                if (inputValue !== value) {
+                    onChange(inputValue);
+                }
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [inputValue, value, onChange]);
+
+    // Handler do input
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.value;
+        setInputValue(newValue);
+        setIsOpen(true);
+        setHighlightedIndex(-1);
+    }, []);
+
+    // Selecionar opcao
+    const handleSelectOption = useCallback((option: ComboboxOption) => {
+        setInputValue(option.value);
+        onChange(option.value);
+        setIsOpen(false);
+        setHighlightedIndex(-1);
+        inputRef.current?.blur();
+    }, [onChange]);
+
+    // Limpar valor
+    const handleClear = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        setInputValue('');
+        onChange('');
+        inputRef.current?.focus();
+    }, [onChange]);
+
+    // Navegacao por teclado
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (!isOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+            setIsOpen(true);
+            return;
+        }
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setHighlightedIndex(prev =>
+                    prev < filteredOptions.length - 1 ? prev + 1 : 0
+                );
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setHighlightedIndex(prev =>
+                    prev > 0 ? prev - 1 : filteredOptions.length - 1
+                );
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (highlightedIndex >= 0 && filteredOptions[highlightedIndex]) {
+                    handleSelectOption(filteredOptions[highlightedIndex]);
+                } else if (inputValue) {
+                    // Enter sem selecao: confirma valor digitado
+                    onChange(inputValue);
+                    setIsOpen(false);
+                }
+                break;
+            case 'Escape':
+                setIsOpen(false);
+                setHighlightedIndex(-1);
+                break;
+            case 'Tab':
+                // Tab fecha e confirma valor
+                if (inputValue !== value) {
+                    onChange(inputValue);
+                }
+                setIsOpen(false);
+                break;
+        }
+    }, [isOpen, highlightedIndex, filteredOptions, handleSelectOption, inputValue, value, onChange]);
+
+    // Scroll para opcao destacada
+    useEffect(() => {
+        if (highlightedIndex >= 0 && dropdownRef.current) {
+            const highlighted = dropdownRef.current.children[highlightedIndex] as HTMLElement;
+            if (highlighted) {
+                highlighted.scrollIntoView({ block: 'nearest' });
+            }
+        }
+    }, [highlightedIndex]);
+
+    return (
+        <div ref={containerRef} className="relative">
+            <div className="relative flex items-center">
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputValue}
+                    onChange={handleInputChange}
+                    onFocus={() => setIsOpen(true)}
+                    onKeyDown={handleKeyDown}
+                    disabled={disabled}
+                    placeholder={placeholder}
+                    className={`
+                        w-full px-2 py-1.5 pr-12
+                        bg-slate-800/50 border rounded
+                        text-[11px] font-medium text-slate-200
+                        placeholder:text-slate-600
+                        focus:outline-none focus:ring-1 focus:ring-blue-500/50
+                        transition-all
+                        ${error ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-blue-500'}
+                        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                        ${className}
+                    `}
+                />
+
+                {/* Botoes de acao */}
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                    {/* Limpar */}
+                    {allowClear && inputValue && !disabled && (
+                        <button
+                            type="button"
+                            onClick={handleClear}
+                            className="p-0.5 text-slate-500 hover:text-slate-300 transition-colors"
+                            tabIndex={-1}
+                        >
+                            <X size={10} />
+                        </button>
+                    )}
+
+                    {/* Toggle dropdown */}
+                    <button
+                        type="button"
+                        onClick={() => !disabled && setIsOpen(!isOpen)}
+                        className="p-0.5 text-slate-500 hover:text-slate-300 transition-colors"
+                        tabIndex={-1}
+                    >
+                        <ChevronDown
+                            size={12}
+                            className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                        />
+                    </button>
+                </div>
+            </div>
+
+            {/* Dropdown de sugestoes */}
+            {isOpen && filteredOptions.length > 0 && (
+                <div
+                    ref={dropdownRef}
+                    className="absolute z-[100] w-full mt-0.5 py-0.5 max-h-40 overflow-auto
+                               bg-slate-800 border border-slate-600 rounded shadow-lg
+                               scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800"
+                >
+                    {filteredOptions.map((option, index) => (
+                        <div
+                            key={option.value}
+                            onClick={() => handleSelectOption(option)}
+                            className={`
+                                px-2 py-1 text-[11px] cursor-pointer flex justify-between items-center
+                                ${highlightedIndex === index
+                                    ? 'bg-blue-600 text-white'
+                                    : 'text-slate-200 hover:bg-slate-700'
+                                }
+                                ${option.value === value ? 'font-semibold' : ''}
+                            `}
+                        >
+                            <span className="truncate flex items-center gap-1">
+                                {option.isSmart && (
+                                    <span className="text-yellow-400 text-[9px]" title="Sugestão do Framework">★</span>
+                                )}
+                                {option.value}
+                            </span>
+                            {option.count !== undefined && option.count > 0 && !option.isSmart && (
+                                <span className={`
+                                    text-[9px] ml-1 px-1 rounded
+                                    ${highlightedIndex === index
+                                        ? 'bg-blue-500 text-blue-100'
+                                        : 'bg-slate-700 text-slate-400'
+                                    }
+                                `}>
+                                    {option.count}x
+                                </span>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Mensagem quando nao ha opcoes */}
+            {isOpen && filteredOptions.length === 0 && inputValue && (
+                <div className="absolute z-50 w-full mt-0.5 py-2 px-2
+                               bg-slate-800 border border-slate-600 rounded shadow-lg
+                               text-[10px] text-slate-400 text-center">
+                    Novo valor: "{inputValue}"
+                    <br />
+                    <span className="text-[9px] text-slate-500">Pressione Enter para confirmar</span>
+                </div>
+            )}
+
+            {/* Erro */}
+            {error && (
+                <span className="absolute -bottom-3 left-0 text-[8px] text-red-400 font-medium truncate max-w-full">
+                    {error}
+                </span>
+            )}
+        </div>
+    );
+};
