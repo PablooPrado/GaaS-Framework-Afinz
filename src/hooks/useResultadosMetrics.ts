@@ -58,8 +58,15 @@ export const useResultadosMetrics = (data: CalendarData, monthYear?: { year: num
             resultado.bu.push(activity.bu);
           }
 
-          const dateStr = activity.dataDisparo.toISOString().split('T')[0];
-          if (!resultado.datas.includes(dateStr)) {
+          let dateStr = '';
+          if (activity.dataDisparo instanceof Date) {
+            dateStr = activity.dataDisparo.toISOString().split('T')[0];
+          } else if (typeof activity.dataDisparo === 'string') {
+            // Basic fallback for string dates
+            dateStr = String(activity.dataDisparo).split('T')[0];
+          }
+
+          if (dateStr && !resultado.datas.includes(dateStr)) {
             resultado.datas.push(dateStr);
           }
         });

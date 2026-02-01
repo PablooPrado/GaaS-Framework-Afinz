@@ -28,7 +28,7 @@ export const IdentificationBlock: React.FC = () => {
     }, [smartOptions.canais]);
 
     return (
-        <div className="w-[220px] min-w-[220px] shrink-0">
+        <div className="w-full h-full">
             <SectionCard title="Identificacao" icon={<Tag size={14} />} badge="1">
                 <div className="space-y-2.5">
                     {/* BU (fixo) e Campanha (historico) */}

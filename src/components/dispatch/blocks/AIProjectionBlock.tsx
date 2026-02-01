@@ -40,7 +40,7 @@ export const AIProjectionBlock: React.FC = () => {
     const sampleSize = projections.taxaConversao?.sampleSize || 0;
 
     return (
-        <div className="w-[280px] min-w-[280px] shrink-0">
+        <div className="w-full h-full">
             <div className="bg-indigo-950/20 p-3 rounded-lg border border-indigo-500/20 shadow-sm flex flex-col h-full hover:border-indigo-500/40 transition-colors">
                 {/* Header */}
                 <div className="flex items-center justify-between pb-2 border-b border-indigo-500/20 mb-3">

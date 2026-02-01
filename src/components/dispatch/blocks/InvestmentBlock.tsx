@@ -21,7 +21,7 @@ export const InvestmentBlock: React.FC = () => {
     };
 
     return (
-        <div className="w-[200px] min-w-[200px] shrink-0">
+        <div className="w-full h-full">
             <SectionCard
                 title="Investimento"
                 icon={<DollarSign size={14} />}

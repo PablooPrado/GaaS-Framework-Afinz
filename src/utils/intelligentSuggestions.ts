@@ -1,4 +1,5 @@
-import { Activity } from '../types/activity';
+import { ActivityRow as Activity } from '../types/activity';
+import { parseDate } from './formatters';
 
 /**
  * =====================================================
@@ -85,7 +86,7 @@ function generateSuggestionsForField(
     const contextualMatches = new Map<string, number>();
 
     activities.forEach(activity => {
-        let value = activity[activityField] || activity.raw?.[activityField];
+        let value = activity[activityField] || (activity as any).raw?.[activityField];
         if (!value) return;
 
         value = String(value);
@@ -187,14 +188,30 @@ export function calculateProjections(
     activities: Activity[],
     input: ProjectionInput
 ): Record<string, ProjectionResult> {
-    // Filtrar últimos 90 dias
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 90);
+    // Estratégia de Janela de Tempo Dinâmica
+    // Tenta encontrar dados em janelas progressivas: 90 dias -> 180 dias -> 365 dias -> Todo o histórico
+    let selectedActivities: Activity[] = [];
+    const windows = [90, 180, 365, 99999]; // Dias
 
-    const recentActivities = activities.filter(a => {
-        const dispatchDate = new Date(a['Data de Disparo']);
-        return dispatchDate >= cutoffDate;
-    });
+    for (const days of windows) {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+
+        const currentWindowActivities = activities.filter(a => {
+            const dispatchDate = parseDate(a['Data de Disparo']);
+            if (!dispatchDate) return false;
+            return dispatchDate >= cutoffDate;
+        });
+
+        // Se tivermos um volume razoável de dados (>20), paramos nesta janela
+        // Se for a última janela (99999), aceitamos o que tiver
+        if (currentWindowActivities.length >= 20 || days === 99999) {
+            selectedActivities = currentWindowActivities;
+            break;
+        }
+    }
+
+    const recentActivities = selectedActivities;
 
     // Buscar matches com pesos
     const exactMatches = findExactMatches(recentActivities, input);
@@ -244,7 +261,28 @@ export function calculateProjections(
         );
     });
 
+    console.log(`[AI Projection] Input: BU=${input.bu} Seg=${input.segmento} (Window: ${selectedMatches.length} matches, Method: ${method})`);
+
     return projections;
+}
+
+/**
+ * Comparação inteligente de strings (ignorando case, acentos e espaços)
+ */
+function smartCompare(a: string | undefined | null, b: string | undefined | null): boolean {
+    if (!a || !b) return false;
+
+    // Normaliza: remove acentos, lower case, trim
+    const normalize = (str: string) => str
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .trim();
+
+    const normA = normalize(String(a));
+    const normB = normalize(String(b));
+
+    // Match exato, substring A em B, ou substring B em A (fuzzy)
+    return normA === normB || normA.includes(normB) || normB.includes(normA);
 }
 
 /**
@@ -252,10 +290,10 @@ export function calculateProjections(
  */
 function findExactMatches(activities: Activity[], input: ProjectionInput): Activity[] {
     return activities.filter(a =>
-        a.BU === input.bu &&
-        a.Segmento === input.segmento &&
-        (!input.perfilCredito || a['Perfil de Crédito'] === input.perfilCredito) &&
-        (!input.canal || a.Canal === input.canal)
+        smartCompare(a.BU, input.bu) &&
+        smartCompare(a.Segmento, input.segmento) &&
+        (!input.perfilCredito || smartCompare(a['Perfil de Crédito'], input.perfilCredito)) &&
+        (!input.canal || smartCompare(a.Canal, input.canal))
     );
 }
 
@@ -264,8 +302,8 @@ function findExactMatches(activities: Activity[], input: ProjectionInput): Activ
  */
 function findPartialMatches(activities: Activity[], input: ProjectionInput): Activity[] {
     return activities.filter(a =>
-        a.BU === input.bu &&
-        a.Segmento === input.segmento
+        smartCompare(a.BU, input.bu) &&
+        smartCompare(a.Segmento, input.segmento)
     );
 }
 
@@ -273,7 +311,7 @@ function findPartialMatches(activities: Activity[], input: ProjectionInput): Act
  * Fallback: BU apenas (weight: 50%)
  */
 function findFallbackMatches(activities: Activity[], input: ProjectionInput): Activity[] {
-    return activities.filter(a => a.BU === input.bu);
+    return activities.filter(a => smartCompare(a.BU, input.bu));
 }
 
 /**
@@ -289,33 +327,36 @@ function projectMetric(
     // Mapear métricas para campos do Activity
     const metricMap: Record<string, string> = {
         'baseVolume': 'Base Total',
-        'taxaConversao': 'Conv % B2C',
-        'baseAcionavel': 'Base Total',
+        'taxaConversao': 'Taxa de Conversão',
+        'baseAcionavel': 'Base Total', // Fallback, usually calculated
         'cac': 'CAC',
-        'taxaEntrega': 'Taxa Entrega',
-        'taxaAbertura': 'Taxa Abertura',
+        'taxaEntrega': 'Taxa de Entrega',
+        'taxaAbertura': 'Taxa de Abertura',
         'propostas': 'Propostas',
         'aprovados': 'Aprovados',
-        'cartoesGerados': 'Cartões'
+        'cartoesGerados': 'Cartões Gerados'
     };
 
     const activityField = metricMap[metric];
     const values: Array<{ value: number, weight: number }> = [];
 
     matches.forEach(activity => {
-        let value = activity[activityField] || activity.raw?.[activityField];
+        let value = activity[activityField] || (activity as any).raw?.[activityField];
         if (value === undefined || value === null) return;
 
         value = Number(value);
         if (isNaN(value)) return;
 
         // Calcular decaimento temporal
-        const dispatchDate = new Date(activity['Data de Disparo']);
+        const dispatchDate = parseDate(activity['Data de Disparo']);
+        if (!dispatchDate) return;
+
         const now = new Date();
         const daysSince = Math.floor((now.getTime() - dispatchDate.getTime()) / (1000 * 60 * 60 * 24));
 
-        // Decaimento linear: 100% para hoje, 50% para 90 dias atrás
-        const temporalWeight = Math.max(0.5, 1 - (daysSince / 180));
+        // Decaimento linear suavizado
+        // 100% para hoje, decaindo para 20% em 365 dias (jamais zera totalmente para não invalidar dados históricos)
+        const temporalWeight = Math.max(0.2, 1 - (daysSince / 365));
 
         // Peso por volume (se aplicável)
         const volumeWeight = activity['Base Total'] ? Math.log10(activity['Base Total'] + 1) / 5 : 1;

@@ -13,7 +13,7 @@ export const ScheduleBlock: React.FC = () => {
     const { formData, handleChange, errors } = useDispatchForm();
 
     return (
-        <div className="w-[180px] min-w-[180px] shrink-0">
+        <div className="w-full h-full">
             <SectionCard title="Cronograma" icon={<Calendar size={14} />} badge="2">
                 <div className="space-y-2.5">
                     {/* Data Inicio */}

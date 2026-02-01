@@ -33,7 +33,7 @@ export const ProductOfferBlock: React.FC = () => {
     }, [smartOptions.etapasAquisicao]);
 
     return (
-        <div className="w-[200px] min-w-[200px] shrink-0">
+        <div className="w-full h-full">
             <SectionCard title="Produto & Oferta" icon={<Package size={14} />} badge="3">
                 <div className="space-y-2">
                     {/* Produto - Combobox */}
