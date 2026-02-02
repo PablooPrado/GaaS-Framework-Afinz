@@ -8,6 +8,7 @@ import { useAppStore } from '../store/useAppStore';
 import { parseXLSX } from '../modules/paid-media-afinz/utils/fileParser';
 import { GoalsManager } from './admin/GoalsManager';
 import { activityService, versionService } from '../services/activityService';
+import { dataService } from '../services/dataService';
 
 const VersionManager: React.FC = () => {
     const [versions, setVersions] = useState<any[]>([]);
@@ -273,13 +274,19 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
             // 2. Parse based on slot
             if (slot === 'b2c') {
                 const { data } = await parseB2CCSV(file);
+                // PERSISTENCE FIX: Save to Supabase
+                await dataService.upsertB2CMetrics(data);
+                // Update Store
                 setB2CData(data);
             } else if (slot === 'media') {
                 const data = await parseXLSX(file);
+                // PERSISTENCE FIX: Save to Supabase
+                await dataService.upsertPaidMedia(data as any);
+                // Update Store
                 setPaidMediaData(data as any);
             }
 
-            setMsg({ type: 'success', text: 'Dados restaurados com sucesso!' });
+            setMsg({ type: 'success', text: 'Dados restaurados e salvos no banco com sucesso!' });
         } catch (e: any) {
             console.error('❌ Erro ao restaurar:', e);
             setMsg({ type: 'error', text: 'Erro ao restaurar: ' + e.message });

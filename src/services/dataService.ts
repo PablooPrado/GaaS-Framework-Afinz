@@ -4,6 +4,7 @@ import { Activity, FrameworkRow } from '../types/framework';
 import { DailyAdMetrics } from '../schemas/paid-media';
 import { B2CDataRow } from '../types/b2c';
 import { parseDate } from '../utils/formatters';
+import { format } from 'date-fns';
 
 // Helper to map SQL row to Activity
 export const mapSqlToActivity = (row: any): Activity => {
@@ -159,6 +160,45 @@ export const dataService = {
         const { error } = await supabase
             .from('goals')
             .upsert(goal, { onConflict: 'mes' });
+
+        if (error) throw error;
+    },
+
+    async upsertB2CMetrics(metrics: B2CDataRow[]) {
+        const sqlBatch = metrics.map(m => ({
+            data: m.data,
+            propostas_total: m.propostas_b2c_total || 0,
+            emissoes_total: m.emissoes_b2c_total || 0,
+            percentual_conversao: m.percentual_conversao_b2c || 0,
+            observacoes: m.observacoes || null
+        }));
+
+        const { error } = await supabase
+            .from('b2c_daily_metrics')
+            .upsert(sqlBatch, { onConflict: 'data' });
+
+        if (error) throw error;
+    },
+
+    async upsertPaidMedia(metrics: DailyAdMetrics[]) {
+        const sqlBatch = metrics.map(m => ({
+            date: format(m.date, 'yyyy-MM-dd'),
+            channel: m.channel,
+            campaign: m.campaign,
+            objective: m.objective,
+            spend: m.spend,
+            impressions: m.impressions,
+            clicks: m.clicks,
+            conversions: m.conversions,
+            ctr: m.ctr,
+            cpc: m.cpc,
+            cpm: m.cpm,
+            cpa: m.cpa
+        }));
+
+        const { error } = await supabase
+            .from('paid_media_metrics')
+            .upsert(sqlBatch, { onConflict: 'date, channel, campaign' });
 
         if (error) throw error;
     }

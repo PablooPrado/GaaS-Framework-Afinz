@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { startOfMonth, endOfMonth, subDays, subMonths } from 'date-fns';
 
 export type PeriodPreset = 'today' | 'yesterday' | 'thisWeek' | 'last7' | 'last14' | 'last28' | 'last30' | 'last90' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'custom';
@@ -17,14 +17,24 @@ interface PeriodContextType {
 const PeriodContext = createContext<PeriodContextType | undefined>(undefined);
 
 export const PeriodProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Default to Last 28 Days
-    const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 27));
-    const [endDate, setEndDate] = useState<Date>(new Date());
-    const [preset, setPresetState] = useState<PeriodPreset>('last28');
+    // Default to This Month (Launch Planner requirement)
+    // const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 27));
+    const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
+    const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
+    const [preset, setPresetState] = useState<PeriodPreset>('thisMonth');
     const [compareEnabled, setCompareEnabled] = useState(false);
     const [compareMode, setCompareMode] = useState<'previousPeriod' | null>(null);
 
+
+    // Initial load effect
+    useEffect(() => {
+        console.log("PeriodProvider mounted. Force-setting preset to 'thisMonth'.");
+        // Ensure we start with 'thisMonth' even if state initialization was weird
+        setPreset('thisMonth');
+    }, []);
+
     const setPeriod = (start: Date, end: Date, newPreset: PeriodPreset = 'custom') => {
+        console.log("setPeriod called:", { start, end, newPreset });
         setStartDate(start);
         setEndDate(end);
         setPresetState(newPreset);

@@ -92,7 +92,7 @@ export const GoalsManager: React.FC = () => {
                     <Target size={24} />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold text-white">Gerenciador de Metas</h3>
+                    <h3 className="text-xl font-bold text-white">Gerenciador de Metas <span className="text-xs text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full ml-2">v1.1 (Live)</span></h3>
                     <p className="text-sm text-slate-400">Defina os objetivos mensais para os KPIs.</p>
                 </div>
             </div>

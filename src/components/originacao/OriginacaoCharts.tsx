@@ -20,7 +20,7 @@ interface OriginacaoChartsProps {
 
 const tooltipFormatter = (value: number, name: string) => {
     if (name.includes('%') || name.includes('Taxa') || name.includes('Share') || name.includes('Conv')) {
-        return [`${value.toFixed(1)}%`, name];
+        return [`${value.toFixed(2)}%`, name];
     }
     if (name.includes('CAC') || name.includes('Custo')) {
         return [`R$ ${value.toFixed(2)}`, name];

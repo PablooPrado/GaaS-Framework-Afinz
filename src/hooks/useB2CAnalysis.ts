@@ -5,7 +5,7 @@ import { useFrameworkData } from './useFrameworkData';
 import { useAdvancedFilters } from './useAdvancedFilters';
 import { DailyAnalysis, MetricsSummary } from '../types/b2c';
 import { usePeriod } from '../contexts/PeriodContext';
-import { startOfWeek, startOfMonth, format, subDays, differenceInDays } from 'date-fns';
+import { startOfWeek, startOfMonth, format, subDays, differenceInDays, eachDayOfInterval } from 'date-fns';
 import { useBU } from '../contexts/BUContext';
 import { parseDate } from '../utils/formatters';
 
@@ -45,6 +45,25 @@ const calculateMetrics = (
 
     // 2. Merge B2C & CRM (Daily Base)
     const allDates = new Set<string>();
+
+    // SAFEGUARD: Ensure we cover the FULL range requested, even if no data exists
+    if (startDateStr && endDateStr) {
+        try {
+            const start = new Date(startDateStr + 'T00:00:00');
+            const end = new Date(endDateStr + 'T00:00:00');
+
+            if (start <= end) {
+                const datesInRange = eachDayOfInterval({ start, end });
+                datesInRange.forEach(d => {
+                    allDates.add(format(d, 'yyyy-MM-dd'));
+                });
+            }
+        } catch (e) {
+            console.error("Error generating date range:", e);
+        }
+    }
+
+    // Also include any data dates (just in case they fall outside for some reason, though filters should handle it)
     Object.keys(crmByDate).forEach(d => allDates.add(d));
 
     // Helper to get YYYY-MM-DD from any date string
