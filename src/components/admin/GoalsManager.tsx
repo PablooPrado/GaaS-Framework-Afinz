@@ -23,22 +23,24 @@ export const GoalsManager: React.FC = () => {
     };
 
     const currentMonthKey = getMonthKey(currentDate);
-    const currentGoal = goals.find(g => g.mes === currentMonthKey) || {
-        mes: currentMonthKey,
+
+    // Initialize form state
+    // We use string | number to allow empty strings during typing
+    const [formState, setFormState] = useState<{
+        cartoes_meta: string | number;
+        b2c_meta: string | number;
+        plurix_meta: string | number;
+        b2b2c_meta: string | number;
+        cac_max: string | number;
+    }>({
         cartoes_meta: 0,
         b2c_meta: 0,
+        plurix_meta: 0,
+        b2b2c_meta: 0,
         cac_max: 0
-    };
-
-    const [formState, setFormState] = useState({
-        cartoes_meta: currentGoal.cartoes_meta || 0,
-        b2c_meta: currentGoal.b2c_meta || 0,
-        plurix_meta: currentGoal.plurix_meta || 0,
-        b2b2c_meta: currentGoal.b2b2c_meta || 0,
-        cac_max: currentGoal.cac_max || 0
     });
 
-    // Update form when month changes
+    // Update form when month or goals change
     React.useEffect(() => {
         const goal = goals.find(g => g.mes === currentMonthKey);
         setFormState({
@@ -55,11 +57,11 @@ export const GoalsManager: React.FC = () => {
         try {
             const newGoalEntry = {
                 mes: currentMonthKey,
-                cartoes_meta: Number(formState.cartoes_meta),
-                b2c_meta: Number(formState.b2c_meta),
-                plurix_meta: Number(formState.plurix_meta),
-                b2b2c_meta: Number(formState.b2b2c_meta),
-                cac_max: Number(formState.cac_max)
+                cartoes_meta: Number(formState.cartoes_meta) || 0,
+                b2c_meta: Number(formState.b2c_meta) || 0,
+                plurix_meta: Number(formState.plurix_meta) || 0,
+                b2b2c_meta: Number(formState.b2b2c_meta) || 0,
+                cac_max: Number(formState.cac_max) || 0
             };
 
             // 1. Update Local Store
@@ -71,9 +73,11 @@ export const GoalsManager: React.FC = () => {
             const { dataService } = await import('../../services/dataService');
             await dataService.upsertGoal(newGoalEntry);
 
-        } catch (error) {
+            alert('Meta salva com sucesso!');
+
+        } catch (error: any) {
             console.error('Erro ao salvar meta:', error);
-            alert('Erro ao salvar meta na nuvem. Verifique sua conexão.');
+            alert(`Erro ao salvar meta na nuvem: ${error.message || 'Erro desconhecido'}`);
         } finally {
             setLoading(false);
         }
@@ -127,7 +131,7 @@ export const GoalsManager: React.FC = () => {
                             <input
                                 type="number"
                                 value={formState.cartoes_meta}
-                                onChange={e => setFormState({ ...formState, cartoes_meta: Number(e.target.value) })}
+                                onChange={e => setFormState({ ...formState, cartoes_meta: e.target.value })}
                                 className="w-full bg-slate-950/50 border border-slate-700 rounded-lg py-2 pl-9 pr-4 text-white font-mono focus:outline-none focus:border-blue-500 transition-all placeholder-slate-600"
                                 placeholder="0"
                             />
@@ -145,7 +149,7 @@ export const GoalsManager: React.FC = () => {
                             <input
                                 type="number"
                                 value={formState.b2c_meta}
-                                onChange={e => setFormState({ ...formState, b2c_meta: Number(e.target.value) })}
+                                onChange={e => setFormState({ ...formState, b2c_meta: e.target.value })}
                                 className="w-full bg-slate-950/50 border border-slate-700 rounded-lg py-2 pl-9 pr-4 text-white font-mono focus:outline-none focus:border-emerald-500 transition-all placeholder-slate-600"
                                 placeholder="0"
                             />
@@ -160,7 +164,7 @@ export const GoalsManager: React.FC = () => {
                             <input
                                 type="number"
                                 value={formState.cac_max}
-                                onChange={e => setFormState({ ...formState, cac_max: Number(e.target.value) })}
+                                onChange={e => setFormState({ ...formState, cac_max: e.target.value })}
                                 className="w-full bg-slate-950/50 border border-slate-700 rounded-lg py-2 pl-9 pr-4 text-white font-mono focus:outline-none focus:border-amber-500 transition-all placeholder-slate-600"
                                 placeholder="0.00"
                                 step="0.01"
@@ -179,8 +183,8 @@ export const GoalsManager: React.FC = () => {
                         <Calculator size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
                         <input
                             type="number"
-                            value={formState.plurix_meta || 0}
-                            onChange={e => setFormState({ ...formState, plurix_meta: Number(e.target.value) })}
+                            value={formState.plurix_meta}
+                            onChange={e => setFormState({ ...formState, plurix_meta: e.target.value })}
                             className="w-full bg-slate-950/50 border border-slate-700 rounded-lg py-2 pl-9 pr-4 text-white font-mono focus:outline-none focus:border-purple-500 transition-all placeholder-slate-600"
                             placeholder="0"
                         />
@@ -197,8 +201,8 @@ export const GoalsManager: React.FC = () => {
                         <Calculator size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
                         <input
                             type="number"
-                            value={formState.b2b2c_meta || 0}
-                            onChange={e => setFormState({ ...formState, b2b2c_meta: Number(e.target.value) })}
+                            value={formState.b2b2c_meta}
+                            onChange={e => setFormState({ ...formState, b2b2c_meta: e.target.value })}
                             className="w-full bg-slate-950/50 border border-slate-700 rounded-lg py-2 pl-9 pr-4 text-white font-mono focus:outline-none focus:border-emerald-500 transition-all placeholder-slate-600"
                             placeholder="0"
                         />
@@ -213,7 +217,7 @@ export const GoalsManager: React.FC = () => {
                         <input
                             type="number"
                             value={formState.cac_max}
-                            onChange={e => setFormState({ ...formState, cac_max: Number(e.target.value) })}
+                            onChange={e => setFormState({ ...formState, cac_max: e.target.value })}
                             className="w-full bg-slate-950/50 border border-slate-700 rounded-lg py-2 pl-9 pr-4 text-white font-mono focus:outline-none focus:border-amber-500 transition-all placeholder-slate-600"
                             placeholder="0.00"
                             step="0.01"
@@ -233,6 +237,5 @@ export const GoalsManager: React.FC = () => {
                 </button>
             </div>
         </div>
-
     );
 };
