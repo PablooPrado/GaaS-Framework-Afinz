@@ -344,7 +344,7 @@ export class InsightGenerator {
         relatedAlternative: win,
         confidence: win.confidence,
         evidence: [
-          `Low risk: ${win.rampleCount} similar cases`,
+          `Low risk: ${win.sampleCount} similar cases`,
           `High confidence: ${win.confidence}%`,
           `Easy to apply`,
         ],

@@ -18,7 +18,7 @@ export const ScheduleBlock: React.FC = () => {
                 <div className="space-y-2.5">
                     {/* Data Inicio */}
                     <div>
-                        <Label label="Data Inicio" required />
+                        <Label label="Data Inicio" required tooltip="Data de início do disparo. Formato YYYY-MM-DD" />
                         <Input
                             type="date"
                             value={formData.dataInicio}
@@ -29,7 +29,7 @@ export const ScheduleBlock: React.FC = () => {
 
                     {/* Data Fim */}
                     <div>
-                        <Label label="Data Fim" required />
+                        <Label label="Data Fim" required tooltip="Data de término do disparo. Auto-preenchido como Data Início + 2 dias." />
                         <Input
                             type="date"
                             value={formData.dataFim}
@@ -40,7 +40,7 @@ export const ScheduleBlock: React.FC = () => {
 
                     {/* Horario */}
                     <div>
-                        <Label label="Horario" />
+                        <Label label="Horario" tooltip="Horário previsto para o disparo. Padrão: 10:00" />
                         <Input
                             type="time"
                             value={formData.horarioDisparo}
@@ -57,7 +57,7 @@ export const ScheduleBlock: React.FC = () => {
                                 value={formData.safra}
                             />
                             <div>
-                                <Label label="Ordem" />
+                                <Label label="Ordem" tooltip="Número sequencial do disparo na mesma jornada/data. Auto-calculado mas EDITÁVEL. Ex: 1, 2, 3 ou 'Pontual'" />
                                 <Input
                                     value={formData.ordemDisparo}
                                     onChange={(e) => handleChange('ordemDisparo', e.target.value)}

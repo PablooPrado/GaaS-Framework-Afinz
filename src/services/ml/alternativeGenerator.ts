@@ -200,6 +200,12 @@ export class AlternativeGenerator {
         return null;
       }
 
+      // Verificar se há padrões de dia da semana
+      if (!baseline.dayOfWeekPatterns || baseline.dayOfWeekPatterns.length === 0) {
+        console.log('[AlternativeGenerator] Sem padrões de dia da semana disponíveis');
+        return null;
+      }
+
       // Encontrar melhor dia
       const bestDay = baseline.dayOfWeekPatterns.reduce(
         (best, day) => (day.average > best.average ? day : best),

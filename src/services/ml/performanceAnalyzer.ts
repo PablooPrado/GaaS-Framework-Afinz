@@ -17,6 +17,9 @@
 import { ActivityRow } from '../../types/activity';
 import { ProjectableMetric, METRIC_FIELD_MAP } from './types';
 
+// Re-exportar ProjectableMetric para compatibilidade com imports existentes
+export type { ProjectableMetric } from './types';
+
 // =============================================================================
 // TIPOS E INTERFACES
 // =============================================================================

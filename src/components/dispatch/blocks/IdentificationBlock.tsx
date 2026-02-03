@@ -35,7 +35,7 @@ export const IdentificationBlock: React.FC = () => {
                     <div className="grid grid-cols-2 gap-1.5">
                         {/* BU - SELECT fixo (apenas 3 opcoes) */}
                         <div>
-                            <Label label="BU" required />
+                            <Label label="BU" required tooltip="Business Unit - Unidade de negócio responsável. B2C, B2B2C, Plurix ou Bem Barato" />
                             <Select
                                 value={formData.bu}
                                 onChange={(e) => handleChange('bu', e.target.value)}
@@ -51,7 +51,7 @@ export const IdentificationBlock: React.FC = () => {
 
                         {/* CAMPANHA - Combobox com historico */}
                         <div>
-                            <Label label="CAMPANHA" required />
+                            <Label label="CAMPANHA" required tooltip="Segmento/Campanha de marketing. Ex: Leads_Parceiros, CRM, Cartonistas. Sugere baseado no histórico." />
                             <Combobox
                                 value={formData.segmento}
                                 onChange={(val) => handleChange('segmento', val)}
@@ -64,7 +64,7 @@ export const IdentificationBlock: React.FC = () => {
 
                     {/* Activity Name (editavel, com auto-sugestao) */}
                     <div>
-                        <Label label="ActivityName" required />
+                        <Label label="ActivityName" required tooltip="Identificador único do disparo no Salesforce. Auto-gerado: BU_CAMPANHA_JORNADA_ORDEM_SAFRA. Editável." />
                         <Input
                             value={formData.activityName}
                             onChange={(e) => handleChange('activityName', e.target.value)}
@@ -76,7 +76,7 @@ export const IdentificationBlock: React.FC = () => {
 
                     {/* Jornada - Combobox com historico */}
                     <div>
-                        <Label label="Jornada" required />
+                        <Label label="Jornada" required tooltip="Fluxo de comunicação do cliente. Ex: DISPARO_AQUISICAO, RETENÇÃO, UPSELL. Sugere do histórico." />
                         <Combobox
                             value={formData.jornada}
                             onChange={(val) => handleChange('jornada', val)}
@@ -88,7 +88,7 @@ export const IdentificationBlock: React.FC = () => {
 
                     {/* Canal - Combobox com historico + fallback */}
                     <div>
-                        <Label label="Canal" required />
+                        <Label label="Canal" required tooltip="Meio de comunicação. E-mail (R$0,001), Push (R$0,001), SMS (R$0,064), WhatsApp (R$0,420)" />
                         <Combobox
                             value={formData.canal}
                             onChange={(val) => handleChange('canal', val)}
@@ -103,7 +103,7 @@ export const IdentificationBlock: React.FC = () => {
                         {/* Parceiro e Subgrupo - Combobox com historico */}
                         <div className="grid grid-cols-2 gap-1.5">
                             <div>
-                                <Label label="Parceiro" />
+                                <Label label="Parceiro" tooltip="Origem/Parceiro da base de leads. Ex: Serasa, Acordo Certo, Bom_Pra_Credito" />
                                 <Combobox
                                     value={formData.parceiro}
                                     onChange={(val) => handleChange('parceiro', val)}
@@ -112,7 +112,7 @@ export const IdentificationBlock: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <Label label="Subgrupo" />
+                                <Label label="Subgrupo" tooltip="Segmentação adicional dentro da campanha. Ex: Ativo, Inativo, Novos, Leais" />
                                 <Combobox
                                     value={formData.subgrupo}
                                     onChange={(val) => handleChange('subgrupo', val)}

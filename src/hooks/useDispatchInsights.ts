@@ -94,7 +94,12 @@ export function useDispatchInsights(
   // ===========================================================================
 
   useEffect(() => {
+    console.log('[useDispatchInsights] Inicializando services...', {
+      activitiesCount: activities?.length || 0
+    });
+
     if (!activities || activities.length === 0) {
+      console.log('[useDispatchInsights] Sem atividades disponíveis');
       setError('Nenhuma atividade disponível para análise');
       servicesRef.current = null;
       return;
@@ -112,8 +117,10 @@ export function useDispatchInsights(
       const insightGen = new InsightGenerator();
 
       servicesRef.current = { analyzer, altGen, insightGen };
+      console.log('[useDispatchInsights] Services inicializados com sucesso');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao inicializar análise';
+      console.error('[useDispatchInsights] Erro ao inicializar:', err);
       setError(message);
       servicesRef.current = null;
     }
@@ -162,13 +169,23 @@ export function useDispatchInsights(
         onlyCompleted: true,
       };
 
+      console.log('[useDispatchInsights] Analisando performance com filtros:', filters);
       const perf = analyzer.analyzePerformance(filters, currentMetric);
+      console.log('[useDispatchInsights] Performance analisada:', {
+        sampleSize: perf.sampleSize,
+        timeseriesLength: perf.timeseries?.length || 0,
+        dayOfWeekPatternsLength: perf.dayOfWeekPatterns?.length || 0
+      });
 
       // 2. Gerar alternativas
+      console.log('[useDispatchInsights] Gerando alternativas...');
       const alts = altGen.generateAlternatives(formData, currentMetric, 5);
+      console.log('[useDispatchInsights] Alternativas geradas:', alts.length);
 
       // 3. Gerar insights
+      console.log('[useDispatchInsights] Gerando insights...');
       const inights = insightGen.generateInsights(formData as any, perf, alts, perf.trend);
+      console.log('[useDispatchInsights] Insights gerados:', inights.length);
 
       // Cachear resultados
       cacheRef.current.set(cacheKey, {
@@ -183,7 +200,8 @@ export function useDispatchInsights(
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao calcular insights';
       setError(message);
-      console.error('useDispatchInsights error:', err);
+      console.error('[useDispatchInsights] ERRO ao calcular insights:', err);
+      console.error('[useDispatchInsights] Stack:', err instanceof Error ? err.stack : 'N/A');
     } finally {
       setIsLoading(false);
     }

@@ -38,7 +38,7 @@ export const ProductOfferBlock: React.FC = () => {
                 <div className="space-y-2">
                     {/* Produto - Combobox */}
                     <div>
-                        <Label label="Produto" required />
+                        <Label label="Produto" required tooltip="Tipo do cartão a ser oferecido. Ex: Classic, Gold, Platinum" />
                         <Combobox
                             value={formData.produto}
                             onChange={(val) => handleChange('produto', val)}
@@ -49,7 +49,7 @@ export const ProductOfferBlock: React.FC = () => {
 
                     {/* Perfil Credito - Combobox */}
                     <div>
-                        <Label label="Perfil Credito" />
+                        <Label label="Perfil Credito" tooltip="Classificação de risco do público-alvo. Ex: Whitelist, Alto_Limite, Baixo_Risco" />
                         <Combobox
                             value={formData.perfilCredito}
                             onChange={(val) => handleChange('perfilCredito', val)}
@@ -60,7 +60,7 @@ export const ProductOfferBlock: React.FC = () => {
 
                     {/* Etapa do Funil - Combobox */}
                     <div>
-                        <Label label="Etapa Funil" />
+                        <Label label="Etapa Funil" tooltip="Posição do lead no funil de conversão. Aquisição (topo) ou Meio_de_Funil (já engajado)" />
                         <Combobox
                             value={formData.etapaAquisicao}
                             onChange={(val) => handleChange('etapaAquisicao', val)}
@@ -73,7 +73,7 @@ export const ProductOfferBlock: React.FC = () => {
                     <div className="border-t border-slate-700/50 pt-2 space-y-2">
                         {/* Oferta Principal - Combobox */}
                         <div>
-                            <Label label="Oferta" required />
+                            <Label label="Oferta" required tooltip="Estratégia principal de aquisição. Padrão (sem custo), Vibe (R$2), Limite (R$1), Anuidade (R$76,50)" />
                             <Combobox
                                 value={formData.oferta}
                                 onChange={(val) => handleChange('oferta', val)}
@@ -85,7 +85,7 @@ export const ProductOfferBlock: React.FC = () => {
 
                         {/* Promocional - Combobox */}
                         <div>
-                            <Label label="Promocional" />
+                            <Label label="Promocional" tooltip="Tática promocional adicional. Ex: Em dobro, Upgrade, Black Friday. Preenchido auto baseado na Oferta." />
                             <Combobox
                                 value={formData.promocional}
                                 onChange={(val) => handleChange('promocional', val)}
@@ -97,7 +97,7 @@ export const ProductOfferBlock: React.FC = () => {
                         {/* Oferta 2 e Promocional 2 - Combobox */}
                         <div className="grid grid-cols-2 gap-1.5">
                             <div>
-                                <Label label="Oferta 2" />
+                                <Label label="Oferta 2" tooltip="Oferta secundária opcional para A/B test ou combo. Sugerido baseado no histórico." />
                                 <Combobox
                                     value={formData.oferta2}
                                     onChange={(val) => handleChange('oferta2', val)}
@@ -106,7 +106,7 @@ export const ProductOfferBlock: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <Label label="Promo 2" />
+                                <Label label="Promo 2" tooltip="Promocional secundário opcional. Sugerido baseado no histórico de disparos similares." />
                                 <Combobox
                                     value={formData.promocional2}
                                     onChange={(val) => handleChange('promocional2', val)}

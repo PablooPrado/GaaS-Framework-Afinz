@@ -449,6 +449,11 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
     useEffect(() => {
         if (formData.bu && formData.segmento && activities.length > 0) {
             try {
+                console.log('[DispatchForm] Calculando projeções IA:', {
+                    bu: formData.bu,
+                    segmento: formData.segmento,
+                    activitiesCount: activities.length
+                });
                 const projectionInput = {
                     bu: formData.bu,
                     segmento: formData.segmento,
@@ -457,15 +462,146 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
                     baseVolume: Number(formData.baseVolume) || undefined
                 };
                 const results = calculateProjections(activities as any, projectionInput);
+                console.log('[DispatchForm] Projeções calculadas:', Object.keys(results));
                 setProjections(results);
             } catch (error) {
-                console.error('Erro ao calcular projecoes:', error);
+                console.error('[DispatchForm] Erro ao calcular projecoes:', error);
                 setProjections({});
             }
         } else {
+            console.log('[DispatchForm] Condições não atendidas para projeções:', {
+                bu: formData.bu,
+                segmento: formData.segmento,
+                activitiesCount: activities.length
+            });
             setProjections({});
         }
     }, [formData.bu, formData.segmento, formData.perfilCredito, formData.canal, formData.baseVolume, activities]);
+
+    // Effect 10: Auto-sugestão de Promocional baseado na Oferta
+    useEffect(() => {
+        if (formData.oferta && !editingActivity && !formData.promocional) {
+            // Buscar promocional mais usado para esta oferta no histórico
+            const matchingActivities = activities.filter((a: any) => {
+                const raw = a.raw || a;
+                return raw.Oferta === formData.oferta && raw.Promocional;
+            });
+
+            if (matchingActivities.length > 0) {
+                // Contar frequência de cada promocional
+                const promocionalCounts = new Map<string, number>();
+                matchingActivities.forEach((a: any) => {
+                    const raw = a.raw || a;
+                    const promo = raw.Promocional;
+                    if (promo) {
+                        promocionalCounts.set(promo, (promocionalCounts.get(promo) || 0) + 1);
+                    }
+                });
+
+                // Pegar o mais frequente
+                let mostUsedPromo = '';
+                let maxCount = 0;
+                promocionalCounts.forEach((count, promo) => {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        mostUsedPromo = promo;
+                    }
+                });
+
+                if (mostUsedPromo) {
+                    console.log('[DispatchForm] Auto-sugerindo Promocional:', mostUsedPromo, `(${maxCount}x usado)`);
+                    setFormData(prev => ({ ...prev, promocional: mostUsedPromo }));
+                }
+            }
+        }
+    }, [formData.oferta, activities, editingActivity, formData.promocional]);
+
+    // Effect 11: Auto-sugestão de Oferta 2 e Promocional 2 baseado no contexto
+    useEffect(() => {
+        if (formData.bu && formData.segmento && formData.oferta && !editingActivity) {
+            // Buscar atividades similares com Oferta 2 preenchida
+            const matchingActivities = activities.filter((a: any) => {
+                const raw = a.raw || a;
+                return raw.BU === formData.bu &&
+                       raw.Segmento === formData.segmento &&
+                       raw.Oferta === formData.oferta;
+            });
+
+            if (matchingActivities.length > 0) {
+                // Auto-preencher Oferta 2 se não preenchido
+                if (!formData.oferta2) {
+                    const oferta2Counts = new Map<string, number>();
+                    matchingActivities.forEach((a: any) => {
+                        const raw = a.raw || a;
+                        const of2 = raw['Oferta 2'];
+                        if (of2) {
+                            oferta2Counts.set(of2, (oferta2Counts.get(of2) || 0) + 1);
+                        }
+                    });
+
+                    let mostUsed = '';
+                    let maxCount = 0;
+                    oferta2Counts.forEach((count, val) => {
+                        if (count > maxCount) {
+                            maxCount = count;
+                            mostUsed = val;
+                        }
+                    });
+
+                    if (mostUsed && maxCount >= 2) {
+                        console.log('[DispatchForm] Auto-sugerindo Oferta 2:', mostUsed);
+                        setFormData(prev => ({ ...prev, oferta2: mostUsed }));
+                    }
+                }
+
+                // Auto-preencher Promocional 2 se não preenchido
+                if (!formData.promocional2) {
+                    const promo2Counts = new Map<string, number>();
+                    matchingActivities.forEach((a: any) => {
+                        const raw = a.raw || a;
+                        const p2 = raw['Promocional 2'];
+                        if (p2) {
+                            promo2Counts.set(p2, (promo2Counts.get(p2) || 0) + 1);
+                        }
+                    });
+
+                    let mostUsed = '';
+                    let maxCount = 0;
+                    promo2Counts.forEach((count, val) => {
+                        if (count > maxCount) {
+                            maxCount = count;
+                            mostUsed = val;
+                        }
+                    });
+
+                    if (mostUsed && maxCount >= 2) {
+                        console.log('[DispatchForm] Auto-sugerindo Promocional 2:', mostUsed);
+                        setFormData(prev => ({ ...prev, promocional2: mostUsed }));
+                    }
+                }
+            }
+        }
+    }, [formData.bu, formData.segmento, formData.oferta, activities, editingActivity, formData.oferta2, formData.promocional2]);
+
+    // Log de diagnóstico do estado do formulário
+    useEffect(() => {
+        console.log('[DispatchForm] Estado atual:', {
+            bu: formData.bu,
+            segmento: formData.segmento,
+            jornada: formData.jornada,
+            canal: formData.canal,
+            oferta: formData.oferta,
+            promocional: formData.promocional,
+            oferta2: formData.oferta2,
+            promocional2: formData.promocional2,
+            baseVolume: formData.baseVolume,
+            custoUnitarioOferta: formData.custoUnitarioOferta,
+            custoUnitarioCanal: formData.custoUnitarioCanal,
+            custoTotalCampanha: formData.custoTotalCampanha,
+            projectionsKeys: Object.keys(projections),
+            activitiesCount: activities.length
+        });
+    }, [formData, projections, activities]);
 
     const value = useMemo<DispatchFormContextValue>(() => ({
         formData,
