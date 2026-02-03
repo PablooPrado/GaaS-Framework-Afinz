@@ -19,8 +19,8 @@ const PeriodContext = createContext<PeriodContextType | undefined>(undefined);
 export const PeriodProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // Default to This Month (Launch Planner requirement)
     // const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 27));
-    const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
-    const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
+    const [startDate, setStartDate] = useState<Date>(() => startOfMonth(new Date()));
+    const [endDate, setEndDate] = useState<Date>(() => endOfMonth(new Date()));
     const [preset, setPresetState] = useState<PeriodPreset>('thisMonth');
     const [compareEnabled, setCompareEnabled] = useState(false);
     const [compareMode, setCompareMode] = useState<'previousPeriod' | null>(null);

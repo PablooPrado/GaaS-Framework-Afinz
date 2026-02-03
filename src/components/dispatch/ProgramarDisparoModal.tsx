@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Calendar, CheckCircle2, Trash2, AlertCircle } from 'lucide-react';
 import { ActivityFormSchema } from '../../schemas/ActivityFormSchema';
 import { activityService } from '../../services/activityService';
@@ -14,6 +14,12 @@ import {
     InvestmentBlock,
     AIProjectionBlock
 } from './blocks';
+
+// NEW: AI Insights
+import { useDispatchInsights } from '../../hooks/useDispatchInsights';
+import { InsightsSection } from './sections/InsightsSection';
+import { DispatchFormData } from '../../services/ml/alternativeGenerator';
+import { Alternative } from '../../services/ml/alternativeGenerator';
 
 interface ProgramarDisparoModalProps {
     isOpen: boolean;
@@ -36,10 +42,40 @@ const ModalContent: React.FC<{
         setErrors,
         loading,
         setLoading,
-        editingActivity
+        editingActivity,
+        setFormData
     } = useDispatchForm();
 
     const removeActivity = useAppStore((state) => state.removeActivity);
+    const activities = useAppStore((state) => state.activities);
+
+    // NEW: Convert formData to DispatchFormData for AI insights
+    const dispatchFormData = useMemo<DispatchFormData | null>(() => {
+        if (!formData.bu || !formData.canal) return null;
+        return {
+            bu: formData.bu,
+            canal: formData.canal,
+            segmento: formData.segmento || '',
+            jornada: formData.jornada || '',
+            perfilCredito: formData.perfilCredito || '',
+            oferta: formData.oferta || '',
+            dataDisparo: formData.dataInicio || new Date().toISOString().split('T')[0],
+            horarioDisparo: formData.horarioDisparo || '10:00',
+            baseTotal: parseInt(String(formData.baseVolume || 1000), 10),
+        };
+    }, [formData]);
+
+    // NEW: AI Insights hook
+    const insightResult = useDispatchInsights(dispatchFormData, activities);
+
+    // NEW: Handle alternative selection
+    const handleSelectAlternative = (alternative: Alternative) => {
+        setFormData((prev) => ({
+            ...prev,
+            ...alternative.appliedChanges,
+        }));
+        console.log(`✅ Sugestão aplicada: ${alternative.title}`);
+    };
 
     const handleSubmit = async (status: ActivityStatus) => {
         try {
@@ -169,8 +205,8 @@ const ModalContent: React.FC<{
                 </button>
             </div>
 
-            {/* Body - 5 Blocos Horizontais */}
-            <div className="flex-1 overflow-x-auto overflow-y-visible p-4">
+            {/* Body - 5 Blocos Horizontais + AI Insights */}
+            <div className="flex-1 overflow-x-auto overflow-y-auto p-4">
 
                 {errors.form && (
                     <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg text-red-300 text-xs flex items-center gap-2">
@@ -180,13 +216,22 @@ const ModalContent: React.FC<{
                 )}
 
                 {/* Container dos 5 Blocos - Grid Responsivo (Full Width) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 h-full">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-4">
                     <IdentificationBlock />
                     <ScheduleBlock />
                     <ProductOfferBlock />
                     <InvestmentBlock />
                     <AIProjectionBlock />
                 </div>
+
+                {/* NEW: AI Insights Section */}
+                {dispatchFormData && (
+                    <InsightsSection
+                        insightResult={insightResult}
+                        onSelectAlternative={handleSelectAlternative}
+                        className="w-full"
+                    />
+                )}
             </div>
 
             {/* Footer */}

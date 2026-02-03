@@ -103,3 +103,29 @@ export {
     formatConfidenceLevel,
     generateTooltipTitle,
 } from './explanationGenerator';
+
+// ============================================================================
+// NOVOS SERVIÇOS - ANALYTICS AVANÇADO
+// ============================================================================
+
+// Performance Analyzer - Análise de performance histórica
+export { PerformanceAnalyzer } from './performanceAnalyzer';
+export type {
+    PerformanceSnapshot,
+    PerformanceFilters,
+    TimeSeriesPoint,
+    PerformanceStats,
+    TrendAnalysis,
+    DayOfWeekPattern,
+    HourOfDayPattern,
+    DataQualityAssessment,
+    AlternativeComparison,
+} from './performanceAnalyzer';
+
+// Alternative Generator - Gerador de alternativas
+export { AlternativeGenerator } from './alternativeGenerator';
+export type { DispatchFormData, Alternative } from './alternativeGenerator';
+
+// Insight Generator - Gerador de insights
+export { InsightGenerator } from './insightGenerator';
+export type { InsightType, SeverityLevel, Insight } from './insightGenerator';

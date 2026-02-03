@@ -19,7 +19,12 @@ interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayClick, onProgramDispatch }) => {
     const [displayDate, setDisplayDate] = React.useState(new Date());
     const { goals, b2cData } = useAppStore();
-    const { startDate, endDate, compareEnabled, setPeriod } = usePeriod();
+    const { startDate, endDate, compareEnabled, setPeriod, setPreset } = usePeriod();
+
+    // Force "This Month" view when entering Launch Planner to ensure charts consistently show full month
+    useEffect(() => {
+        setPreset('thisMonth');
+    }, []);
 
     // Sync displayDate with endDate (focus on the "target" or "current" end of the range)
     useEffect(() => {
