@@ -32,6 +32,28 @@ export const ProductOfferBlock: React.FC = () => {
         return ETAPAS_AQUISICAO.map(e => ({ value: e, count: 0 }));
     }, [smartOptions.etapasAquisicao]);
 
+    // Adicionar "N/A" como fallback se não houver opções
+    const promocionaisOptions = useMemo<ComboboxOption[]>(() => {
+        if (smartOptions.promocionais.length > 0) {
+            return smartOptions.promocionais;
+        }
+        return [{ value: 'N/A', count: 0 }];
+    }, [smartOptions.promocionais]);
+
+    const ofertas2Options = useMemo<ComboboxOption[]>(() => {
+        if (smartOptions.ofertas2.length > 0) {
+            return smartOptions.ofertas2;
+        }
+        return [{ value: 'N/A', count: 0 }];
+    }, [smartOptions.ofertas2]);
+
+    const promocionais2Options = useMemo<ComboboxOption[]>(() => {
+        if (smartOptions.promocionais2.length > 0) {
+            return smartOptions.promocionais2;
+        }
+        return [{ value: 'N/A', count: 0 }];
+    }, [smartOptions.promocionais2]);
+
     return (
         <div className="w-full h-full">
             <SectionCard title="Produto & Oferta" icon={<Package size={14} />} badge="3">
@@ -89,7 +111,7 @@ export const ProductOfferBlock: React.FC = () => {
                             <Combobox
                                 value={formData.promocional}
                                 onChange={(val) => handleChange('promocional', val)}
-                                options={smartOptions.promocionais}
+                                options={promocionaisOptions}
                                 placeholder="Digite..."
                             />
                         </div>
@@ -101,7 +123,7 @@ export const ProductOfferBlock: React.FC = () => {
                                 <Combobox
                                     value={formData.oferta2}
                                     onChange={(val) => handleChange('oferta2', val)}
-                                    options={smartOptions.ofertas2}
+                                    options={ofertas2Options}
                                     placeholder="Digite..."
                                 />
                             </div>
@@ -110,7 +132,7 @@ export const ProductOfferBlock: React.FC = () => {
                                 <Combobox
                                     value={formData.promocional2}
                                     onChange={(val) => handleChange('promocional2', val)}
-                                    options={smartOptions.promocionais2}
+                                    options={promocionais2Options}
                                     placeholder="Digite..."
                                 />
                             </div>

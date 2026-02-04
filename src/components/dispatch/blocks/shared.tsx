@@ -471,12 +471,9 @@ export const Combobox: React.FC<ComboboxProps> = ({
                             `}
                         >
                             <span className="truncate flex items-center gap-1">
-                                {option.isSmart && (
-                                    <span className="text-yellow-400 text-[9px]" title="Sugestão do Framework">★</span>
-                                )}
                                 {option.value}
                             </span>
-                            {option.count !== undefined && option.count > 0 && !option.isSmart && (
+                            {option.count !== undefined && option.count > 0 && (
                                 <span className={`
                                     text-[9px] ml-1 px-1 rounded
                                     ${highlightedIndex === index

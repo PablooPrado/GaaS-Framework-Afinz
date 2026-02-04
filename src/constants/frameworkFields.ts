@@ -34,9 +34,10 @@ export const CUSTO_UNITARIO_CANAL: Record<Canal, number> = {
 
 export const CUSTO_UNITARIO_OFERTA: Record<string, number> = {
     'Padrão': 0.00,
-    'Limite': 1.00,
-    'Vibe': 2.00,
-    'Anuidade': 76.50,
+    'Limite': 0.00,
+    'Vibe': 0.00,
+    'Anuidade': 0.00, // TODO: Ajustar com custo real do Test_Drive_3_meses
+    'Bonificação': 0.00,
 };
 
 // ========================================

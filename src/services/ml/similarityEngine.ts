@@ -122,9 +122,15 @@ function calculateSimilarity(
 /**
  * Compara dois valores (match exato ou parcial)
  */
-function compareValues(value1: string, value2: string): number {
+function compareValues(value1: string | undefined | null, value2: string | undefined | null): number {
+    // Guard: se algum valor é undefined/null, retorna 0
+    if (!value1 || !value2) return 0;
+
     const normalized1 = normalizeValue(value1);
     const normalized2 = normalizeValue(value2);
+
+    // Guard: se normalização resultou vazio, retorna 0
+    if (!normalized1 || !normalized2) return 0;
 
     // Match exato
     if (normalized1 === normalized2) return 1;

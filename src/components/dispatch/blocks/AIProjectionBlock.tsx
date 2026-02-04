@@ -19,25 +19,92 @@ import { MetricCard } from './shared';
  * Largura: 280px
  */
 export const AIProjectionBlock: React.FC = () => {
-    const { projections, formData } = useDispatchForm();
+    const { projections, formData, projectionReadiness } = useDispatchForm();
+
+    /**
+     * Gera mensagem de feedback baseada em readiness e campos faltantes
+     * Mostra quais campos críticos estão faltando ou qual o nível de confiança
+     */
+    const getReadinessMessage = () => {
+        // Identificar campos críticos faltantes
+        const missing: string[] = [];
+        if (!formData.bu) missing.push('BU');
+        if (!formData.segmento) missing.push('Campanha');
+        if (!formData.canal) missing.push('Canal');
+        if (!formData.baseVolume || Number(formData.baseVolume) === 0) missing.push('Volume');
+
+        // Se faltam campos críticos, mostrar mensagem em vermelho/amarelo
+        if (missing.length > 0) {
+            return {
+                text: `Preencha ${missing.join(', ')} para gerar projeções`,
+                color: 'text-amber-400',
+                bgColor: 'bg-amber-500/10',
+                borderColor: 'border-amber-500/20',
+                isWarning: true
+            };
+        }
+
+        // Campos críticos OK - mostrar status baseado em readiness
+        switch (projectionReadiness) {
+            case 'partial':
+                return {
+                    text: 'Projeções básicas. Adicione Oferta e Jornada para melhorar',
+                    color: 'text-blue-400',
+                    bgColor: 'bg-blue-500/10',
+                    borderColor: 'border-blue-500/20',
+                    isWarning: false
+                };
+            case 'good':
+                return {
+                    text: 'Projeções com boa confiança',
+                    color: 'text-emerald-400',
+                    bgColor: 'bg-emerald-500/10',
+                    borderColor: 'border-emerald-500/20',
+                    isWarning: false
+                };
+            case 'excellent':
+                return {
+                    text: 'Projeções de alta precisão',
+                    color: 'text-emerald-400',
+                    bgColor: 'bg-emerald-500/10',
+                    borderColor: 'border-emerald-500/20',
+                    isWarning: false
+                };
+            default:
+                return null;
+        }
+    };
+
+    const readinessMessage = getReadinessMessage();
+
+    // Extrair projeções tipadas
+    const volumeProj = projections['volume'] as any;
+    const taxaConvProj = projections['taxaConversao'] as any;
+    const baseAcionProj = projections['baseAcionavel'] as any;
+    const cacProj = projections['cac'] as any;
+    const propostasProj = projections['propostas'] as any;
+    const aprovadosProj = projections['aprovados'] as any;
+    const cartoesProj = projections['cartoesGerados'] as any;
+    const taxaEntProj = projections['taxaEntrega'] as any;
+    const taxaAbertProj = projections['taxaAbertura'] as any;
 
     // Calculo de metricas derivadas
-    const volumeValue = projections.baseVolume?.projectedValue || Number(formData.baseVolume) || 0;
-    const taxaConv = projections.taxaConversao?.projectedValue || 0;
-    const baseAcionavel = projections.baseAcionavel?.projectedValue || (volumeValue * 0.78);
+    const volumeValue = volumeProj?.projectedValue || Number(formData.baseVolume) || 0;
+    const taxaConv = taxaConvProj?.projectedValue || 0;
+    const baseAcionavel = baseAcionProj?.projectedValue || (volumeValue * 0.78);
 
     // Calculos de funil
-    const propostas = projections.propostas?.projectedValue || (volumeValue * (taxaConv / 100));
-    const aprovados = projections.aprovados?.projectedValue || (propostas * 0.65);
-    const cartoes = projections.cartoesGerados?.projectedValue || (aprovados * 0.85);
+    const propostas = propostasProj?.projectedValue || (volumeValue * (taxaConv / 100));
+    const aprovados = aprovadosProj?.projectedValue || (propostas * 0.65);
+    const cartoes = cartoesProj?.projectedValue || (aprovados * 0.85);
 
     // CAC
     const custoTotal = Number(formData.custoTotalCampanha) || 0;
     const cacCalculado = cartoes > 0 ? custoTotal / cartoes : 0;
-    const cacValue = projections.cac?.projectedValue || cacCalculado;
+    const cacValue = cacProj?.projectedValue || cacCalculado;
 
-    // Sample size
-    const sampleSize = projections.taxaConversao?.sampleSize || 0;
+    // Sample size - usar explanation.sampleSize se existir
+    const sampleSize = taxaConvProj?.explanation?.sampleSize || 0;
 
     return (
         <div className="w-full h-full">
@@ -61,21 +128,21 @@ export const AIProjectionBlock: React.FC = () => {
                         label="Volume"
                         value={volumeValue > 0 ? volumeValue : undefined}
                         isInt
-                        confidence={projections.baseVolume?.confidence}
+                        confidence={volumeProj?.confidence}
                         compact
                     />
                     <MetricCard
                         label="Tx Conv"
                         value={taxaConv > 0 ? taxaConv : undefined}
                         suffix="%"
-                        confidence={projections.taxaConversao?.confidence}
+                        confidence={taxaConvProj?.confidence}
                         compact
                     />
                     <MetricCard
                         label="Bs Acion."
                         value={baseAcionavel > 0 ? baseAcionavel : undefined}
                         isInt
-                        confidence={projections.baseAcionavel?.confidence}
+                        confidence={baseAcionProj?.confidence}
                         compact
                     />
 
@@ -84,21 +151,21 @@ export const AIProjectionBlock: React.FC = () => {
                         label="CAC"
                         value={cacValue > 0 ? cacValue : undefined}
                         prefix="R$"
-                        confidence={projections.cac?.confidence}
+                        confidence={cacProj?.confidence}
                         compact
                     />
                     <MetricCard
                         label="Tx Entreg"
-                        value={projections.taxaEntrega?.projectedValue}
+                        value={taxaEntProj?.projectedValue}
                         suffix="%"
-                        confidence={projections.taxaEntrega?.confidence}
+                        confidence={taxaEntProj?.confidence}
                         compact
                     />
                     <MetricCard
                         label="Tx Abert"
-                        value={projections.taxaAbertura?.projectedValue}
+                        value={taxaAbertProj?.projectedValue}
                         suffix="%"
-                        confidence={projections.taxaAbertura?.confidence}
+                        confidence={taxaAbertProj?.confidence}
                         compact
                     />
 
@@ -107,31 +174,56 @@ export const AIProjectionBlock: React.FC = () => {
                         label="Propostas"
                         value={propostas > 0 ? propostas : undefined}
                         isInt
-                        confidence={projections.propostas?.confidence}
+                        confidence={propostasProj?.confidence}
                         compact
                     />
                     <MetricCard
                         label="Aprovados"
                         value={aprovados > 0 ? aprovados : undefined}
                         isInt
-                        confidence={projections.aprovados?.confidence}
+                        confidence={aprovadosProj?.confidence}
                         compact
                     />
                     <MetricCard
                         label="Cartoes"
                         value={cartoes > 0 ? cartoes : undefined}
                         isInt
-                        confidence={projections.cartoesGerados?.confidence}
+                        confidence={cartoesProj?.confidence}
                         compact
                     />
                 </div>
 
-                {/* Footer - Sample Size */}
-                <div className="mt-3 text-[8px] text-indigo-400/50 text-center border-t border-indigo-500/10 pt-2">
-                    {sampleSize > 0 ? (
-                        <>Baseado em <span className="font-bold text-indigo-400">{sampleSize}</span> disparos similares</>
+                {/* Footer - Sample Size ou Mensagem de Validação */}
+                <div className="mt-3 text-[8px] text-center border-t border-indigo-500/10 pt-2">
+                    {/* Se há erro de validação, mostrar em destaque */}
+                    {readinessMessage?.isWarning ? (
+                        <div className={`px-2 py-1 rounded ${readinessMessage.bgColor} border ${readinessMessage.borderColor}`}>
+                            <span className={`${readinessMessage.color} font-bold`}>
+                                ⚠️ {readinessMessage.text}
+                            </span>
+                        </div>
                     ) : (
-                        <>Preencha BU e Segmento para projecoes</>
+                        <>
+                            {/* Normal: mostrar sample size + readiness message */}
+                            <div>
+                                {sampleSize > 0 ? (
+                                    <span className="text-indigo-400/50">
+                                        Baseado em <span className="font-bold text-indigo-400">{sampleSize}</span> disparos similares
+                                    </span>
+                                ) : (
+                                    <span className="text-indigo-400/50">Processando projeções...</span>
+                                )}
+                            </div>
+
+                            {/* Mostrar status de readiness se houver */}
+                            {readinessMessage && (
+                                <div className={`mt-1.5 px-2 py-0.5 rounded ${readinessMessage.bgColor} border ${readinessMessage.borderColor}`}>
+                                    <span className={`${readinessMessage.color} text-[7px] font-medium`}>
+                                        📊 {readinessMessage.text}
+                                    </span>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

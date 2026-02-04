@@ -472,6 +472,7 @@ export class PerformanceAnalyzer {
 
     result = result.filter((a) => {
       const date = this.parseDate(a['Data de Disparo']);
+      if (!date) return false; // Excluir se data inválida/undefined
       return date >= windowStart && date <= now;
     });
 
@@ -522,6 +523,8 @@ export class PerformanceAnalyzer {
 
     for (const activity of activities) {
       const date = this.parseDate(activity['Data de Disparo']);
+      if (!date) continue; // Pular se data inválida/undefined
+
       const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
 
       const value = this.extractMetricValue(activity, metricField);
@@ -724,6 +727,8 @@ export class PerformanceAnalyzer {
 
     for (const activity of activities) {
       const date = this.parseDate(activity['Data de Disparo']);
+      if (!date) continue; // Pular se data inválida/undefined
+
       const dayOfWeek = date.getDay();
 
       const value = this.extractMetricValue(activity, metricField);
@@ -916,7 +921,12 @@ export class PerformanceAnalyzer {
     return null;
   }
 
-  private parseDate(dateStr: string): Date {
+  private parseDate(dateStr: string | undefined | null): Date | null {
+    // Guard contra undefined/null
+    if (!dateStr) {
+      return null;
+    }
+
     // Tentar DD/MM/YYYY
     if (dateStr.includes('/')) {
       const [day, month, year] = dateStr.split('/');

@@ -12,7 +12,7 @@ import { SectionCard, Label, Input } from './shared';
  * Total Campanha agora e discreto (sem verde chamativo)
  */
 export const InvestmentBlock: React.FC = () => {
-    const { formData, handleChange } = useDispatchForm();
+    const { formData, handleChange, projections } = useDispatchForm();
 
     // Formatar moeda
     const formatCurrency = (value: string | number): string => {
@@ -68,7 +68,7 @@ export const InvestmentBlock: React.FC = () => {
                     </div>
 
                     {/* Custo Total Campanha - DISCRETO (sem verde) */}
-                    <div className="mt-auto pt-3">
+                    <div className="mt-auto pt-3 space-y-2">
                         <div className="p-3 bg-slate-800/50 border border-slate-700/50 rounded-lg text-center relative group">
                             <div className="flex items-center justify-center gap-1 mb-0.5">
                                 <span className="text-[8px] uppercase text-slate-400 font-bold">
@@ -85,6 +85,21 @@ export const InvestmentBlock: React.FC = () => {
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 border border-slate-600 rounded text-[9px] text-slate-300 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                                 {formData.baseVolume} × ({formData.custoUnitarioOferta || 0} + {formData.custoUnitarioCanal || 0})
                             </div>
+                        </div>
+
+                        {/* CAC Projetado - IA */}
+                        <div className="p-3 bg-indigo-950/30 border border-indigo-500/20 rounded-lg text-center">
+                            <div className="flex items-center justify-center gap-1 mb-0.5">
+                                <span className="text-[8px] uppercase text-indigo-400 font-bold">
+                                    CAC Projetado (IA)
+                                </span>
+                            </div>
+                            <span className="text-base font-bold text-indigo-300 block">
+                                R$ {formatCurrency(projections['cac']?.projectedValue || 0)}
+                            </span>
+                            <span className="text-[8px] text-indigo-400/60">
+                                Confiança: {Math.round(projections['cac']?.confidence || 0)}%
+                            </span>
                         </div>
                     </div>
                 </div>

@@ -40,6 +40,7 @@ export function projectMetric(
 
     // Se nao ha matches, retorna projecao vazia
     if (activities.length === 0) {
+        console.warn(`[PredictionEngine] ${metric}: sem matches disponíveis`);
         return createEmptyProjection(metric);
     }
 
@@ -74,6 +75,21 @@ export function projectMetric(
         stats
     );
 
+    // LOG de diagnóstico
+    console.log(`  → ${metric}:`, {
+        matchLevel,
+        matchCount: matches.length,
+        method,
+        stats: {
+            mean: stats.mean.toFixed(2),
+            median: stats.median.toFixed(2),
+            weightedMean: stats.weightedMean.toFixed(2),
+            stdDev: stats.stdDev.toFixed(2)
+        },
+        projectedValue: roundValue(projectedValue, metric),
+        confidence
+    });
+
     return {
         field: metric,
         projectedValue: roundValue(projectedValue, metric),
@@ -101,8 +117,9 @@ export function projectAllMetrics(
     formData: FormDataInput,
     allActivities: ProcessedActivity[]
 ): Record<ProjectableMetric, FieldProjection> {
+    // IMPORTANTE: Volume é INPUT do usuário, não deve ser projetado!
     const metrics: ProjectableMetric[] = [
-        'volume',
+        // 'volume', ← REMOVIDO: usar formData.baseVolume diretamente
         'taxaConversao',
         'baseAcionavel',
         'cac',
@@ -114,6 +131,27 @@ export function projectAllMetrics(
     ];
 
     const projections: Partial<Record<ProjectableMetric, FieldProjection>> = {};
+
+    // Adicionar volume como projeção com valor do input do usuário
+    // IMPORTANTE: Sempre adicionar, mesmo que volume seja 0 ou undefined
+    // (evita crash em applyFunnelCalculations)
+    const volumeValue = formData.baseVolume || 0;
+    projections['volume'] = {
+        projectedValue: volumeValue,
+        confidence: volumeValue > 0 ? 100 : 0, // 100% só se houver volume
+        method: 'user_input' as any,
+        interval: { min: volumeValue, max: volumeValue },
+        explanation: {
+            description: volumeValue > 0
+                ? 'Volume definido pelo usuário'
+                : 'Nenhum volume informado',
+            sampleSize: 0,
+            matchingActivities: 0,
+            dataQuality: volumeValue > 0 ? 'high' : 'low',
+            matchLevel: 'user_input',
+            matchPercentage: 0
+        }
+    };
 
     metrics.forEach(metric => {
         projections[metric] = projectMetric(
@@ -278,52 +316,112 @@ function calculateConfidenceInterval(
 }
 
 /**
- * Aplica calculos de funil interdependentes
+ * Aplica calculos de funil interdependentes usando taxas projetadas pela IA
+ * 
+ * O funil usa TAXAS derivadas de campanhas similares (via AIOrchestrator):
+ * - Taxa de Conversão: projetada pela IA
+ * - Taxa de Aprovação: derivada de aprovados/propostas das campanhas similares
+ * - Taxa de Finalização: derivada de cartoes/aprovados das campanhas similares
+ * 
+ * Estas taxas são aplicadas ao VOLUME informado pelo usuário.
  */
 function applyFunnelCalculations(
     projections: Record<ProjectableMetric, FieldProjection>,
     formData: FormDataInput
 ): void {
-    const volume = projections.volume.projectedValue || formData.baseVolume || 0;
-    const taxaConv = projections.taxaConversao.projectedValue / 100;
-    const taxaAprov = 0.65; // Taxa de aprovacao media
-    const taxaFinal = 0.85; // Taxa de finalizacao media
+    // GUARDS: Verificar que todos os campos necessários existem
+    if (!projections.volume || !projections.taxaConversao || !projections.taxaEntrega ||
+        !projections.baseAcionavel || !projections.propostas || !projections.aprovados ||
+        !projections.cartoesGerados || !projections.cac) {
+        console.warn('[applyFunnelCalculations] Projeções incompletas, pulando cálculos');
+        return;
+    }
 
-    // Recalcular metricas de funil se volume esta definido
-    if (volume > 0) {
-        // Base Acionavel
-        const taxaEntrega = projections.taxaEntrega.projectedValue / 100 || 0.78;
-        projections.baseAcionavel.projectedValue = Math.round(volume * taxaEntrega);
+    // ============================================================
+    // VOLUME DO USUÁRIO - ponto de partida do funil
+    // ============================================================
+    const volume = formData.baseVolume || 0;
+    if (volume <= 0) return;
 
-        // Propostas
-        if (projections.propostas.projectedValue === 0 || taxaConv > 0) {
-            projections.propostas.projectedValue = Math.round(volume * taxaConv);
-        }
+    // ============================================================
+    // TAXAS PROJETADAS PELA IA (baseadas em campanhas similares)
+    // ============================================================
 
-        // Aprovados
-        const propostas = projections.propostas.projectedValue;
-        if (projections.aprovados.projectedValue === 0 && propostas > 0) {
-            projections.aprovados.projectedValue = Math.round(propostas * taxaAprov);
-        }
+    // Taxa de Entrega (projetada)
+    const taxaEntrega = (projections.taxaEntrega.projectedValue || 78) / 100;
 
-        // Cartoes
-        const aprovados = projections.aprovados.projectedValue;
-        if (projections.cartoesGerados.projectedValue === 0 && aprovados > 0) {
-            projections.cartoesGerados.projectedValue = Math.round(aprovados * taxaFinal);
-        }
+    // Taxa de Conversão (projetada pela IA)
+    const taxaConversao = (projections.taxaConversao.projectedValue || 0) / 100;
 
-        // CAC
-        if (formData.canal) {
-            const custoCanal = CHANNEL_UNIT_COSTS[formData.canal] || 0.01;
-            const custoOferta = formData.oferta ? (OFFER_UNIT_COSTS[formData.oferta] || 0) : 0;
-            const custoTotal = volume * (custoCanal + custoOferta);
-            const cartoes = projections.cartoesGerados.projectedValue;
+    // Taxa de Aprovação: derivada das projeções de propostas e aprovados
+    // Se a IA projetou propostas=100 e aprovados=65 do histórico, taxa=65%
+    const propostasProj = projections.propostas.projectedValue || 0;
+    const aprovadosProj = projections.aprovados.projectedValue || 0;
+    const taxaAprovacao = propostasProj > 0
+        ? Math.min(1, aprovadosProj / propostasProj)
+        : 0.65; // fallback se não há dados
 
-            if (cartoes > 0) {
-                projections.cac.projectedValue = Math.round((custoTotal / cartoes) * 100) / 100;
-            }
+    // Taxa de Finalização: derivada das projeções de aprovados e cartões
+    const cartoesProj = projections.cartoesGerados.projectedValue || 0;
+    const taxaFinalizacao = aprovadosProj > 0
+        ? Math.min(1, cartoesProj / aprovadosProj)
+        : 0.85; // fallback se não há dados
+
+    // ============================================================
+    // APLICAR FUNIL AO VOLUME DO USUÁRIO
+    // ============================================================
+
+    // 1. Base Acionável = Volume × Taxa de Entrega
+    const baseAcionavel = Math.round(volume * taxaEntrega);
+    projections.baseAcionavel.projectedValue = baseAcionavel;
+
+    // 2. Propostas = Volume × Taxa de Conversão (projetada pela IA)
+    const propostas = Math.round(volume * taxaConversao);
+    projections.propostas.projectedValue = propostas;
+
+    // 3. Aprovados = Propostas × Taxa de Aprovação (derivada do histórico)
+    const aprovados = Math.round(propostas * taxaAprovacao);
+    projections.aprovados.projectedValue = aprovados;
+
+    // 4. Cartões = Aprovados × Taxa de Finalização (derivada do histórico)
+    const cartoes = Math.round(aprovados * taxaFinalizacao);
+    projections.cartoesGerados.projectedValue = cartoes;
+
+    // ============================================================
+    // CAC - baseado em custos e cartões projetados
+    // ============================================================
+    if (formData.canal) {
+        const custoCanal = CHANNEL_UNIT_COSTS[formData.canal] || 0.01;
+        const custoOferta = formData.oferta ? (OFFER_UNIT_COSTS[formData.oferta] || 0) : 0;
+        const custoTotal = volume * (custoCanal + custoOferta);
+
+        if (cartoes > 0) {
+            projections.cac.projectedValue = Math.round((custoTotal / cartoes) * 100) / 100;
+        } else if (custoTotal > 0) {
+            // Se não há cartões projetados, mostrar custo por proposta como referência
+            projections.cac.projectedValue = propostas > 0
+                ? Math.round((custoTotal / propostas) * 100) / 100
+                : custoTotal;
         }
     }
+
+    // LOG de diagnóstico
+    console.log('%c[Funnel IA] Taxas projetadas aplicadas ao volume', 'color: #22C55E; font-weight: bold;', {
+        volumeUsuario: volume,
+        taxas: {
+            entrega: (taxaEntrega * 100).toFixed(1) + '%',
+            conversao: (taxaConversao * 100).toFixed(2) + '% (IA)',
+            aprovacao: (taxaAprovacao * 100).toFixed(1) + '% (derivada)',
+            finalizacao: (taxaFinalizacao * 100).toFixed(1) + '% (derivada)'
+        },
+        funil: {
+            baseAcionavel,
+            propostas,
+            aprovados,
+            cartoes
+        },
+        cac: projections.cac.projectedValue
+    });
 }
 
 // =============================================================================

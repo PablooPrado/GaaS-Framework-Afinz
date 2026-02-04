@@ -137,6 +137,30 @@ export class AIOrchestrator implements IAIOrchestrator {
             this.config.minSampleSize
         );
 
+        // LOG: Detalhamento de matches por nível
+        const groupedByLevel: Record<string, number> = {
+            exact: 0,
+            high: 0,
+            medium: 0,
+            low: 0,
+            fallback: 0
+        };
+        matches.forEach(m => {
+            groupedByLevel[m.level]++;
+        });
+
+        console.log('%c[AIOrchestrator] Matching Results', 'color: #3B82F6; font-weight: bold;', {
+            totalMatches: matches.length,
+            selectedLevel: level,
+            selectedMatches: selectedMatches.length,
+            byLevel: groupedByLevel,
+            topMatches: selectedMatches.slice(0, 3).map(m => ({
+                score: m.score,
+                level: m.level,
+                matched: m.matchedDimensions.join(', ')
+            }))
+        });
+
         // Projetar todas as metricas
         const projections = projectAllMetrics(
             selectedMatches,

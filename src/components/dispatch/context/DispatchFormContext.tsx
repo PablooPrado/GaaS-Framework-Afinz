@@ -14,12 +14,75 @@ import {
     SEGMENTO_CONTEXT_MAP,
     OFERTA_DETALHE_MAP
 } from '../../../constants/frameworkFields';
-import {
-    calculateProjections,
-    ProjectionResult,
-    suggestFieldsBasedOnHistory
-} from '../../../utils/intelligentSuggestions';
+import { suggestFieldsBasedOnHistory } from '../../../utils/intelligentSuggestions';
+import { getAIOrchestrator } from '../../../services/ml/AIOrchestrator';
 import type { Canal } from '../../../constants/frameworkFields';
+import type { FieldProjection } from '../../../services/ml/types';
+
+/**
+ * =============================================================================
+ * VALIDAÇÃO DE CAMPOS MÍNIMOS - Garantir Projeções Cientificamente Válidas
+ * =============================================================================
+ */
+
+// Tipo para tracking de readiness das projeções
+export type ProjectionReadiness = 'insufficient' | 'partial' | 'good' | 'excellent';
+
+// Campos CRÍTICOS necessários para que as projeções sejam cientificamente válidas
+const MINIMUM_REQUIRED_FIELDS = {
+    bu: true,           // BU é obrigatório (15% weight)
+    segmento: true,     // Segmento/Campanha é obrigatório (15% weight)
+    canal: true,        // Canal crítico: afeta custos e comportamento (12% weight)
+    baseVolume: true    // Volume crítico: base de todos os cálculos de funil
+} as const;
+
+/**
+ * Verifica se os campos mínimos necessários foram preenchidos
+ * para gerar projeções cientificamente válidas
+ */
+function hasMinimumRequiredFields(formData: any): boolean {
+    return !!(
+        formData.bu &&
+        formData.segmento &&
+        formData.canal &&                    // NOVO REQUISITO: Canal (12% weight)
+        formData.baseVolume &&               // NOVO REQUISITO: Volume (fator X)
+        Number(formData.baseVolume) > 0      // Volume deve ser positivo
+    );
+}
+
+/**
+ * Determina o nível de readiness das projeções baseado em campos preenchidos
+ *
+ * NÍVEIS:
+ * - insufficient: Não há dados suficientes para projetar (faltam campos críticos)
+ * - partial: Apenas campos críticos preenchidos (BU+Segmento+Canal+Volume)
+ * - good: Campos críticos + 1-2 campos importantes (Oferta, Jornada, etc)
+ * - excellent: Campos críticos + 3+ campos importantes (máxima precisão)
+ */
+function determineProjectionReadiness(formData: any): ProjectionReadiness {
+    const hasMinimum = hasMinimumRequiredFields(formData);
+
+    if (!hasMinimum) {
+        return 'insufficient';
+    }
+
+    // Contar campos importantes preenchidos (além dos 4 críticos)
+    const importantFields = [
+        formData.oferta,           // 8% weight - afeta conversão e custo
+        formData.jornada,          // 10% weight - afeta performance
+        formData.perfilCredito,    // 10% weight - afeta aprovação
+        formData.parceiro,         // 5% weight - afeta disponibilidade
+        formData.produto,          // 5% weight - afeta aprovação
+    ].filter(Boolean).length;
+
+    if (importantFields >= 3) {
+        return 'excellent';  // 4 críticos + 3+ importantes = máxima precisão
+    }
+    if (importantFields >= 1) {
+        return 'good';       // 4 críticos + 1-2 importantes = boa confiança
+    }
+    return 'partial';        // Apenas 4 campos críticos = projeções básicas
+}
 
 /**
  * Form Input - Todos os campos do formulario de disparo
@@ -107,7 +170,10 @@ interface DispatchFormContextValue {
     smartOptions: HistoricalOptions;
 
     // Projecoes IA
-    projections: Record<string, ProjectionResult>;
+    projections: Record<string, FieldProjection>;
+
+    // Readiness das projeções (novo!)
+    projectionReadiness: ProjectionReadiness;
 
     // Estado de loading
     loading: boolean;
@@ -185,28 +251,16 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
     const [formData, setFormData] = useState<DispatchFormData>(INITIAL_FORM_DATA);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
-    const [projections, setProjections] = useState<Record<string, ProjectionResult>>({});
+    const [projections, setProjections] = useState<Record<string, FieldProjection>>({});
+    const [projectionReadiness, setProjectionReadiness] = useState<ProjectionReadiness>('insufficient');
 
     // Buscar activities e framework data do store
     const activities = useAppStore((state) => state.activities) as ActivityRow[];
     const frameworkData = useAppStore((state) => state.frameworkData) || [];
 
-    // 1. Extrair Opcoes HISTORICAS
+    // 1. Extrair Opcoes HISTORICAS COM FILTRAGEM DINÂMICA EM CASCATA
+    // Cada campo mostra contagens filtradas pelos campos anteriores selecionados
     const historicalOptions = useMemo<HistoricalOptions>(() => {
-        // Maps para contar frequencia de cada valor
-        const segmentosMap = new Map<string, number>();
-        const perfisMap = new Map<string, number>();
-        const ofertasMap = new Map<string, number>();
-        const ofertas2Map = new Map<string, number>();
-        const promocionaisMap = new Map<string, number>();
-        const promocionais2Map = new Map<string, number>();
-        const jornadasMap = new Map<string, number>();
-        const parceirosMap = new Map<string, number>();
-        const subgruposMap = new Map<string, number>();
-        const etapasMap = new Map<string, number>();
-        const produtosMap = new Map<string, number>();
-        const canaisMap = new Map<string, number>();
-
         // Helper para incrementar contagem
         const increment = (map: Map<string, number>, value: string | undefined | null) => {
             if (value && typeof value === 'string' && value.trim()) {
@@ -215,36 +269,120 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
             }
         };
 
-        // Processar TODAS as activities do historico
-        activities.forEach((activity: any) => {
-            const raw = activity.raw || activity;
-
-            // Filtragem inteligente: O historico deve ser relevante para a BU atual?
-            // Se nao tiver BU selecionada, mostra tudo.
-            // Se tiver BU selecionada, mostra apenas coisas dessa BU?
-            // NAO: O usuario pode querer copiar uma estrategia de outra BU.
-            // Mante-se global, mas o SmartOptions vai priorizar.
-
-            increment(segmentosMap, raw.Segmento);
-            increment(jornadasMap, raw.Jornada || raw.jornada);
-            increment(canaisMap, raw.Canal || raw.canal);
-            increment(parceirosMap, raw.Parceiro);
-            increment(ofertasMap, raw.Oferta);
-            increment(promocionaisMap, raw.Promocional);
-            increment(ofertas2Map, raw['Oferta 2']);
-            increment(promocionais2Map, raw['Promocional 2']);
-            increment(perfisMap, raw['Perfil de Crédito']);
-            increment(subgruposMap, raw.Subgrupos);
-            increment(etapasMap, raw['Etapa de aquisição']);
-            increment(produtosMap, raw.Produto);
-        });
-
         // Helper para converter Map em array ordenado por frequencia
         const mapToSortedArray = (map: Map<string, number>): OptionWithFrequency[] => {
             return Array.from(map.entries())
                 .map(([value, count]) => ({ value, count, isSmart: false }))
-                .sort((a, b) => b.count - a.count); // Mais usado primeiro
+                .sort((a, b) => b.count - a.count);
         };
+
+        // Helper para extrair raw data
+        const getRaw = (activity: any) => activity.raw || activity;
+
+        // ============================================
+        // FILTROS EM CASCATA
+        // Cada nível filtra baseado nos campos anteriores
+        // ============================================
+
+        // Nível 0: Todas as activities
+        const allActivities = activities;
+
+        // Nível 1: Filtrado por BU (se selecionada)
+        const activitiesByBU = formData.bu
+            ? allActivities.filter((a: any) => getRaw(a).BU === formData.bu)
+            : allActivities;
+
+        // Nível 2: Filtrado por BU + Campanha (se selecionada)
+        const activitiesByBUCampanha = formData.segmento
+            ? activitiesByBU.filter((a: any) => getRaw(a).Segmento === formData.segmento)
+            : activitiesByBU;
+
+        // Nível 3: Filtrado por BU + Campanha + Canal (apenas para Parceiro)
+        const activitiesByBUCampanhaCanal = formData.canal
+            ? activitiesByBUCampanha.filter((a: any) => {
+                const raw = getRaw(a);
+                return (raw.Canal || raw.canal) === formData.canal;
+            })
+            : activitiesByBUCampanha;
+
+        // Nível 4: Filtrado por BU + Campanha + Oferta (para Promocional, Oferta2, Promo2)
+        const activitiesByBUCampanhaOferta = formData.oferta
+            ? activitiesByBUCampanha.filter((a: any) => getRaw(a).Oferta === formData.oferta)
+            : activitiesByBUCampanha;
+
+        // ============================================
+        // COMPUTAR CONTAGENS PARA CADA CAMPO
+        // Usando o nível de filtro apropriado
+        // ============================================
+
+        // Campanha: filtrada por BU
+        const segmentosMap = new Map<string, number>();
+        activitiesByBU.forEach((a: any) => increment(segmentosMap, getRaw(a).Segmento));
+
+        // Jornada: filtrada por BU + Campanha
+        const jornadasMap = new Map<string, number>();
+        activitiesByBUCampanha.forEach((a: any) => {
+            const raw = getRaw(a);
+            increment(jornadasMap, raw.Jornada || raw.jornada);
+        });
+
+        // Canal: filtrada por BU + Campanha
+        const canaisMap = new Map<string, number>();
+        activitiesByBUCampanha.forEach((a: any) => {
+            const raw = getRaw(a);
+            increment(canaisMap, raw.Canal || raw.canal);
+        });
+
+        // Parceiro: filtrada por BU + Campanha + Canal
+        const parceirosMap = new Map<string, number>();
+        activitiesByBUCampanhaCanal.forEach((a: any) => increment(parceirosMap, getRaw(a).Parceiro));
+
+        // Subgrupo: filtrada por BU + Campanha
+        const subgruposMap = new Map<string, number>();
+        activitiesByBUCampanha.forEach((a: any) => increment(subgruposMap, getRaw(a).Subgrupos));
+
+        // Produto: filtrada por BU + Campanha
+        const produtosMap = new Map<string, number>();
+        activitiesByBUCampanha.forEach((a: any) => increment(produtosMap, getRaw(a).Produto));
+
+        // Perfil Crédito: filtrada por BU + Campanha
+        const perfisMap = new Map<string, number>();
+        activitiesByBUCampanha.forEach((a: any) => increment(perfisMap, getRaw(a)['Perfil de Crédito']));
+
+        // Etapa Funil: filtrada por BU + Campanha
+        const etapasMap = new Map<string, number>();
+        activitiesByBUCampanha.forEach((a: any) => increment(etapasMap, getRaw(a)['Etapa de aquisição']));
+
+        // Oferta: filtrada por BU + Campanha
+        const ofertasMap = new Map<string, number>();
+        activitiesByBUCampanha.forEach((a: any) => increment(ofertasMap, getRaw(a).Oferta));
+
+        // Promocional: filtrada por BU + Campanha + Oferta
+        const promocionaisMap = new Map<string, number>();
+        activitiesByBUCampanhaOferta.forEach((a: any) => increment(promocionaisMap, getRaw(a).Promocional));
+
+        // Oferta 2: filtrada por BU + Campanha + Oferta
+        const ofertas2Map = new Map<string, number>();
+        activitiesByBUCampanhaOferta.forEach((a: any) => increment(ofertas2Map, getRaw(a)['Oferta 2']));
+
+        // Promocional 2: filtrada por BU + Campanha + Oferta
+        const promocionais2Map = new Map<string, number>();
+        activitiesByBUCampanhaOferta.forEach((a: any) => increment(promocionais2Map, getRaw(a)['Promocional 2']));
+
+        // Log para debug
+        console.log('%c[Dynamic Options] Cascading Filter Stats', 'color: #8B5CF6; font-weight: bold;', {
+            totalActivities: allActivities.length,
+            afterBU: activitiesByBU.length,
+            afterCampanha: activitiesByBUCampanha.length,
+            afterCanal: activitiesByBUCampanhaCanal.length,
+            afterOferta: activitiesByBUCampanhaOferta.length,
+            filters: {
+                bu: formData.bu || '(all)',
+                campanha: formData.segmento || '(all)',
+                canal: formData.canal || '(all)',
+                oferta: formData.oferta || '(all)'
+            }
+        });
 
         return {
             segmentos: mapToSortedArray(segmentosMap),
@@ -260,23 +398,34 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
             produtos: mapToSortedArray(produtosMap),
             canais: mapToSortedArray(canaisMap),
         };
-    }, [activities]);
+    }, [activities, formData.bu, formData.segmento, formData.canal, formData.oferta]);
 
-    // 2. Mesclar com Opcoes SMART (Framework)
+
+    // 2. Mesclar com Opcoes SMART (Framework) - preservando contagens reais
     const smartOptions = useMemo<HistoricalOptions>(() => {
-        // Helpers para mesclagem
+        // Helper para mesclagem - combina, filtra zeros, e ordena por contagem (maior para menor)
         const mergeOptions = (smartList: string[] | undefined, historicalList: OptionWithFrequency[]) => {
             if (!smartList || smartList.length === 0) return historicalList;
 
-            // Converter smart em objetos OptionWithFrequency
-            const smartObjs = smartList.map(val => ({ value: val, count: 999, isSmart: true }));
+            // Criar mapa de contagens do histórico
+            const historicalMap = new Map(historicalList.map(opt => [opt.value, opt.count]));
+
+            // Converter smart em objetos OptionWithFrequency COM contagem real
+            const smartObjs = smartList.map(val => ({
+                value: val,
+                count: historicalMap.get(val) || 0,
+                isSmart: true
+            }));
 
             // Filtrar historicos que JA estao na lista smart
             const smartSet = new Set(smartList);
             const pureHistorical = historicalList.filter(opt => !smartSet.has(opt.value));
 
-            // Retornar Smart primeiro + Historico depois
-            return [...smartObjs, ...pureHistorical];
+            // Combinar TODAS as opções, filtrar os que têm count = 0, e ordenar (maior para menor)
+            const allOptions = [...smartObjs, ...pureHistorical];
+            return allOptions
+                .filter(opt => opt.count > 0) // Remove opções fora do contexto (sem dados)
+                .sort((a, b) => b.count - a.count);
         };
 
         // --- Lógica Hierárquica ---
@@ -292,6 +441,9 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
         // 3. Detalhes (Promocional) baseados na Oferta
         const smartPromocionais = OFERTA_DETALHE_MAP[formData.oferta] || [];
 
+        // 3b. Detalhes para Oferta 2 (secundária)
+        const smartPromocionais2 = OFERTA_DETALHE_MAP[formData.oferta2] || [];
+
         // 4. Jornadas do Framework (Extrair do CSV importado, não do histórico sujo)
         // Isso garante que apenas Jornadas "Oficiais" apareçam com estrela
         const smartJornadas = Array.from(new Set(
@@ -306,9 +458,10 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
             parceiros: mergeOptions(smartParceiros, historicalOptions.parceiros),
             subgrupos: mergeOptions(smartSubgrupos, historicalOptions.subgrupos),
             promocionais: mergeOptions(smartPromocionais, historicalOptions.promocionais),
+            promocionais2: mergeOptions(smartPromocionais2, historicalOptions.promocionais2),
             jornadas: mergeOptions(smartJornadas, historicalOptions.jornadas),
         };
-    }, [historicalOptions, formData.bu, formData.segmento, formData.oferta, frameworkData]);
+    }, [historicalOptions, formData.bu, formData.segmento, formData.oferta, formData.oferta2, frameworkData]);
 
     // Handler para mudanca de campo
     const handleChange = useCallback((field: keyof DispatchFormData, value: string | number) => {
@@ -445,38 +598,187 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
         }
     }, [formData.baseVolume, formData.custoUnitarioOferta, formData.custoUnitarioCanal]);
 
-    // Effect 9: Projecoes IA
+    // Effect 9: Projecoes IA com AIOrchestrator
     useEffect(() => {
-        if (formData.bu && formData.segmento && activities.length > 0) {
+        // VALIDAÇÃO DE CAMPOS MÍNIMOS - NOVO BLOQUEIO!
+        // Apenas projeta se BU + Segmento + Canal + Volume estão preenchidos
+        if (!hasMinimumRequiredFields(formData)) {
+            // Identificar quais campos faltam
+            const missing: string[] = [];
+            if (!formData.bu) missing.push('BU');
+            if (!formData.segmento) missing.push('Segmento');
+            if (!formData.canal) missing.push('Canal');
+            if (!formData.baseVolume || Number(formData.baseVolume) === 0) missing.push('Volume');
+
+            console.log(
+                '%c[AI Projection] Aguardando campos mínimos',
+                'color: #F59E0B; font-weight: bold;',
+                {
+                    faltam: missing.join(', '),
+                    mensagem: 'Preencha BU, Segmento, Canal e Volume para gerar projeções'
+                }
+            );
+
+            // Limpar projeções anteriores
+            setProjections({});
+            setProjectionReadiness('insufficient');
+            return; // EARLY RETURN - não projeta!
+        }
+
+        // Campos mínimos OK - agora calcular readiness
+        const readiness = determineProjectionReadiness(formData);
+        setProjectionReadiness(readiness);
+
+        const startTime = performance.now();
+
+        if (formData.bu && activities.length > 0) {
             try {
-                console.log('[DispatchForm] Calculando projeções IA:', {
-                    bu: formData.bu,
-                    segmento: formData.segmento,
-                    activitiesCount: activities.length
+                // Converter Activity[] para ActivityRow[] (usando .raw)
+                const activityRows = activities
+                    .filter((a: any) => a.raw != null)
+                    .map((a: any) => ({
+                        ...a.raw,
+                        // Garantir campos obrigatórios existem
+                        'Data de Disparo': a.raw['Data de Disparo'] || (a.dataDisparo ? new Date(a.dataDisparo).toISOString().split('T')[0] : ''),
+                        'BU': a.raw.BU || a.bu,
+                        'Segmento': a.raw.Segmento || a.segmento
+                    } as any));
+
+                if (activityRows.length === 0) {
+                    console.warn('[DispatchContext] No valid activities with .raw data');
+                    setProjections({});
+                    return;
+                }
+
+                // Inicializar AIOrchestrator
+                const orchestrator = getAIOrchestrator({
+                    temporalWindow: 90,
+                    similarityWeights: {
+                        BU: 0.15,
+                        Segmento: 0.15,
+                        Canal: 0.12,
+                        Jornada: 0.10,
+                        Perfil_Credito: 0.10,
+                        Oferta: 0.08,
+                        Promocional: 0.05,
+                        Parceiro: 0.05,
+                        Subgrupo: 0.05,
+                        Etapa_Aquisicao: 0.05,
+                        Produto: 0.05,
+                        Temporal: 0.05
+                    },
+                    minSampleSize: 5
                 });
-                const projectionInput = {
+
+                // Inicializar com dados históricos
+                orchestrator.initialize(activityRows);
+
+                // Preparar input do form
+                // IMPORTANTE: As chaves devem corresponder EXATAMENTE ao dimensionMappings do similarityEngine!
+                // Usar camelCase minúsculo (bu, jornada, perfilCredito, etc)
+                const formInput: any = {
                     bu: formData.bu,
-                    segmento: formData.segmento,
-                    perfilCredito: formData.perfilCredito || undefined,
+                    segmento: formData.segmento || '',
                     canal: formData.canal || undefined,
-                    baseVolume: Number(formData.baseVolume) || undefined
+                    jornada: formData.jornada || undefined,  // minúscula!
+                    perfilCredito: formData.perfilCredito || undefined,  // camelCase!
+                    oferta: formData.oferta || undefined,
+                    promocional: formData.promocional || undefined,
+                    parceiro: formData.parceiro || undefined,
+                    subgrupo: formData.subgrupo || undefined,
+                    etapaAquisicao: formData.etapaAquisicao || undefined,  // camelCase!
+                    produto: formData.produto || undefined,
+                    volume: formData.baseVolume ? Number(formData.baseVolume) : undefined
                 };
-                const results = calculateProjections(activities as any, projectionInput);
-                console.log('[DispatchForm] Projeções calculadas:', Object.keys(results));
-                setProjections(results);
+
+                console.log('[Effect 9] Form Input Fields:', {
+                    bu: formInput.bu,
+                    segmento: formInput.segmento,
+                    canal: formInput.canal,
+                    jornada: formInput.jornada,
+                    perfilCredito: formInput.perfilCredito,
+                    oferta: formInput.oferta,
+                    volume: formInput.volume
+                });
+
+                // Projetar TODOS os campos
+                const result = orchestrator.projectAllFields(formInput);
+
+                // Extrair apenas o objeto 'projections' do resultado
+                const allProjections = result.projections || {};
+
+                // Formatar para compatibilidade com UI
+                const formattedProjections: Record<string, FieldProjection> = {};
+                Object.entries(allProjections).forEach(([key, value]) => {
+                    formattedProjections[key] = value as FieldProjection;
+                });
+
+                setProjections(formattedProjections);
+
+                const endTime = performance.now();
+
+                // LOG DETALHADO: Métricas chave
+                console.log('%c[AI Projection] RESULTADOS COMPLETOS', 'color: #00ff00; font-weight: bold; font-size: 12px;', {
+                    totalActivities: orchestrator.getDatasetStats().totalActivities,
+                    sampleSize: result.totalSampleSize,
+                    overallConfidence: result.overallConfidence + '%',
+                    execTime: Math.round(endTime - startTime) + 'ms',
+                    volume: {
+                        projected: formattedProjections.volume?.projectedValue,
+                        confidence: formattedProjections.volume?.confidence,
+                        method: formattedProjections.volume?.method
+                    },
+                    taxaConversao: {
+                        projected: formattedProjections.taxaConversao?.projectedValue + '%',
+                        confidence: formattedProjections.taxaConversao?.confidence,
+                        method: formattedProjections.taxaConversao?.method,
+                        explanation: formattedProjections.taxaConversao?.explanation?.summary
+                    },
+                    cac: {
+                        projected: 'R$ ' + formattedProjections.cac?.projectedValue?.toFixed(2),
+                        confidence: formattedProjections.cac?.confidence,
+                        method: formattedProjections.cac?.method
+                    },
+                    propostas: {
+                        projected: formattedProjections.propostas?.projectedValue,
+                        confidence: formattedProjections.propostas?.confidence,
+                        method: formattedProjections.propostas?.method
+                    },
+                    aprovados: {
+                        projected: formattedProjections.aprovados?.projectedValue,
+                        confidence: formattedProjections.aprovados?.confidence,
+                        method: formattedProjections.aprovados?.method
+                    },
+                    cartoes: {
+                        projected: formattedProjections.cartoesGerados?.projectedValue,
+                        confidence: formattedProjections.cartoesGerados?.confidence,
+                        method: formattedProjections.cartoesGerados?.method
+                    }
+                });
+
             } catch (error) {
-                console.error('[DispatchForm] Erro ao calcular projecoes:', error);
+                console.error('[DispatchContext] AI Projection Error:', error);
                 setProjections({});
+                setProjectionReadiness('insufficient');
             }
         } else {
-            console.log('[DispatchForm] Condições não atendidas para projeções:', {
-                bu: formData.bu,
-                segmento: formData.segmento,
-                activitiesCount: activities.length
-            });
             setProjections({});
+            setProjectionReadiness('insufficient');
         }
-    }, [formData.bu, formData.segmento, formData.perfilCredito, formData.canal, formData.baseVolume, activities]);
+    }, [
+        formData.bu,
+        formData.segmento,
+        formData.canal,
+        formData.jornada,
+        formData.perfilCredito,
+        formData.oferta,
+        formData.baseVolume,
+        formData.parceiro,
+        formData.subgrupo,
+        formData.etapaAquisicao,
+        formData.produto,
+        activities
+    ]);
 
     // Effect 10: Auto-sugestão de Promocional baseado na Oferta
     useEffect(() => {
@@ -523,8 +825,8 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
             const matchingActivities = activities.filter((a: any) => {
                 const raw = a.raw || a;
                 return raw.BU === formData.bu &&
-                       raw.Segmento === formData.segmento &&
-                       raw.Oferta === formData.oferta;
+                    raw.Segmento === formData.segmento &&
+                    raw.Oferta === formData.oferta;
             });
 
             if (matchingActivities.length > 0) {
@@ -611,11 +913,12 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
         setErrors,
         smartOptions, // <--- EXPORTANDO SMART OPTIONS
         projections,
+        projectionReadiness, // <--- NOVO: Status de readiness das projeções
         loading,
         setLoading,
         editingActivity,
         activities,
-    }), [formData, handleChange, errors, smartOptions, projections, loading, editingActivity, activities]);
+    }), [formData, handleChange, errors, smartOptions, projections, projectionReadiness, loading, editingActivity, activities]);
 
     return (
         <DispatchFormContext.Provider value={value}>
