@@ -37,8 +37,7 @@ export const useVersionManager = () => {
                 localStorage.setItem(STORAGE_KEY, serialized);
                 calculateStorageUsage();
             } catch (e) {
-                console.error('Failed to save versions to localStorage', e);
-                alert('Erro ao salvar no armazenamento local. O limite pode ter sido atingido.');
+                console.warn('Failed to save versions to localStorage (quota may be exceeded):', e);
             }
         }
     }, [versions, currentVersionId]);
