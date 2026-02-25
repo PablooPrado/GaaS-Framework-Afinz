@@ -100,7 +100,7 @@ export interface JournalEntry {
 
 export interface ViewSettings {
   periodo: { inicio: string; fim: string };
-  abaAtual: "launch" | "resultados" | "jornada" | "framework" | "diario" | "orientador" | "configuracoes" | "originacao-b2c" | "midia-paga";
+  abaAtual: "launch" | "resultados" | "jornada" | "framework" | "diario" | "orientador" | "configuracoes" | "originacao-b2c" | "midia-paga" | "explorador";
   filtrosGlobais: FilterState;
   modoTempoJornada: "diario" | "semanal";
   perspective: "total" | "crm" | "b2c";

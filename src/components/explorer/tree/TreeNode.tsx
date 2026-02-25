@@ -1,0 +1,124 @@
+import React, { useRef } from 'react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
+import { TreeNode as TreeNodeType } from '../../../types/explorer';
+import { TreeNodeIcon } from './TreeNodeIcon';
+import { TreeNodeBadge } from './TreeNodeBadge';
+
+const LEVEL_INDENT = 16; // px per level
+
+interface TreeNodeProps {
+  node: TreeNodeType;
+  level: number;
+  isExpanded: boolean;
+  isSelected: boolean;
+  onToggle: (nodeId: string) => void;
+  onSelect: (nodeId: string, multiSelect: boolean) => void;
+  onKeyDown: (e: React.KeyboardEvent, nodeId: string) => void;
+}
+
+export const TreeNodeComponent: React.FC<TreeNodeProps> = ({
+  node,
+  level,
+  isExpanded,
+  isSelected,
+  onToggle,
+  onSelect,
+  onKeyDown,
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const hasChildren = node.children.length > 0;
+  const paddingLeft = level * LEVEL_INDENT;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect(node.id, e.ctrlKey || e.metaKey);
+  };
+
+  const handleChevronClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hasChildren) onToggle(node.id);
+  };
+
+  return (
+    <div role="treeitem" aria-expanded={hasChildren ? isExpanded : undefined} aria-selected={isSelected}>
+      <div
+        ref={ref}
+        tabIndex={0}
+        onClick={handleClick}
+        onKeyDown={(e) => onKeyDown(e, node.id)}
+        className={[
+          'flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer select-none text-sm transition-colors',
+          'focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500',
+          isSelected
+            ? 'bg-blue-600/20 border-l-2 border-blue-500 text-white'
+            : 'text-slate-300 hover:bg-slate-700/50 border-l-2 border-transparent',
+        ].join(' ')}
+        style={{ paddingLeft: `${paddingLeft + 8}px` }}
+      >
+        {/* Chevron */}
+        <span
+          className="shrink-0 text-slate-500 hover:text-slate-300"
+          onClick={handleChevronClick}
+          style={{ width: 14 }}
+        >
+          {hasChildren ? (
+            isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />
+          ) : (
+            <span className="inline-block" style={{ width: 12 }} />
+          )}
+        </span>
+
+        {/* Icon */}
+        <TreeNodeIcon type={node.type} label={node.label} color={node.color} size={13} />
+
+        {/* Label */}
+        <span className="truncate flex-1 font-medium text-xs leading-relaxed">
+          {node.label}
+        </span>
+
+        {/* Badge */}
+        <TreeNodeBadge count={node.count} />
+      </div>
+
+      {/* Children */}
+      {isExpanded && hasChildren && (
+        <div role="group">
+          {node.children.map((child) => (
+            <TreeNodeChildWrapper
+              key={child.id}
+              node={child}
+              level={level + 1}
+              onToggle={onToggle}
+              onSelect={onSelect}
+              onKeyDown={onKeyDown}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Wrapper that reads store state for each child node
+import { useExplorerStore } from '../../../store/explorerStore';
+
+const TreeNodeChildWrapper: React.FC<{
+  node: TreeNodeType;
+  level: number;
+  onToggle: (id: string) => void;
+  onSelect: (id: string, multi: boolean) => void;
+  onKeyDown: (e: React.KeyboardEvent, id: string) => void;
+}> = ({ node, level, onToggle, onSelect, onKeyDown }) => {
+  const { expandedNodeIds, selectedNodeIds } = useExplorerStore();
+  return (
+    <TreeNodeComponent
+      node={node}
+      level={level}
+      isExpanded={expandedNodeIds.includes(node.id)}
+      isSelected={selectedNodeIds.includes(node.id)}
+      onToggle={onToggle}
+      onSelect={onSelect}
+      onKeyDown={onKeyDown}
+    />
+  );
+};

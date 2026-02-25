@@ -11,6 +11,7 @@ import { FrameworkView } from './components/FrameworkView';
 import { OrientadorView } from './components/OrientadorView';
 import { ConfiguracoesView } from './components/ConfiguracoesView';
 import { OriginacaoB2CView } from './components/OriginacaoB2CView';
+import { DisparoExplorer } from './components/explorer/DisparoExplorer';
 import { useFrameworkData } from './hooks/useFrameworkData';
 import { useAdvancedFilters } from './hooks/useAdvancedFilters';
 import { useCalendarFilter } from './hooks/useCalendarFilter';
@@ -113,6 +114,7 @@ function App() {
       case 'resultados': return 'Resultados';
       case 'orientador': return 'Orientador';
       case 'framework': return 'Campanhas';
+      case 'explorador': return 'Explorador de Disparos';
       case 'diario': return 'Diário de Bordo';
       case 'configuracoes': return 'Configurações';
       case 'midia-paga': return 'Media Analytics';
@@ -224,6 +226,23 @@ function App() {
                   <DiarioBordo />
                 </PageTransition>
               )}
+              {activeTab === 'explorador' && (
+                <PageTransition>
+                  <DisparoExplorer
+                    onNavigateToFramework={(f) => {
+                      setTab('framework');
+                      if (f?.bu || f?.segmento || f?.jornada) {
+                        // Pre-apply filters via store when navigating to Framework
+                        // (framework view reads filtrosGlobais from store)
+                        const patch: Record<string, string[]> = {};
+                        if (f.bu) patch['bu'] = [f.bu];
+                        if (f.segmento) patch['segmentos'] = [f.segmento];
+                        if (f.jornada) patch['jornadas'] = [f.jornada];
+                      }
+                    }}
+                  />
+                </PageTransition>
+              )}
               {activeTab === 'framework' && (
                 <PageTransition>
                   <FrameworkView />
@@ -245,7 +264,7 @@ function App() {
                 </PageTransition>
               )}
               {/* midia-paga rendred above conditionally as full screen */}
-              {!['launch', 'resultados', 'jornada', 'diario', 'framework', 'orientador', 'configuracoes', 'originacao-b2c', 'midia-paga'].includes(activeTab) && (
+              {!['launch', 'resultados', 'jornada', 'diario', 'framework', 'explorador', 'orientador', 'configuracoes', 'originacao-b2c', 'midia-paga'].includes(activeTab) && (
                 <div className="flex items-center justify-center h-full text-slate-400">
                   <p>Aba desconhecida: {activeTab}. Redirecionando...</p>
                 </div>
