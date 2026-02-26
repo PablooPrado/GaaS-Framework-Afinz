@@ -206,6 +206,7 @@ export const syncFrameworkActivities = async (
             "Safra": a.safraKey || a.raw?.['Safra'],
 
             // Segmentação
+            "jornada": a.jornada || a.raw?.['Jornada'],
             "Parceiro": a.parceiro,
             "SIGLA_Parceiro": a.raw?.['SIGLA'],
             "Segmento": a.segmento,
@@ -278,6 +279,7 @@ export const activityService = {
     publishActivity,
     confirmDraft,
     getAllActivities,
+    getActivitiesBySegment,
     syncFrameworkActivities // Export new function
 };
 

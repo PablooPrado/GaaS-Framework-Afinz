@@ -137,19 +137,27 @@ export function projectAllMetrics(
     // (evita crash em applyFunnelCalculations)
     const volumeValue = formData.baseVolume || 0;
     projections['volume'] = {
+        field: 'volume',
         projectedValue: volumeValue,
         confidence: volumeValue > 0 ? 100 : 0, // 100% só se houver volume
-        method: 'user_input' as any,
+        method: 'fallback',
         interval: { min: volumeValue, max: volumeValue },
         explanation: {
-            description: volumeValue > 0
+            summary: volumeValue > 0
                 ? 'Volume definido pelo usuário'
                 : 'Nenhum volume informado',
+            causalFactors: [],
+            correlationFactors: [],
+            timeDecay: 'N/A',
             sampleSize: 0,
-            matchingActivities: 0,
             dataQuality: volumeValue > 0 ? 'high' : 'low',
-            matchLevel: 'user_input',
+            matchLevel: 'fallback',
             matchPercentage: 0
+        },
+        similarCampaigns: [],
+        metadata: {
+            computedAt: new Date().toISOString(),
+            version: '2.0'
         }
     };
 

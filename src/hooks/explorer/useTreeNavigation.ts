@@ -53,7 +53,7 @@ export function useTreeNavigation(rootNodes: TreeNode[], nodeMap: Map<string, Tr
     expandToNode(nodeId, nodeMap);
     selectNode(nodeId, false);
     setDetailsPaneNode(nodeId);
-  }, [nodeId, nodeMap, expandToNode, selectNode, setDetailsPaneNode]);
+  }, [nodeMap, expandToNode, selectNode, setDetailsPaneNode]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent, currentNodeId: string) => {

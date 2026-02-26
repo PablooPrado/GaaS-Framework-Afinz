@@ -26,7 +26,9 @@ import { useAppStore } from '../../../store/useAppStore';
 
 export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     // Sync with Global Store
-    const { paidMediaData: rawData, setPaidMediaData: setRawData } = useAppStore();
+    const { paidMediaData: rawDataFromStore, setPaidMediaData: setRawDataFromStore } = useAppStore();
+    const rawData = rawDataFromStore as unknown as DailyMetrics[];
+    const setRawData = setRawDataFromStore as unknown as (data: DailyMetrics[]) => void;
 
     // Filter State
     const [dateRange, setDateRangeState] = useState<DateRange>({
@@ -77,7 +79,7 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             if (!inChannel) return false;
 
             // Objective Filter
-            if (item.objective && !selectedObjectives.includes(item.objective)) return false;
+            if (item.objective && !selectedObjectives.includes(item.objective as 'marca' | 'b2c')) return false;
 
             // Campaign Filter
             if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return false;
@@ -102,7 +104,7 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             const inChannel = selectedChannels.includes(item.channel as 'meta' | 'google');
             if (!inChannel) return false;
 
-            if (item.objective && !selectedObjectives.includes(item.objective)) return false;
+            if (item.objective && !selectedObjectives.includes(item.objective as 'marca' | 'b2c')) return false;
 
             if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return false;
 

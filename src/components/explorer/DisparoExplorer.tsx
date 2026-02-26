@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 import { ActivityRow } from '../../types/activity';
 import { activityService } from '../../services/activityService';
+import { useAppStore } from '../../store/useAppStore';
+import { usePeriod } from '../../contexts/PeriodContext';
 
 import { useExplorerStore } from '../../store/explorerStore';
 import { useTreeData } from '../../hooks/explorer/useTreeData';
@@ -23,10 +25,33 @@ interface DisparoExplorerProps {
 }
 
 export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFramework }) => {
-  const [activities, setActivities] = useState<ActivityRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  // ── Dados ──────────────────────────────────────────────────────────────────
+  // Usa as atividades já carregadas no store global; faz fetch só se vazio
+  const storeActivities = useAppStore((state) => state.activities) as unknown as ActivityRow[];
+  const [fetchedActivities, setFetchedActivities] = useState<ActivityRow[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (storeActivities.length > 0) return; // store já tem dados, não busca novamente
+    let cancelled = false;
+    setLoading(true);
+    activityService.getAllActivities()
+      .then((data) => { if (!cancelled) { setFetchedActivities(data); setError(null); } })
+      .catch((err) => { if (!cancelled) setError(err.message ?? 'Erro ao carregar atividades'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [storeActivities.length]);
+
+  const activities: ActivityRow[] = storeActivities.length > 0 ? storeActivities : fetchedActivities;
+
+  // ── Período global ────────────────────────────────────────────────────────
+  // Lê do PeriodContext — o mesmo date picker visível no topo da página
+  const { startDate, endDate } = usePeriod();
+  const periodInicio = format(startDate, 'yyyy-MM-dd');
+  const periodFim = format(endDate, 'yyyy-MM-dd');
+
+  // ── Store do Explorer (navegação, seleção, busca) ─────────────────────────
   const {
     filters,
     metric,
@@ -40,16 +65,11 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
     setDetailsPaneNode,
   } = useExplorerStore();
 
-  // Fetch all activities from Supabase on mount
+  // Sincroniza o período do explorerStore com o PeriodContext global
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    activityService.getAllActivities()
-      .then((data) => { if (!cancelled) { setActivities(data); setError(null); } })
-      .catch((err) => { if (!cancelled) setError(err.message ?? 'Erro ao carregar atividades'); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
+    setFilters({ periodo: { inicio: periodInicio, fim: periodFim } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodInicio, periodFim]);
 
   // Build tree
   const { rootNodes, nodeMap, allNodeIds } = useTreeData({ activities, filters });
@@ -85,22 +105,6 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
 
   // Search
   const searchResults = useExplorerSearch(nodeMap, searchQuery);
-
-  // Period navigation (month-by-month)
-  const currentDate = new Date(filters.periodo.inicio + 'T00:00:00');
-
-  const shiftMonth = (delta: number) => {
-    const next = new Date(currentDate);
-    next.setMonth(next.getMonth() + delta);
-    setFilters({
-      periodo: {
-        inicio: format(startOfMonth(next), 'yyyy-MM-dd'),
-        fim: format(endOfMonth(next), 'yyyy-MM-dd'),
-      },
-    });
-  };
-
-  const periodLabel = format(currentDate, 'MMMM yyyy', { locale: ptBR });
 
   // "Ver todos disparos" handler
   const handleViewAll = () => {
@@ -139,23 +143,13 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
     <div className="flex h-full gap-4 p-4 overflow-hidden">
       {/* LEFT — Tree Panel */}
       <aside className="w-72 shrink-0 flex flex-col gap-3 overflow-hidden">
-        {/* Period Navigator */}
+
+        {/* Period label — lido do PeriodContext global */}
         <div className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2">
-          <button
-            onClick={() => shiftMonth(-1)}
-            className="text-slate-500 hover:text-slate-300 transition-colors p-0.5"
-            aria-label="Mês anterior"
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <span className="text-xs font-medium text-slate-300 capitalize">{periodLabel}</span>
-          <button
-            onClick={() => shiftMonth(1)}
-            className="text-slate-500 hover:text-slate-300 transition-colors p-0.5"
-            aria-label="Próximo mês"
-          >
-            <ChevronRight size={14} />
-          </button>
+          <span className="text-xs font-medium text-slate-400">
+            {format(startDate, 'dd MMM', { locale: ptBR })} – {format(endDate, 'dd MMM yyyy', { locale: ptBR })}
+          </span>
+          <span className="text-xs text-slate-600">{activities.length.toLocaleString('pt-BR')} disparos</span>
         </div>
 
         {/* Search */}
@@ -182,9 +176,9 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
           />
         </div>
 
-        {/* Stats footer */}
+        {/* Stats footer — mostra contagem no período ativo */}
         <div className="text-xs text-slate-600 text-center">
-          {activities.length.toLocaleString('pt-BR')} atividades · {rootNodes.length} BUs
+          {rootNodes.length} BUs · {rootNodes.reduce((s, n) => s + n.count, 0).toLocaleString('pt-BR')} disparos no período
         </div>
       </aside>
 

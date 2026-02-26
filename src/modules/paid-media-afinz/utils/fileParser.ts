@@ -151,8 +151,8 @@ export const parseXLSX = async (file: File): Promise<DailyMetrics[]> => {
                                     normalizedRow.results = cleanNumber(row[key]); // Capture results
                                 } else {
                                     // Numeric metrics
-                                    // @ts-expect-error Dynamic key assignment
-                                    normalizedRow[metricKey] = cleanNumber(row[key]);
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    (normalizedRow as any)[metricKey] = cleanNumber(row[key]);
                                 }
                             }
                         });
@@ -208,7 +208,7 @@ export const parseXLSX = async (file: File): Promise<DailyMetrics[]> => {
                 const seenSpends = new Map<string, number[]>();
 
                 allData.forEach(row => {
-                    const dateKey = row.date.substring(0, 10);
+                    const dateKey = String(row.date).substring(0, 10);
                     const key = `${row.campaign}|${dateKey}`;
 
                     const existingSpends = seenSpends.get(key) || [];

@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useAppStore } from '../store/useAppStore';
+import { usePeriod } from '../contexts/PeriodContext';
+import { format } from 'date-fns';
 import {
     Search, Download, Save, AlertCircle, X, History, Archive,
     ChevronRight, ChevronDown, FolderOpen, Folder,
     ArrowUp, ArrowDown, ArrowUpDown, FileText, Database
 } from 'lucide-react';
 import Papa from 'papaparse';
-import { FrameworkRow } from '../types/framework';
+import { FrameworkRow, Activity } from '../types/framework';
 import { useVersionManager } from '../hooks/useVersionManager';
 import { SaveVersionModal } from './SaveVersionModal';
 import { VersionHistoryDrawer } from './VersionHistoryDrawer';
@@ -14,28 +16,74 @@ import { VersionHistoryDrawer } from './VersionHistoryDrawer';
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const BU_CONFIG: Record<string, { dot: string; text: string; folder: string }> = {
-    'B2C':   { dot: 'bg-blue-400',    text: 'text-blue-300',    folder: 'text-blue-400'    },
+    'B2C': { dot: 'bg-blue-400', text: 'text-blue-300', folder: 'text-blue-400' },
     'B2B2C': { dot: 'bg-emerald-400', text: 'text-emerald-300', folder: 'text-emerald-400' },
-    'Plurix':{ dot: 'bg-purple-400',  text: 'text-purple-300',  folder: 'text-purple-400'  },
+    'Plurix': { dot: 'bg-purple-400', text: 'text-purple-300', folder: 'text-purple-400' },
 };
 
 const CANAL_EMOJI: Record<string, string> = {
-    'E-mail':    '✉',
-    'SMS':       '💬',
-    'WhatsApp':  '📱',
-    'Push':      '🔔',
+    'E-mail': '✉',
+    'SMS': '💬',
+    'WhatsApp': '📱',
+    'Push': '🔔',
 };
 
-// Primary columns shown in the table (keeps it scannable)
+// All 33 columns requested — shown in a horizontally-scrollable table
 const DISPLAY_COLS: { key: string; label: string; cls: string }[] = [
-    { key: 'Activity name / Taxonomia', label: 'Taxonomia / Activity Name', cls: 'min-w-[260px] max-w-xs' },
-    { key: 'Segmento',                  label: 'Campanha',                   cls: 'min-w-[120px]'           },
-    { key: 'Jornada',                   label: 'Jornada',                    cls: 'min-w-[120px]'           },
-    { key: 'Data de Disparo',           label: 'Data',                       cls: 'min-w-[100px]'           },
-    { key: 'Disparado?',                label: 'Status',                     cls: 'min-w-[80px]'            },
-    { key: 'Cartões Gerados',           label: 'Cartões',                    cls: 'min-w-[80px] text-right' },
-    { key: 'Taxa de Conversão',         label: 'Conv %',                     cls: 'min-w-[70px] text-right' },
+    { key: 'Jornada', label: 'Jornada', cls: 'min-w-[200px]' },
+    { key: 'Activity name / Taxonomia', label: 'Taxonomia', cls: 'min-w-[260px] max-w-sm' },
+    { key: 'Canal', label: 'Canal', cls: 'min-w-[80px]' },
+    { key: 'Data de Disparo', label: 'Data Disparo', cls: 'min-w-[110px]' },
+    { key: 'Segmento', label: 'Segmento', cls: 'min-w-[130px]' },
+    { key: 'Base Total', label: 'Base Total', cls: 'min-w-[90px] text-right' },
+    { key: 'Base Acionável', label: 'Base Acionável', cls: 'min-w-[100px] text-right' },
+    { key: '% Otimização de base', label: '% Otim.', cls: 'min-w-[75px] text-right' },
+    { key: 'Etapa de aquisição', label: 'Etapa Aquisição', cls: 'min-w-[120px]' },
+    { key: 'Ordem de disparo', label: 'Ordem', cls: 'min-w-[65px] text-right' },
+    { key: 'Perfil de Crédito', label: 'Perfil Crédito', cls: 'min-w-[110px]' },
+    { key: 'Produto', label: 'Produto', cls: 'min-w-[90px]' },
+    { key: 'Oferta', label: 'Oferta', cls: 'min-w-[90px]' },
+    { key: 'Promocional', label: 'Promo', cls: 'min-w-[80px]' },
+    { key: 'SIGLA', label: 'SIGLA', cls: 'min-w-[70px]' },
+    { key: 'Oferta 2', label: 'Oferta 2', cls: 'min-w-[90px]' },
+    { key: 'Promocional 2', label: 'Promo 2', cls: 'min-w-[80px]' },
+    { key: 'Custo Unitário Oferta', label: 'CU Oferta', cls: 'min-w-[85px] text-right' },
+    { key: 'Custo Total da Oferta', label: 'CT Oferta', cls: 'min-w-[85px] text-right' },
+    { key: 'Custo unitário do canal', label: 'CU Canal', cls: 'min-w-[80px] text-right' },
+    { key: 'Custo total canal', label: 'CT Canal', cls: 'min-w-[80px] text-right' },
+    { key: 'Taxa de Entrega', label: 'Tx Entrega', cls: 'min-w-[80px] text-right' },
+    { key: 'Taxa de Abertura', label: 'Tx Abertura', cls: 'min-w-[85px] text-right' },
+    { key: 'Taxa de Clique', label: 'Tx Clique', cls: 'min-w-[80px] text-right' },
+    { key: 'Taxa de Proposta', label: 'Tx Proposta', cls: 'min-w-[85px] text-right' },
+    { key: 'Taxa de Aprovação', label: 'Tx Aprovação', cls: 'min-w-[90px] text-right' },
+    { key: 'Taxa de Finalização', label: 'Tx Final.', cls: 'min-w-[75px] text-right' },
+    { key: 'Taxa de Conversão', label: 'Tx Conv.', cls: 'min-w-[75px] text-right' },
+    { key: 'Custo Total Campanha', label: 'CT Campanha', cls: 'min-w-[95px] text-right' },
+    { key: 'CAC', label: 'CAC', cls: 'min-w-[70px] text-right' },
+    { key: 'Cartões Gerados', label: 'Cartões', cls: 'min-w-[75px] text-right' },
+    { key: 'Aprovados', label: 'Aprovados', cls: 'min-w-[80px] text-right' },
+    { key: 'Propostas', label: 'Propostas', cls: 'min-w-[80px] text-right' },
 ];
+
+
+// — Parse a date string from FrameworkRow to YYYY-MM-DD —
+// FrameworkRow dates can be full JS date strings like "Thu Jan 29 2026 00:00:00 GMT-0300"
+// OR already formatted as "2026-01-29"
+function parseRowDate(raw: string): string {
+    if (!raw) return '';
+    const trimmed = raw.trim();
+    // Already YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
+    // Try parsing as JS Date
+    const d = new Date(trimmed);
+    if (!isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+    return '';
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,56 +101,96 @@ function Highlight({ text, term }: { text: string; term: string }) {
     );
 }
 
+function Cell({ value }: { value: any }) {
+    if (value === undefined || value === null || value === '' || value === 'N/A') {
+        return <span className="text-slate-700 font-normal">—</span>;
+    }
+    return <span className="text-slate-300 font-normal">{value}</span>;
+}
+
 function StatusBadge({ value }: { value: string }) {
-    const v = String(value ?? '').toLowerCase();
-    if (v === 'sim')  return <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Enviado</span>;
-    if (v === 'não' || v === 'nao') return <span className="px-2 py-0.5 rounded-full text-xs bg-slate-700 text-slate-400 border border-slate-600">Pendente</span>;
+    const v = String(value ?? '').toLowerCase().trim();
+    if (v === 'sim' || v === 'enviado' || v === 'realizado')
+        return <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Enviado</span>;
+    if (v === 'não' || v === 'nao' || v === 'pendente' || v === 'scheduled')
+        return <span className="px-2 py-0.5 rounded-full text-xs bg-slate-700 text-slate-400 border border-slate-600">Pendente</span>;
+    if (v === 'rascunho')
+        return <span className="px-2 py-0.5 rounded-full text-xs bg-amber-500/15 text-amber-300 border border-amber-500/30">Rascunho</span>;
+    if (v === 'em andamento')
+        return <span className="px-2 py-0.5 rounded-full text-xs bg-blue-500/15 text-blue-300 border border-blue-500/30">Em andamento</span>;
     return <span className="text-slate-400 text-xs">{value || '—'}</span>;
 }
 
-interface SelectedNode { bu?: string; canal?: string }
+interface SelectedNode { bu?: string; segmento?: string; canal?: string }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const FrameworkView: React.FC = () => {
     const { frameworkData, setFrameworkData, activities } = useAppStore();
 
+    // ── Fonte de dados — prioriza Supabase (activities.raw), cai para CSV ───────────
+    const displayData = useMemo<FrameworkRow[]>(() => {
+        if (activities && activities.length > 0) {
+            return (activities as Activity[])
+                .map(a => a.raw)
+                .filter((r): r is FrameworkRow => Boolean(r));
+        }
+        return frameworkData;
+    }, [activities, frameworkData]);
+
+    // ── Período global (PeriodContext) ───────────────────────────────────────
+    const { startDate, endDate } = usePeriod();
+    const periodInicio = format(startDate, 'yyyy-MM-dd');
+    const periodFim = format(endDate, 'yyyy-MM-dd');
+
     // Search + tree selection
-    const [searchTerm, setSearchTerm]       = useState('');
-    const [selected, setSelected]           = useState<SelectedNode>({});
-    const [expandedBUs, setExpandedBUs]     = useState<Set<string>>(new Set());
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selected, setSelected] = useState<SelectedNode>({});
+    const [expandedBUs, setExpandedBUs] = useState<Set<string>>(new Set());
 
     // Row detail
-    const [expandedRow, setExpandedRow]     = useState<number | null>(null);
+    const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
     // Table sort (for non-search view)
-    const [sortConfig, setSortConfig]       = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
+    const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
 
     // Inline edits
-    const [edits, setEdits]                 = useState<{ [idx: number]: Partial<FrameworkRow> }>({});
+    const [edits, setEdits] = useState<{ [idx: number]: Partial<FrameworkRow> }>({});
 
     // Version / history UI
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-    const [isHistoryOpen, setIsHistoryOpen]     = useState(false);
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     const { versions, currentVersion, saveNewVersion, restoreVersion, deleteVersion, exportVersion, storageUsage } = useVersionManager();
 
-    // ── Build tree structure ────────────────────────────────────────────────
+    // ── Build tree structure — BU > Segmento > Canal ─────────────────────
+    // periodData filtra as rows do frameworkData pelo período global
+    const periodData = useMemo(() => {
+        if (!periodInicio || !periodFim) return displayData;
+        return displayData.filter(row => {
+            const d = parseRowDate(String(row['Data de Disparo'] ?? ''));
+            return d >= periodInicio && d <= periodFim;
+        });
+    }, [displayData, periodInicio, periodFim]);
 
     const tree = useMemo(() => {
-        const buMap = new Map<string, Map<string, FrameworkRow[]>>();
-        frameworkData.forEach(row => {
-            const bu    = row.BU    || 'N/A';
+        // buMap: BU -> Segmento -> Canal -> rows[]
+        const buMap = new Map<string, Map<string, Map<string, FrameworkRow[]>>>();
+        periodData.forEach(row => {
+            const bu = row.BU || 'N/A';
+            const segmento = row.Segmento || 'N/A';
             const canal = row.Canal || 'N/A';
-            if (!buMap.has(bu))              buMap.set(bu, new Map());
-            const canalMap = buMap.get(bu)!;
-            if (!canalMap.has(canal))        canalMap.set(canal, []);
+            if (!buMap.has(bu)) buMap.set(bu, new Map());
+            const segMap = buMap.get(bu)!;
+            if (!segMap.has(segmento)) segMap.set(segmento, new Map());
+            const canalMap = segMap.get(segmento)!;
+            if (!canalMap.has(canal)) canalMap.set(canal, []);
             canalMap.get(canal)!.push(row);
         });
         return buMap;
-    }, [frameworkData]);
+    }, [periodData]);
 
-    const allColumns = useMemo(() => frameworkData.length > 0 ? Object.keys(frameworkData[0]) : [], [frameworkData]);
+    const allColumns = useMemo(() => displayData.length > 0 ? Object.keys(displayData[0]) : [], [displayData]);
 
     // ── Row matching for search ─────────────────────────────────────────────
 
@@ -114,52 +202,66 @@ export const FrameworkView: React.FC = () => {
 
     // ── Filtered + grouped rows ─────────────────────────────────────────────
 
-    // When searching: return groups [{bu, canal, rows[]}]
+    // When searching: return groups [{bu, segmento, canal, rows[]}]
     // When not searching: return flat list filtered by selected node
     const searchGroups = useMemo(() => {
         if (!searchTerm) return null;
-        const groups: { bu: string; canal: string; rows: (FrameworkRow & { _origIdx: number })[] }[] = [];
-        frameworkData.forEach((row, idx) => {
+        const groups: { bu: string; segmento: string; canal: string; rows: (FrameworkRow & { _origIdx: number })[] }[] = [];
+        periodData.forEach((row, idx) => {
             if (!rowMatchesSearch(row, searchTerm)) return;
-            const bu    = row.BU    || 'N/A';
+            const bu = row.BU || 'N/A';
+            const segmento = row.Segmento || 'N/A';
             const canal = row.Canal || 'N/A';
-            // If a node is selected, filter to just that branch
             if (selected.bu && selected.bu !== bu) return;
+            if (selected.segmento && selected.segmento !== segmento) return;
             if (selected.canal && selected.canal !== canal) return;
-            const g = groups.find(g => g.bu === bu && g.canal === canal);
+            const g = groups.find(g => g.bu === bu && g.segmento === segmento && g.canal === canal);
             if (g) g.rows.push({ ...row, _origIdx: idx });
-            else   groups.push({ bu, canal, rows: [{ ...row, _origIdx: idx }] });
+            else groups.push({ bu, segmento, canal, rows: [{ ...row, _origIdx: idx }] });
         });
         return groups;
-    }, [searchTerm, frameworkData, selected, rowMatchesSearch]);
+    }, [searchTerm, periodData, selected, rowMatchesSearch]);
 
     // buNodes that match search (for tree highlight)
     const matchingBUs = useMemo(() => {
         if (!searchTerm) return new Set<string>();
         return new Set(
-            frameworkData
+            periodData
                 .filter(r => rowMatchesSearch(r, searchTerm))
                 .map(r => r.BU || 'N/A')
         );
-    }, [searchTerm, frameworkData, rowMatchesSearch]);
+    }, [searchTerm, periodData, rowMatchesSearch]);
+
+    const matchingSegmentos = useMemo(() => {
+        if (!searchTerm) return new Map<string, Set<string>>();
+        const m = new Map<string, Set<string>>();
+        periodData.forEach(r => {
+            if (!rowMatchesSearch(r, searchTerm)) return;
+            const bu = r.BU || 'N/A', seg = r.Segmento || 'N/A';
+            if (!m.has(bu)) m.set(bu, new Set());
+            m.get(bu)!.add(seg);
+        });
+        return m;
+    }, [searchTerm, periodData, rowMatchesSearch]);
 
     const matchingCanals = useMemo(() => {
         if (!searchTerm) return new Map<string, Set<string>>();
         const m = new Map<string, Set<string>>();
-        frameworkData.forEach(r => {
+        periodData.forEach(r => {
             if (!rowMatchesSearch(r, searchTerm)) return;
-            const bu = r.BU || 'N/A', canal = r.Canal || 'N/A';
-            if (!m.has(bu)) m.set(bu, new Set());
-            m.get(bu)!.add(canal);
+            const seg = r.Segmento || 'N/A', canal = r.Canal || 'N/A';
+            if (!m.has(seg)) m.set(seg, new Set());
+            m.get(seg)!.add(canal);
         });
         return m;
-    }, [searchTerm, frameworkData, rowMatchesSearch]);
+    }, [searchTerm, periodData, rowMatchesSearch]);
 
-    // Flat rows for non-search mode
+    // Flat rows for non-search mode — filtered by period + selected node
     const flatRows = useMemo(() => {
         if (searchTerm) return [];
-        let data = frameworkData.map((row, idx) => ({ ...row, _origIdx: idx }));
-        if (selected.bu)    data = data.filter(r => (r.BU    || 'N/A') === selected.bu);
+        let data = periodData.map((row, idx) => ({ ...row, _origIdx: idx }));
+        if (selected.bu) data = data.filter(r => (r.BU || 'N/A') === selected.bu);
+        if (selected.segmento) data = data.filter(r => (r.Segmento || 'N/A') === selected.segmento);
         if (selected.canal) data = data.filter(r => (r.Canal || 'N/A') === selected.canal);
         if (sortConfig.key) {
             data.sort((a, b) => {
@@ -173,7 +275,7 @@ export const FrameworkView: React.FC = () => {
             });
         }
         return data;
-    }, [searchTerm, frameworkData, selected, sortConfig, edits]);
+    }, [searchTerm, periodData, selected, sortConfig, edits]);
 
     // ── Auto-expand tree nodes on search ────────────────────────────────────
 
@@ -193,8 +295,8 @@ export const FrameworkView: React.FC = () => {
         });
     };
 
-    const selectNode = (bu?: string, canal?: string) => {
-        setSelected({ bu, canal });
+    const selectNode = (bu?: string, segmento?: string, canal?: string) => {
+        setSelected({ bu, segmento, canal });
         setExpandedRow(null);
         if (bu && !expandedBUs.has(bu)) setExpandedBUs(prev => new Set([...prev, bu]));
     };
@@ -244,10 +346,10 @@ export const FrameworkView: React.FC = () => {
 
     const handleExport = () => {
         const data = frameworkData.map((row, idx) => edits[idx] ? { ...row, ...edits[idx] } : row);
-        const csv  = Papa.unparse(data, { delimiter: ';', quotes: true });
+        const csv = Papa.unparse(data, { delimiter: ';', quotes: true });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
         a.href = url;
         a.setAttribute('download', 'campanhas_editado.csv');
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
@@ -255,19 +357,29 @@ export const FrameworkView: React.FC = () => {
 
     // ── Count helpers ────────────────────────────────────────────────────────
 
-    const canalMatchCount = (bu: string, canal: string) =>
-        searchTerm
-            ? (matchingCanals.get(bu)?.has(canal) ? (searchGroups?.find(g => g.bu === bu && g.canal === canal)?.rows.length ?? 0) : 0)
-            : (tree.get(bu)?.get(canal)?.length ?? 0);
+    // ── Count helpers (BU > Segmento > Canal) ───────────────────────────────
+    // Count total rows in a segmento across all canais
+    const segMatchCount = (bu: string, seg: string) => {
+        const allCanais = tree.get(bu)?.get(seg);
+        if (!allCanais) return 0;
+        return [...allCanais.values()].reduce((s, rows) => s + rows.length, 0);
+    };
 
-    const buMatchCount = (bu: string) =>
-        searchTerm
-            ? (searchGroups?.filter(g => g.bu === bu).reduce((s, g) => s + g.rows.length, 0) ?? 0)
-            : (tree.get(bu) ? [...(tree.get(bu)!.values())].reduce((s, rows) => s + rows.length, 0) : 0);
+    const canalMatchCount = (bu: string, seg: string, canal: string) =>
+        tree.get(bu)?.get(seg)?.get(canal)?.length ?? 0;
+
+    const buMatchCount = (bu: string) => {
+        const segMap = tree.get(bu);
+        if (!segMap) return 0;
+        let total = 0;
+        for (const canalMap of segMap.values())
+            for (const rows of canalMap.values()) total += rows.length;
+        return total;
+    };
 
     const totalCount = searchTerm
         ? (searchGroups?.reduce((s, g) => s + g.rows.length, 0) ?? 0)
-        : frameworkData.length;
+        : flatRows.length;
 
     // ─── Empty state ────────────────────────────────────────────────────────
 
@@ -374,23 +486,22 @@ export const FrameworkView: React.FC = () => {
                         {/* Root node */}
                         <button
                             onClick={() => { selectNode(); setSearchTerm(''); }}
-                            className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm transition rounded-none ${
-                                !selected.bu && !searchTerm
-                                    ? 'bg-blue-600/20 text-blue-200'
-                                    : 'text-slate-300 hover:bg-slate-800'
-                            }`}
+                            className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm transition rounded-none ${!selected.bu && !searchTerm
+                                ? 'bg-blue-600/20 text-blue-200'
+                                : 'text-slate-300 hover:bg-slate-800'
+                                }`}
                         >
                             <FolderOpen size={15} className="text-amber-400 shrink-0" />
                             <span className="flex-1 text-left truncate font-medium">Todos os Disparos</span>
-                            <span className="text-xs text-slate-500">{frameworkData.length}</span>
+                            <span className="text-xs text-slate-500">{periodData.length}</span>
                         </button>
 
                         {/* BU nodes */}
                         {[...tree.keys()].map(bu => {
-                            const buCfg     = BU_CONFIG[bu] || BU_CONFIG['B2C'];
+                            const buCfg = BU_CONFIG[bu] || BU_CONFIG['B2C'];
                             const isExpanded = expandedBUs.has(bu);
-                            const hasMatch  = !searchTerm || matchingBUs.has(bu);
-                            const count     = buMatchCount(bu);
+                            const hasMatch = !searchTerm || matchingBUs.has(bu);
+                            const count = buMatchCount(bu);
                             if (searchTerm && !hasMatch) return null;
 
                             return (
@@ -399,48 +510,75 @@ export const FrameworkView: React.FC = () => {
                                     <button
                                         onClick={() => {
                                             toggleBU(bu);
-                                            selectNode(bu, undefined);
+                                            selectNode(bu, undefined, undefined);
                                             if (searchTerm) setSearchTerm('');
                                         }}
-                                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm transition ${
-                                            selected.bu === bu && !selected.canal
-                                                ? 'bg-blue-600/20 text-blue-200'
-                                                : 'text-slate-300 hover:bg-slate-800'
-                                        }`}
+                                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm transition ${selected.bu === bu && !selected.segmento
+                                            ? 'bg-blue-600/20 text-blue-200'
+                                            : 'text-slate-300 hover:bg-slate-800'
+                                            }`}
                                     >
                                         <span className="text-slate-500 shrink-0">
                                             {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                                         </span>
                                         {isExpanded
                                             ? <FolderOpen size={14} className={`${buCfg.folder} shrink-0`} />
-                                            : <Folder     size={14} className={`${buCfg.folder} shrink-0`} />
+                                            : <Folder size={14} className={`${buCfg.folder} shrink-0`} />
                                         }
                                         <span className={`flex-1 text-left truncate font-semibold ${buCfg.text}`}>{bu}</span>
                                         <span className={`text-xs ${searchTerm && hasMatch ? 'text-amber-400 font-semibold' : 'text-slate-500'}`}>{count}</span>
                                     </button>
 
-                                    {/* Canal children */}
-                                    {isExpanded && [...(tree.get(bu)?.keys() ?? [])].map(canal => {
-                                        const canalHasMatch = !searchTerm || matchingCanals.get(bu)?.has(canal);
-                                        const cCount = canalMatchCount(bu, canal);
-                                        if (searchTerm && !canalHasMatch) return null;
-                                        const isSelected = selected.bu === bu && selected.canal === canal;
+                                    {/* Segmento children */}
+                                    {isExpanded && [...(tree.get(bu)?.keys() ?? [])].map(seg => {
+                                        const segHasMatch = !searchTerm || matchingSegmentos.get(bu)?.has(seg);
+                                        const sCount = segMatchCount(bu, seg);
+                                        if (searchTerm && !segHasMatch) return null;
+                                        const isSegSelected = selected.bu === bu && selected.segmento === seg && !selected.canal;
+                                        const isSegExpanded = selected.bu === bu && selected.segmento === seg;
+                                        const segCanais = [...(tree.get(bu)?.get(seg)?.keys() ?? [])];
+                                        const multiCanal = segCanais.length > 1;
                                         return (
-                                            <button
-                                                key={canal}
-                                                onClick={() => { selectNode(bu, canal); if (searchTerm) setSearchTerm(''); }}
-                                                className={`w-full flex items-center gap-2 pl-9 pr-3 py-1 text-xs transition ${
-                                                    isSelected
+                                            <div key={seg}>
+                                                {/* Segmento row */}
+                                                <button
+                                                    onClick={() => { selectNode(bu, seg, undefined); if (searchTerm) setSearchTerm(''); }}
+                                                    className={`w-full flex items-center gap-2 pl-7 pr-3 py-1.5 text-xs transition ${isSegSelected
                                                         ? 'bg-blue-600/20 text-blue-200'
                                                         : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                                                }`}
-                                            >
-                                                <FileText size={12} className="shrink-0 opacity-60" />
-                                                <span className="flex-1 text-left truncate">
-                                                    {CANAL_EMOJI[canal] ? `${CANAL_EMOJI[canal]} ` : ''}{canal}
-                                                </span>
-                                                <span className={`text-xs ${searchTerm && canalHasMatch ? 'text-amber-400 font-semibold' : 'text-slate-600'}`}>{cCount}</span>
-                                            </button>
+                                                        }`}
+                                                >
+                                                    {multiCanal
+                                                        ? (isSegExpanded ? <ChevronDown size={11} className="shrink-0 text-slate-600" /> : <ChevronRight size={11} className="shrink-0 text-slate-600" />)
+                                                        : <span className="w-[11px] shrink-0" />
+                                                    }
+                                                    <FileText size={12} className="shrink-0 opacity-50" />
+                                                    <span className="flex-1 text-left truncate">{seg}</span>
+                                                    <span className={`text-xs ${searchTerm && segHasMatch ? 'text-amber-400 font-semibold' : 'text-slate-600'}`}>{sCount}</span>
+                                                </button>
+
+                                                {/* Canal children (optional, shown when segmento expanded AND multi-canal) */}
+                                                {isSegExpanded && multiCanal && segCanais.map(canal => {
+                                                    const cCount = canalMatchCount(bu, seg, canal);
+                                                    const isCanalSelected = selected.bu === bu && selected.segmento === seg && selected.canal === canal;
+                                                    return (
+                                                        <button
+                                                            key={canal}
+                                                            onClick={() => { selectNode(bu, seg, canal); if (searchTerm) setSearchTerm(''); }}
+                                                            className={`w-full flex items-center gap-2 pl-12 pr-3 py-1 text-xs transition ${isCanalSelected
+                                                                ? 'bg-blue-600/20 text-blue-200'
+                                                                : 'text-slate-500 hover:bg-slate-800 hover:text-slate-200'
+                                                                }`}
+                                                        >
+                                                            <span className="text-slate-600">
+                                                                {CANAL_EMOJI[canal] ?? '▸'}
+                                                            </span>
+                                                            <span className="flex-1 text-left truncate">{canal}</span>
+                                                            <span className="text-xs text-slate-700">{cCount}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         );
                                     })}
                                 </div>
@@ -454,20 +592,31 @@ export const FrameworkView: React.FC = () => {
 
                     {/* Breadcrumb bar */}
                     <div className="px-4 py-1.5 border-b border-slate-800 bg-slate-900/80 flex items-center gap-1 text-xs text-slate-500 shrink-0">
-                        <span className="hover:text-slate-300 cursor-pointer" onClick={() => { selectNode(); setSearchTerm(''); }}>Framework</span>
+                        <span className="hover:text-slate-300 cursor-pointer" onClick={() => { selectNode(); setSearchTerm(''); }}>Explorador</span>
                         {selected.bu && (
                             <>
                                 <ChevronRight size={11} />
                                 <span className={`${BU_CONFIG[selected.bu]?.text ?? 'text-slate-300'} font-medium cursor-pointer hover:opacity-80`}
-                                    onClick={() => selectNode(selected.bu, undefined)}>
+                                    onClick={() => selectNode(selected.bu, undefined, undefined)}>
                                     {selected.bu}
+                                </span>
+                            </>
+                        )}
+                        {selected.segmento && (
+                            <>
+                                <ChevronRight size={11} />
+                                <span className="text-slate-300 font-medium cursor-pointer hover:opacity-80"
+                                    onClick={() => selectNode(selected.bu, selected.segmento, undefined)}>
+                                    {selected.segmento}
                                 </span>
                             </>
                         )}
                         {selected.canal && (
                             <>
                                 <ChevronRight size={11} />
-                                <span className="text-slate-300 font-medium">{selected.canal}</span>
+                                <span className="text-slate-400">
+                                    {CANAL_EMOJI[selected.canal] ?? ''} {selected.canal}
+                                </span>
                             </>
                         )}
                         {searchTerm && (
@@ -493,15 +642,21 @@ export const FrameworkView: React.FC = () => {
                                 searchGroups.map(group => {
                                     const buCfg = BU_CONFIG[group.bu] || BU_CONFIG['B2C'];
                                     return (
-                                        <div key={`${group.bu}-${group.canal}`} className="border-b border-slate-800">
+                                        <div key={`${group.bu}-${group.segmento}-${group.canal}`} className="border-b border-slate-800">
                                             {/* Group header — acts like a file path */}
                                             <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 sticky top-0 z-10">
                                                 <span className={`w-2 h-2 rounded-full ${buCfg.dot} shrink-0`} />
                                                 <span className={`font-semibold text-xs ${buCfg.text}`}>{group.bu}</span>
                                                 <ChevronRight size={11} className="text-slate-600" />
-                                                <span className="text-xs text-slate-300 font-medium">
-                                                    {CANAL_EMOJI[group.canal] ? `${CANAL_EMOJI[group.canal]} ` : ''}{group.canal}
-                                                </span>
+                                                <span className="text-xs text-slate-300 font-medium">{group.segmento}</span>
+                                                {group.canal && group.canal !== 'N/A' && (
+                                                    <>
+                                                        <ChevronRight size={11} className="text-slate-600" />
+                                                        <span className="text-xs text-slate-400">
+                                                            {CANAL_EMOJI[group.canal] ?? ''} {group.canal}
+                                                        </span>
+                                                    </>
+                                                )}
                                                 <span className="ml-auto text-xs text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
                                                     {group.rows.length} resultado{group.rows.length !== 1 ? 's' : ''}
                                                 </span>
@@ -672,7 +827,7 @@ const RowDetail: React.FC<RowDetailProps> = ({ row, origIdx, edits, allColumns, 
             <p className="text-xs text-slate-500 font-medium mb-3 uppercase tracking-wider">Todos os campos — clique para editar</p>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {filteredCols.map(col => {
-                    const val    = (edits[origIdx] as any)?.[col] ?? (row as any)[col] ?? '';
+                    const val = (edits[origIdx] as any)?.[col] ?? (row as any)[col] ?? '';
                     const edited = (edits[origIdx] as any)?.[col] !== undefined;
                     return (
                         <div key={col} className={`rounded-md p-2 border transition ${edited ? 'border-amber-500/40 bg-amber-900/10' : 'border-slate-700/50 bg-slate-800/40'}`}>

@@ -113,7 +113,7 @@ function App() {
       case 'jornada': return 'Jornada & Disparos';
       case 'resultados': return 'Resultados';
       case 'orientador': return 'Orientador';
-      case 'framework': return 'Campanhas';
+      case 'framework': return 'Explorador de Disparos';
       case 'explorador': return 'Explorador de Disparos';
       case 'diario': return 'Diário de Bordo';
       case 'configuracoes': return 'Configurações';

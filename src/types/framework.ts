@@ -83,6 +83,7 @@ export interface Goal {
   cac_max?: number;
   plurix_meta?: number;
   b2b2c_meta?: number;
+  bus?: Record<string, { cartoes: number; aprovacoes: number; cac: number }>;
 }
 
 export interface JournalEntry {

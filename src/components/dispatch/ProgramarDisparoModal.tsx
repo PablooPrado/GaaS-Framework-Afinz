@@ -66,14 +66,14 @@ const ModalContent: React.FC<{
     }, [formData]);
 
     // NEW: AI Insights hook
-    const insightResult = useDispatchInsights(dispatchFormData, activities);
+    const insightResult = useDispatchInsights(dispatchFormData, activities as unknown as ActivityRow[]);
 
     // NEW: Handle alternative selection
     const handleSelectAlternative = (alternative: Alternative) => {
         setFormData((prev) => ({
             ...prev,
             ...alternative.appliedChanges,
-        }));
+        } as any));
         console.log(`✅ Sugestão aplicada: ${alternative.title}`);
     };
 

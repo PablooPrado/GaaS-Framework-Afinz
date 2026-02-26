@@ -179,14 +179,14 @@ export const CustomMetricChart: React.FC<CustomMetricChartProps> = ({
                             <input
                                 type="date"
                                 value={customDateRange.from}
-                                onChange={(e) => setCustomDateRange(prev => ({ ...prev, from: e.target.value }))}
+                                onChange={(e) => setCustomDateRange({ ...customDateRange, from: e.target.value })}
                                 className="text-xs bg-white border-slate-300 text-slate-700 rounded px-2 py-1 focus:ring-blue-500/20 focus:border-blue-500"
                             />
                             <span className="text-slate-400">-</span>
                             <input
                                 type="date"
                                 value={customDateRange.to}
-                                onChange={(e) => setCustomDateRange(prev => ({ ...prev, to: e.target.value }))}
+                                onChange={(e) => setCustomDateRange({ ...customDateRange, to: e.target.value })}
                                 className="text-xs bg-white border-slate-300 text-slate-700 rounded px-2 py-1 focus:ring-blue-500/20 focus:border-blue-500"
                             />
                         </div>

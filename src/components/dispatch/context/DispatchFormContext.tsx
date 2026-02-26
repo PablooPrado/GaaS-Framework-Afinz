@@ -255,7 +255,7 @@ export const DispatchFormProvider: React.FC<DispatchFormProviderProps> = ({
     const [projectionReadiness, setProjectionReadiness] = useState<ProjectionReadiness>('insufficient');
 
     // Buscar activities e framework data do store
-    const activities = useAppStore((state) => state.activities) as ActivityRow[];
+    const activities = useAppStore((state) => state.activities) as unknown as ActivityRow[];
     const frameworkData = useAppStore((state) => state.frameworkData) || [];
 
     // 1. Extrair Opcoes HISTORICAS COM FILTRAGEM DINÂMICA EM CASCATA

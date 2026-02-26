@@ -47,7 +47,7 @@ export const GlobalHeader: React.FC = () => {
         {
             title: 'Framework',
             items: [
-                { id: 'framework', label: 'Campanhas', icon: LayoutDashboard, onClick: () => setTab('framework') },
+                { id: 'framework', label: 'Explorador de Disparos', icon: LayoutDashboard, onClick: () => setTab('framework') },
             ]
         }
     ];

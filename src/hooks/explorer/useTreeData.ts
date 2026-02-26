@@ -157,7 +157,7 @@ export function useTreeData({ activities, filters }: UseTreeDataProps): UseTreeD
       buGroups.get(bu)!.push(a);
     }
 
-    const levels: NodeType[] = ['segmento', 'jornada', 'canal'];
+    const levels: NodeType[] = ['jornada', 'canal'];
 
     const rootNodes: TreeNode[] = Array.from(buGroups.entries())
       .sort(([a], [b]) => a.localeCompare(b))

@@ -31,7 +31,7 @@ export const ChannelDistribution: React.FC<ChannelDistributionProps> = ({ items 
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={items}
+                data={items as any[]}
                 dataKey="count"
                 cx="50%"
                 cy="50%"

@@ -47,7 +47,7 @@ export const SegmentBarChart: React.FC<SegmentBarChartProps> = ({ data, metric, 
         data={data}
         layout="vertical"
         margin={{ top: 4, right: 60, left: 8, bottom: 4 }}
-        onClick={(e) => {
+        onClick={(e: any) => {
           if (e?.activePayload?.[0]) {
             onBarClick((e.activePayload[0].payload as BarChartDataPoint).id);
           }

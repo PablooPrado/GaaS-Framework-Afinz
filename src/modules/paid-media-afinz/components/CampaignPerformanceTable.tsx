@@ -20,8 +20,8 @@ export const CampaignPerformanceTable: React.FC<CampaignPerformanceTableProps> =
     const campaignStats = useMemo(() => {
         const map = new Map<string, {
             campaign: string;
-            channel: 'meta' | 'google';
-            objective: 'marca' | 'b2c';
+            channel: string;
+            objective: string;
             spend: number;
             impressions: number;
             clicks: number;

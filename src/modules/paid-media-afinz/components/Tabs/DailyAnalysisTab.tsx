@@ -18,7 +18,7 @@ export const DailyAnalysisTab: React.FC = () => {
         const map = new Map<string, any>();
 
         filteredData.forEach(d => {
-            const dateKey = d.date.substring(0, 10); // YYYY-MM-DD
+            const dateKey = String(d.date).substring(0, 10); // YYYY-MM-DD
             if (!map.has(dateKey)) {
                 map.set(dateKey, {
                     date: d.date,

@@ -33,11 +33,11 @@ export const BudgetTab: React.FC = () => {
             const isFutureDay = isFuture(day);
 
             const metaSpend = thisMonthData
-                .filter(d => d.date.startsWith(dayStr) && d.channel === 'meta')
+                .filter(d => String(d.date).startsWith(dayStr) && d.channel === 'meta')
                 .reduce((sum, d) => sum + d.spend, 0);
 
             const googleSpend = thisMonthData
-                .filter(d => d.date.startsWith(dayStr) && d.channel === 'google')
+                .filter(d => String(d.date).startsWith(dayStr) && d.channel === 'google')
                 .reduce((sum, d) => sum + d.spend, 0);
 
             return {
