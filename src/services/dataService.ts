@@ -17,14 +17,15 @@ export const mapSqlToActivity = (row: any): Activity => {
         'Data Fim': row['Data Fim'],
         'BU': row['BU'],
         'Canal': row['Canal'],
+        // Jornada e Siglas que mudam de nome
+        'Jornada': row['jornada'],
+        'Parceiro': row['Parceiro'],
+        'SIGLA': row['SIGLA_Parceiro'],
         'Segmento': row['Segmento'],
         'SIGLA.1': row['SIGLA_Segmento'],
         'Subgrupos': row['Subgrupos'],
-        'Jornada': row['jornada'], // Note: 'jornada' is lowercase in SQL schema
         'Etapa de aquisição': row['Etapa de aquisição'],
         'Ordem de disparo': row['Ordem de disparo'],
-        'Parceiro': row['Parceiro'],
-        'SIGLA': row['SIGLA_Parceiro'],
         'Safra': row['Safra'],
         'Perfil de Crédito': row['Perfil de Crédito'],
         'Produto': row['Produto'],
@@ -44,6 +45,7 @@ export const mapSqlToActivity = (row: any): Activity => {
         'Custo total canal': row['Custo total canal'],
         'Custo Total Campanha': row['Custo Total Campanha'],
         // Rates
+        // Rates
         'Taxa de Entrega': row['Taxa de Entrega'],
         'Taxa de Abertura': row['Taxa de Abertura'],
         'Taxa de Clique': row['Taxa de Clique'],
@@ -51,10 +53,10 @@ export const mapSqlToActivity = (row: any): Activity => {
         'Taxa de Aprovação': row['Taxa de Aprovação'],
         'Taxa de Finalização': row['Taxa de Finalização'],
         'Taxa de Conversão': row['Taxa de Conversão'],
-        // KPIs
-        'Propostas': row['Propostas'],
-        'Aprovados': row['Aprovados'],
+        // Volumes e KPIs
         'Cartões Gerados': row['Cartões Gerados'],
+        'Aprovados': row['Aprovados'],
+        'Propostas': row['Propostas'],
         'CAC': row['CAC'],
     };
 
