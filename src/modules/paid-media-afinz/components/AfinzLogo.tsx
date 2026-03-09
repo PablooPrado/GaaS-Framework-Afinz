@@ -45,8 +45,8 @@ export const AfinzLogo: React.FC<AfinzLogoProps> = ({ className = '', height = 3
                 <path d="M90.5 30.8h17.8V25l-9.8-7.5h9v-5.8h-17v5.8l9.5 7.5h-9.5v5.8z" />
             </g>
 
-            {/* Cyan Stroke extending through the 'z' */}
-            <path d="M90 20.8h22v3.5H90z" fill="#00CEDB" />
+            {/* Teal bar through 'z' — centered at y=21.25, same stroke weight as z bars (5.8), exact z width (17.8) */}
+            <path d="M90.5 18.35h17.8v5.8H90.5z" fill="#00c6cc" />
         </svg>
     );
 };

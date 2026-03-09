@@ -162,13 +162,25 @@ Accent number:     text-2xl font-black text-[#00c6cc]
 ```tsx
 // Logo textual aproximado com o acento "z" em teal
 // Para uso em headers internos
+// REGRA: barra teal deve cortar o CENTRO vertical do "z", com espessura = ~25% da altura do glifo
+// Em unidades em (x-height ~0.52em): centro ≈ 0.26em desde baseline → bottom-[0.19em] h-[0.13em]
 <div className="flex items-baseline gap-0">
   <span className="font-black text-white text-xl tracking-tight">afin</span>
   <span className="relative font-black text-white text-xl">
     z
-    <span className="absolute bottom-[0.15em] left-0 right-0 h-[0.1em] bg-[#00c6cc]" />
+    <span className="absolute bottom-[0.19em] left-0 right-0 h-[0.13em] bg-[#00c6cc]" />
   </span>
 </div>
+```
+
+### Logo Afinz via componente SVG (preferido — precisao milimetrica)
+```tsx
+// Usar AfinzLogo.tsx para fidelidade total ao manual de marca
+// Barra teal: x=90.5→108.3 (exata largura do z), y=18.35→24.15 (centrada em 21.25),
+// espessura=5.8 (identica ao traco do z), cor=#00c6cc
+import { AfinzLogo } from '@/modules/paid-media-afinz/components/AfinzLogo';
+
+<AfinzLogo height={32} className="text-white" />
 ```
 
 ---
