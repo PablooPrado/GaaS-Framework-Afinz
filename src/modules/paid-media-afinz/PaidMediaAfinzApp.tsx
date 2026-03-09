@@ -23,6 +23,7 @@ const DashboardContent: React.FC<PaidMediaAfinzAppProps> = ({ onBack }) => {
   const { isPlurixAnalyst } = useUserRole();
   const [activeTab, setActiveTab] = useState<'overview' | 'monthly' | 'campaigns' | 'budget' | 'daily'>('overview');
   const [isSyncing, setIsSyncing] = useState(true);
+  const [isFilterHovered, setIsFilterHovered] = useState(false);
 
   // Auto-Sync — reads directly from Supabase table
   useEffect(() => {
@@ -101,8 +102,6 @@ const DashboardContent: React.FC<PaidMediaAfinzAppProps> = ({ onBack }) => {
     { id: 'campaigns', label: 'Campanhas', icon: List },
     { id: 'budget', label: 'Orçamentos', icon: Wallet },
   ] as const;
-
-  const [isFilterHovered, setIsFilterHovered] = useState(false);
 
   return (
     // ── Dashboard (light) ──────────────────────────────────────────────
