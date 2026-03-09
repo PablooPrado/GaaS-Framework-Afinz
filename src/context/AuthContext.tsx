@@ -71,27 +71,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const resetPassword = async (email: string) => {
-        try {
-            console.log('resetPassword chamado para:', email);
-            // Get the current URL without hash and add recovery redirect
-            const redirectUrl = new URL(window.location.href);
-            redirectUrl.hash = 'type=recovery';
-            console.log('redirectUrl:', redirectUrl.toString());
+        console.log('🔐 resetPassword INICIADO para:', email);
 
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: redirectUrl.toString(),
-            });
+        const baseUrl = window.location.origin;
+        const redirectUrl = `${baseUrl}/#type=recovery`;
+        console.log('🔗 Redirect URL:', redirectUrl);
 
-            console.log('Supabase response - error:', error);
-            if (error) {
-                console.error('Supabase resetPasswordForEmail error:', error);
-                throw error;
-            }
-            console.log('resetPassword completado com sucesso');
-        } catch (err: any) {
-            console.error('Erro em resetPassword:', err);
-            throw err;
+        const result = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: redirectUrl,
+        });
+
+        console.log('📨 Resposta Supabase:', result);
+
+        if (result.error) {
+            console.error('❌ Erro do Supabase:', result.error.message);
+            throw result.error;
         }
+
+        console.log('✅ resetPassword SUCESSO');
     };
 
     const updatePassword = async (password: string) => {
@@ -100,18 +97,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const inviteUser = async (email: string, fullName: string, role: 'admin' | 'growth_b2c' | 'analista_plurix') => {
-        // Get the current URL and add invite redirect
-        const redirectUrl = new URL(window.location.href);
-        redirectUrl.hash = 'type=invite';
+        console.log('👤 inviteUser INICIADO para:', email, 'role:', role);
 
-        // Send magic link to invite the user
-        const { error: otpError } = await supabase.auth.signInWithOtp({
+        const baseUrl = window.location.origin;
+        const redirectUrl = `${baseUrl}/#type=invite`;
+        console.log('🔗 Redirect URL:', redirectUrl);
+
+        const result = await supabase.auth.signInWithOtp({
             email,
             options: {
-                emailRedirectTo: redirectUrl.toString(),
+                emailRedirectTo: redirectUrl,
             },
         });
-        if (otpError) throw otpError;
+
+        console.log('📨 Resposta Supabase:', result);
+
+        if (result.error) {
+            console.error('❌ Erro do Supabase:', result.error.message);
+            throw result.error;
+        }
+
+        console.log('✅ inviteUser SUCESSO');
     };
 
     return (

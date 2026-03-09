@@ -7,7 +7,8 @@ export const LoginView: React.FC = () => {
     const [emailInput, setEmailInput] = useState('');
     const [passwordInput, setPasswordInput] = useState('');
     const [isLoggingIn, setIsLoggingIn] = useState(false);
-    const [isResetting, setIsResetting] = useState(false);
+    const [showResetForm, setShowResetForm] = useState(false);
+    const [isSending, setIsSending] = useState(false);
     const [resetSent, setResetSent] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -25,19 +26,33 @@ export const LoginView: React.FC = () => {
     };
 
     const handleResetPassword = async (e: React.FormEvent) => {
+        console.log('🚀 handleResetPassword INICIADO - evento:', e.type);
+        console.log('📧 Email atual:', emailInput);
+
         e.preventDefault();
-        setIsResetting(true);
+        console.log('✋ preventDefault executado');
+
+        if (!emailInput.trim()) {
+            console.log('❌ Email vazio!');
+            setError('Por favor, digite um email válido');
+            return;
+        }
+
+        setIsSending(true);
         setError(null);
+
         try {
-            console.log('Enviando reset para:', emailInput);
+            console.log('🔐 Chamando resetPassword...');
             await resetPassword(emailInput);
-            console.log('Reset enviado com sucesso');
+            console.log('✅ resetPassword retornou com sucesso');
             setResetSent(true);
         } catch (err: any) {
-            console.error('Erro ao enviar reset:', err);
+            console.error('❌ ERRO capturado:', err);
+            console.error('Mensagem:', err.message);
             setError(err.message || 'Erro ao enviar reset');
         } finally {
-            setIsResetting(false);
+            console.log('🏁 finally - setando isSending para false');
+            setIsSending(false);
         }
     };
 
@@ -86,15 +101,15 @@ export const LoginView: React.FC = () => {
                                 onClick={() => {
                                     setResetSent(false);
                                     setEmailInput('');
-                                    setIsResetting(false);
+                                    setShowResetForm(false);
                                 }}
                                 className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg transition-all text-sm"
                             >
                                 Voltar para Login
                             </button>
                         </div>
-                    ) : isResetting ? (
-                        <form onSubmit={handleResetPassword} className="space-y-5">
+                    ) : showResetForm ? (
+                        <form onSubmit={handleResetPassword} className="space-y-5" noValidate>
                             <h3 className="text-lg font-bold text-white mb-4">Recuperar Senha</h3>
 
                             <div className="text-left group">
@@ -103,12 +118,12 @@ export const LoginView: React.FC = () => {
                                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-400 transition-colors" />
                                     <input
                                         type="email"
-                                        required
-                                        disabled={isResetting}
+                                        disabled={isSending}
                                         className="w-full bg-slate-900/50 border border-slate-700 text-white pl-11 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-600 disabled:opacity-50"
                                         placeholder="seu.nome@afinz.com.br"
                                         value={emailInput}
                                         onChange={e => setEmailInput(e.target.value)}
+                                        autoFocus
                                     />
                                 </div>
                             </div>
@@ -122,10 +137,10 @@ export const LoginView: React.FC = () => {
 
                             <button
                                 type="submit"
-                                disabled={isResetting || !emailInput.trim()}
+                                disabled={isSending || !emailInput.trim()}
                                 className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-slate-600 disabled:to-slate-600 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                {isResetting ? (
+                                {isSending ? (
                                     <>
                                         <Loader2 className="animate-spin w-5 h-5" />
                                         Enviando...
@@ -141,7 +156,7 @@ export const LoginView: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setIsResetting(false);
+                                    setShowResetForm(false);
                                     setEmailInput('');
                                     setError(null);
                                 }}
@@ -213,7 +228,7 @@ export const LoginView: React.FC = () => {
                                     type="button"
                                     onClick={() => {
                                         console.log('Clique em "Esqueci minha senha"');
-                                        setIsResetting(true);
+                                        setShowResetForm(true);
                                     }}
                                     className="flex-1 text-xs text-slate-400 hover:text-blue-400 hover:underline transition-colors py-2"
                                 >
