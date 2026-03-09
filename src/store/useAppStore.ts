@@ -161,18 +161,14 @@ export const useAppStore = create<AppState>()(
             name: 'app-storage', // unique name
             storage: createJSONStorage(() => storage), // use IDB
             partialize: (state) => ({
-                // Select fields to persist
-                frameworkData: state.frameworkData,
-                activities: state.activities,
-                goals: state.goals,
-                journal: state.journal,
-                b2cData: state.b2cData,
-                paidMediaData: state.paidMediaData,
-                budgets: state.budgets,
+                // Select fields to persist (ONLY UI STATE)
+                journal: state.journal, // Ideally this moves to Supabase too (Fase 3)
                 viewSettings: { ...state.viewSettings, abaAtual: 'launch', perspective: 'crm' }, // Reverte para launch e CRM ao iniciar
                 alertConfig: state.alertConfig
             }),
             onRehydrateStorage: () => (state) => {
+                // Hydration logic is mostly irrelevant now that we fetch from DB on mount, 
+                // but keeping it safe for anything that remains.
                 if (state) {
                     // Hydrate Dates for Activities
                     if (state.activities) {

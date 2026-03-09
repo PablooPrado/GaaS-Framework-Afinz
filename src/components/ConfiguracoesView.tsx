@@ -235,9 +235,22 @@ const FileManager: React.FC<{ title: string; slot: string; accept: string }> = (
         setUploading(true);
         setMsg(null);
         try {
+            // 1. Upload to Backup Bucket
             await storageService.uploadFile(slot, file);
+
+            // 2. Parse and Upsert to Database automatically
+            if (slot === 'b2c') {
+                const { data } = await parseB2CCSV(file);
+                await dataService.upsertB2CMetrics(data);
+                setB2CData(data);
+            } else if (slot === 'media') {
+                const data = await parseXLSX(file);
+                await dataService.upsertPaidMedia(data as any);
+                setPaidMediaData(data as any);
+            }
+
             await loadFiles();
-            setMsg({ type: 'success', text: 'Upload realizado com sucesso!' });
+            setMsg({ type: 'success', text: 'Upload realizado e banco atualizado com sucesso!' });
         } catch (e: any) {
             console.error('❌ Erro durante upload:', e);
             setMsg({ type: 'error', text: 'Falha: ' + e.message });
