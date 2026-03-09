@@ -125,43 +125,6 @@ export const DailyAnalysisTab: React.FC = () => {
                 </div>
             </div>
 
-            {/* Weekday Analysis Chart */}
-            <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-                <h3 className="font-bold text-slate-700 mb-6 flex items-center gap-2">
-                    <BarChart2 size={18} className="text-primary" />
-                    Performance por Dia da Semana (Média)
-                </h3>
-                <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={weekdayData}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
-                            <YAxis yAxisId="left" orientation="left" axisLine={false} tickLine={false} tickFormatter={(v) => `R$${v}`} />
-                            <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} />
-                            <Tooltip
-                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                formatter={(val: any, name: any) => {
-                                    if (name === 'CPA Médio') return fmtBRL(val);
-                                    if (name === 'Investimento Médio') return fmtBRL(val);
-                                    return val;
-                                }}
-                            />
-                            <Bar yAxisId="right" dataKey="avgSpend" name="Investimento Médio" fill="#3b82f6" radius={[4, 4, 0, 0]} opacity={0.3} />
-                            <Bar yAxisId="left" dataKey="avgCpa" name="CPA Médio" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={40}>
-                                {weekdayData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.avgCpa > avgCpa * 1.2 ? '#ef4444' : '#10b981'} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-                <div className="mt-4 flex gap-4 text-xs text-slate-500 justify-center">
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-emerald-500"></div> CPA Saudável</div>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-red-500"></div> CPA Alto</div>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-blue-500 opacity-30"></div> Volume de Investimento</div>
-                </div>
-            </div>
-
             {/* Daily Table */}
             <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center">
@@ -231,6 +194,43 @@ export const DailyAnalysisTab: React.FC = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            {/* Weekday Analysis Chart */}
+            <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                <h3 className="font-bold text-slate-700 mb-6 flex items-center gap-2">
+                    <BarChart2 size={18} className="text-primary" />
+                    Performance por Dia da Semana (Média)
+                </h3>
+                <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={weekdayData}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
+                            <YAxis yAxisId="left" orientation="left" axisLine={false} tickLine={false} tickFormatter={(v) => `R$${v}`} />
+                            <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} />
+                            <Tooltip
+                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                formatter={(val: any, name: any) => {
+                                    if (name === 'CPA Médio') return fmtBRL(val);
+                                    if (name === 'Investimento Médio') return fmtBRL(val);
+                                    return val;
+                                }}
+                            />
+                            <Bar yAxisId="right" dataKey="avgSpend" name="Investimento Médio" fill="#3b82f6" radius={[4, 4, 0, 0]} opacity={0.3} />
+                            <Bar yAxisId="left" dataKey="avgCpa" name="CPA Médio" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={40}>
+                                {weekdayData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.avgCpa > avgCpa * 1.2 ? '#ef4444' : '#10b981'} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="mt-4 flex gap-4 text-xs text-slate-500 justify-center">
+                    <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-emerald-500"></div> CPA Saudável</div>
+                    <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-red-500"></div> CPA Alto</div>
+                    <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-blue-500 opacity-30"></div> Volume de Investimento</div>
                 </div>
             </div>
         </div>
