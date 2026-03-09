@@ -21,36 +21,29 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
     const { goals, b2cData } = useAppStore();
     const { startDate, endDate, compareEnabled, setPeriod, setPreset } = usePeriod();
 
-    // Force "This Month" view when entering Launch Planner to ensure charts consistently show full month
     useEffect(() => {
         setPreset('thisMonth');
     }, []);
 
-    // Sync displayDate with endDate (focus on the "target" or "current" end of the range)
     useEffect(() => {
         if (endDate && format(endDate, 'yyyy-MM') !== format(displayDate, 'yyyy-MM')) {
             setDisplayDate(endDate);
         }
     }, [endDate]);
 
-    // Handle month change from Calendar
     const handleMonthChange = (newDate: Date) => {
         setDisplayDate(newDate);
-        // Update global period context to the new month
         setPeriod(startOfMonth(newDate), endOfMonth(newDate), 'custom');
     };
 
-    // Flatten data
     const allActivities = useMemo(() => Object.values(data).flat(), [data]);
 
-    // Filter for Current Period (from Context)
     const currentPeriodActivities = useMemo(() => {
         return allActivities.filter(a =>
             isWithinInterval(a.dataDisparo, { start: startDate, end: endDate })
         );
     }, [allActivities, startDate, endDate]);
 
-    // Filter B2C Data for Current Period
     const currentB2CData = useMemo(() => {
         return b2cData.filter(d => {
             const date = typeof d.data === 'string' ? new Date(d.data + 'T12:00:00') : new Date(d.data);
@@ -58,7 +51,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
         });
     }, [b2cData, startDate, endDate]);
 
-    // Filter for Previous Period (Comparison)
     const previousPeriodActivities = useMemo(() => {
         if (!compareEnabled) return [];
 
@@ -72,10 +64,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
     }, [allActivities, startDate, endDate, compareEnabled]);
 
     return (
-        <div className="flex h-full gap-2 p-2 bg-[#0F172A] overflow-hidden">
-            {/* Left Column: Calendar Summary */}
+        <div className="flex h-full gap-3 p-3 bg-slate-50 overflow-hidden">
             <div className="w-1/3 min-w-[320px] flex flex-col gap-2">
-                <div className="flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+                <div className="flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white">
                     <CalendarSummary
                         data={data}
                         onDayClick={onDayClick}
@@ -84,29 +75,24 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
                     />
                 </div>
 
-                {/* Programar Disparo Button */}
                 <button
                     onClick={onProgramDispatch}
-                    className="w-full py-2 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 font-medium flex items-center justify-center gap-2 transition-colors text-sm"
+                    className="w-full py-2 px-4 bg-cyan-600 hover:bg-cyan-500 border border-cyan-600 rounded-lg text-white font-medium flex items-center justify-center gap-2 transition-colors text-sm shadow-sm"
                 >
                     <Send size={16} />
                     Programar disparo
                 </button>
             </div>
 
-            {/* Right Column: KPIs & Goals Preview */}
             <div className="flex-1 flex flex-col overflow-y-auto pr-1 gap-3">
-                <div className="flex items-center justify-between mb-1">
-                    {/* Perspective Switcher removed by request */}
-                </div>
+                <div className="flex items-center justify-between mb-1" />
 
-                {/* Detailed KPIs Grid */}
                 <div>
-                    <h3 className="text-xs font-bold text-slate-400 uppercase mb-1.5 flex justify-between items-center">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-1.5 flex justify-between items-center">
                         <span>KPIs</span>
                         {compareEnabled && (
-                            <span className="text-[10px] text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full">
-                                Comparando com período anterior
+                            <span className="text-[10px] text-cyan-700 bg-cyan-100 px-2 py-0.5 rounded-full">
+                                Comparando com periodo anterior
                             </span>
                         )}
                     </h3>
@@ -117,9 +103,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
                     />
                 </div>
 
-                {/* Goals Preview (Replacing Funnel) */}
                 <div className="flex-1">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase mb-1.5 flex items-center gap-2">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase mb-1.5 flex items-center gap-2">
                         Metas & Resultados
                     </h3>
                     <LaunchPlannerKPIs

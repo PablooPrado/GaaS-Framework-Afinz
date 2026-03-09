@@ -19,7 +19,6 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
     const showCRM = perspective === 'total' || perspective === 'crm';
 
     const calculateMetrics = (acts: Activity[], b2c: B2CDataRow[] = []) => {
-        // CRM Metrics (from Activities)
         let baseEnviada = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.baseEnviada || 0), 0) : 0;
         let baseEntregue = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.baseEntregue || 0), 0) : 0;
         let propostas = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.propostas || 0), 0) : 0;
@@ -28,36 +27,21 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
         let custoTotal = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.custoTotal || 0), 0) : 0;
         let cartoes = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.cartoes || 0), 0) : 0;
 
-        // B2C Metrics (from b2cData)
-        // Only include B2C data if we are NOT filtering by specific CRM fields (Segment, Partner, Journey, Channel)
-        // because B2C data is pre-aggregated and doesn't support these filters.
         const hasGranularFilters = viewSettings.filtrosGlobais.segmentos.length > 0 ||
             viewSettings.filtrosGlobais.parceiros.length > 0 ||
             viewSettings.filtrosGlobais.jornadas.length > 0 ||
             viewSettings.filtrosGlobais.canais.length > 0;
 
         if (showB2C && b2c.length > 0 && !hasGranularFilters) {
-            // CRM metrics are already calculated above. 
-            // We ADD B2C metrics to them (Combined View) or if CRM filtered out, it starts at 0.
-
-            // Fix: Parse numbers safely
             const b2cPropostas = b2c.reduce((sum, d) => sum + (Number(d.propostas_b2c_total) || 0), 0);
             const b2cEmissoes = b2c.reduce((sum, d) => sum + (Number(d.emissoes_b2c_total) || 0), 0);
 
             propostas += b2cPropostas;
             emissoes += b2cEmissoes;
-            cartoes += b2cEmissoes; // Assuming emissions = cards
-
-            // Align Funnel: B2C often lacks separate 'Approved' step data. 
-            // We infer 'Approved' = 'Emitted' (or 'Proposals' if we wanted pessimistic).
-            // Setting Approved = Emitted allows Taxa Finalização (Issued/Approved) to be ~100% for B2C portion, 
-            // instead of >300% (dividing B2C+CRM Issued by CRM-only Approved).
+            cartoes += b2cEmissoes;
             aprovados += b2cEmissoes;
         }
 
-        // ... rates calculation ...
-
-        // Rates
         const taxaEntrega = baseEnviada > 0 ? (baseEntregue / baseEnviada) * 100 : 0;
         const taxaPropostas = baseEntregue > 0 ? (propostas / baseEntregue) * 100 : 0;
         const taxaAprovacao = propostas > 0 ? (aprovados / propostas) * 100 : 0;
@@ -108,24 +92,24 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
         <div className={`
             relative rounded-lg p-2 flex flex-col justify-between min-h-[55px] transition-all group
             ${highlight
-                ? 'bg-blue-900/20 border border-blue-500/30'
-                : 'bg-slate-900 border border-slate-800 hover:border-slate-700'
+                ? 'bg-cyan-50 border border-cyan-200'
+                : 'bg-white border border-slate-200 hover:border-slate-300'
             }
         `}>
             <div className="flex items-center justify-between mb-0.5">
-                <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
                     {label}
-                    <Info size={12} className="cursor-help text-slate-600 hover:text-blue-400 transition-colors" strokeWidth={2.5} />
+                    <Info size={12} className="cursor-help text-slate-400 hover:text-cyan-600 transition-colors" strokeWidth={2.5} />
                 </div>
                 {variation !== undefined && variation !== 0 && (
-                    <span className={`text-[9px] font-bold ${variation > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {variation > 0 ? '↑' : '↓'} {Math.abs(variation).toFixed(1)}%
+                    <span className={`text-[9px] font-bold ${variation > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {variation > 0 ? '?' : '?'} {Math.abs(variation).toFixed(1)}%
                     </span>
                 )}
             </div>
 
             <div className="flex flex-col">
-                <span className={`text-base font-bold leading-none ${highlight ? 'text-blue-100' : 'text-slate-100'}`}>
+                <span className={`text-base font-bold leading-none ${highlight ? 'text-cyan-800' : 'text-slate-800'}`}>
                     {prefix}
                     {isCurrency
                         ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
@@ -134,11 +118,10 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
                     {suffix}
                 </span>
 
-                {/* Progress bar for percentage metrics */}
                 {suffix === '%' && (
-                    <div className="w-full h-0.5 bg-slate-700/50 rounded-full overflow-hidden mt-1">
+                    <div className="w-full h-0.5 bg-slate-200 rounded-full overflow-hidden mt-1">
                         <div
-                            className={`h-full rounded-full ${highlight ? 'bg-blue-400' : 'bg-slate-500'}`}
+                            className={`h-full rounded-full ${highlight ? 'bg-cyan-500' : 'bg-slate-400'}`}
                             style={{ width: `${Math.min(value, 100)}%` }}
                         />
                     </div>
@@ -157,10 +140,9 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
             <KPICard label="Aprovados" value={currentMetrics.aprovados} variation={variations.aprovados} decimals={0} />
 
             <KPICard label="% Aprovados" value={currentMetrics.taxaAprovacao} suffix="%" variation={variations.taxaAprovacao} />
-            <KPICard label="Emissões" value={currentMetrics.emissoes} variation={variations.emissoes} decimals={0} />
-            <KPICard label="% Finalização" value={currentMetrics.taxaEmissao} suffix="%" variation={variations.taxaEmissao} />
+            <KPICard label="Emissoes" value={currentMetrics.emissoes} variation={variations.emissoes} decimals={0} />
+            <KPICard label="% Finalizacao" value={currentMetrics.taxaEmissao} suffix="%" variation={variations.taxaEmissao} />
 
-            {/* Highlighted Conv. Base */}
             <KPICard
                 label="% Conv. Base"
                 value={currentMetrics.convBase}

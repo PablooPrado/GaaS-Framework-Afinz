@@ -5,7 +5,11 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRangePicker } from './DateRangePicker';
 
-export const PeriodSelector: React.FC = () => {
+interface PeriodSelectorProps {
+    compact?: boolean;
+}
+
+export const PeriodSelector: React.FC<PeriodSelectorProps> = ({ compact = false }) => {
     const { startDate, endDate, setPeriod, compareEnabled, toggleCompare } = usePeriod();
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -35,11 +39,12 @@ export const PeriodSelector: React.FC = () => {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border shadow-sm transition-all ${isOpen
-                    ? 'bg-slate-900 border-white text-white'
-                    : 'bg-slate-900/90 border-slate-700 text-white hover:bg-slate-900'
+                    ? 'bg-cyan-50 border-cyan-300 text-cyan-800'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
             >
-                <CalendarIcon size={16} className="text-slate-400" />
+                <CalendarIcon size={16} className={isOpen ? 'text-cyan-600' : 'text-slate-400'} />
+                {compact && <span className="text-sm font-medium text-slate-600">Periodo</span>}
                 <span className="text-sm font-medium">
                     {format(startDate, "dd MMM, yyyy", { locale: ptBR })} - {format(endDate, "dd MMM, yyyy", { locale: ptBR })}
                 </span>
@@ -48,7 +53,7 @@ export const PeriodSelector: React.FC = () => {
 
             {isOpen && (
                 <div className="absolute top-full left-0 mt-2 z-50">
-                    <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl shadow-black/50 overflow-hidden w-[800px]">
+                    <div className="bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden w-[800px] max-w-[92vw]">
                         <DateRangePicker
                             initialStartDate={startDate}
                             initialEndDate={endDate}

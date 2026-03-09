@@ -12,37 +12,28 @@ interface CalendarSummaryProps {
 }
 
 export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayClick, displayDate, onMonthChange }) => {
-    // Generate calendar grid days for the displayDate month (Fixed 6 weeks / 42 days)
     const calendarDays = useMemo(() => {
         const monthStart = startOfMonth(displayDate);
         const start = startOfWeek(monthStart);
-
-        // Always generate 42 days (6 rows x 7 cols) to maintain consistent layout
         return Array.from({ length: 42 }, (_, i) => addDays(start, i));
     }, [displayDate]);
 
-    // Update display month AND update the period filter
     const handleMonthChange = (newDate: Date) => {
         onMonthChange(newDate);
     };
 
-    // Flatten data
     const allActivities = useMemo(() => Object.values(data).flat(), [data]);
 
     const getDayMetrics = (day: Date) => {
         const activities = allActivities.filter(a => isSameDay(a.dataDisparo, day));
         const count = activities.length;
-
-        // Apenas o Rascunho fica em amarelo conforme pedido
         const hasDraft = activities.some(a => a.status === 'Rascunho');
 
-        // Group by BU to determine colors (Agendados agora contam para a cor da BU aqui)
         const byBU = activities.reduce((acc, curr) => {
             acc[curr.bu] = (acc[curr.bu] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);
 
-        // Calculate by KPI (cartões/emissões) to find dominant BU
         const byBUCartoes = activities.reduce((acc, curr) => {
             acc[curr.bu] = (acc[curr.bu] || 0) + (curr.kpis.cartoes || 0);
             return acc;
@@ -54,23 +45,21 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
     const getDominantBUColor = (byBUCartoes: Record<string, number>, byBU: Record<string, number>) => {
         let dominantBU: string | null = null;
 
-        // Priority 1: Volume of Cards (Results)
         const totalCards = Object.values(byBUCartoes).reduce((a, b) => a + b, 0);
 
         if (totalCards > 0) {
             dominantBU = Object.entries(byBUCartoes).sort((a, b) => b[1] - a[1])[0][0];
         } else if (Object.keys(byBU).length > 0) {
-            // Priority 2: Count of Activities (Scheduled/Planned)
             dominantBU = Object.entries(byBU).sort((a, b) => b[1] - a[1])[0][0];
         }
 
-        if (!dominantBU) return 'bg-slate-800/30 border-slate-700/50';
+        if (!dominantBU) return 'bg-slate-50 border-slate-200 hover:bg-slate-100';
 
         switch (dominantBU?.toUpperCase()) {
-            case 'B2C': return 'bg-blue-900/40 border-blue-700/50 hover:bg-blue-900/60 hover:border-blue-600/70';
-            case 'B2B2C': return 'bg-emerald-900/40 border-emerald-700/50 hover:bg-emerald-900/60 hover:border-emerald-600/70';
-            case 'PLURIX': return 'bg-purple-900/40 border-purple-700/50 hover:bg-purple-900/60 hover:border-purple-600/70';
-            default: return 'bg-slate-800/30 border-slate-700/50';
+            case 'B2C': return 'bg-blue-50 border-blue-200 hover:bg-blue-100';
+            case 'B2B2C': return 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100';
+            case 'PLURIX': return 'bg-violet-50 border-violet-200 hover:bg-violet-100';
+            default: return 'bg-slate-50 border-slate-200 hover:bg-slate-100';
         }
     };
 
@@ -78,48 +67,45 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
         switch (bu?.toUpperCase()) {
             case 'B2C': return 'bg-blue-600 hover:bg-blue-500';
             case 'B2B2C': return 'bg-emerald-600 hover:bg-emerald-500';
-            case 'PLURIX': return 'bg-purple-600 hover:bg-purple-500';
-            default: return 'bg-slate-600 hover:bg-slate-500';
+            case 'PLURIX': return 'bg-violet-600 hover:bg-violet-500';
+            default: return 'bg-slate-500 hover:bg-slate-400';
         }
     };
 
     const isWeekend = (day: Date) => {
         const dayOfWeek = getDay(day);
-        return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+        return dayOfWeek === 0 || dayOfWeek === 6;
     };
 
     return (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 h-full flex flex-col">
-            {/* Header com navegação */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 h-full flex flex-col">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => handleMonthChange(subMonths(displayDate, 1))}
-                        className="p-1.5 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-white"
-                        title="Mês anterior"
+                        className="p-1.5 hover:bg-slate-100 rounded-lg transition text-slate-500 hover:text-slate-700"
+                        title="Mes anterior"
                     >
                         <ChevronLeft size={18} />
                     </button>
-                    <h2 className="text-lg font-bold text-white uppercase min-w-[200px] text-center">
+                    <h2 className="text-lg font-bold text-slate-800 uppercase min-w-[200px] text-center">
                         {format(displayDate, 'MMMM yyyy', { locale: ptBR })}
                     </h2>
                     <button
                         onClick={() => handleMonthChange(addMonths(displayDate, 1))}
-                        className="p-1.5 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-white"
-                        title="Próximo mês"
+                        className="p-1.5 hover:bg-slate-100 rounded-lg transition text-slate-500 hover:text-slate-700"
+                        title="Proximo mes"
                     >
                         <ChevronRight size={18} />
                     </button>
                 </div>
-
             </div>
 
-            {/* Dias da semana */}
             <div className="grid grid-cols-7 mb-2">
                 {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((day, i) => (
                     <div
                         key={i}
-                        className={`text-center text-xs font-semibold py-2 ${i === 0 || i === 6 ? 'text-blue-400' : 'text-slate-500'
+                        className={`text-center text-xs font-semibold py-2 ${i === 0 || i === 6 ? 'text-cyan-600' : 'text-slate-400'
                             }`}
                     >
                         {day}
@@ -127,7 +113,6 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
                 ))}
             </div>
 
-            {/* Grid de dias */}
             <div className="flex-1 overflow-y-auto flex justify-center">
                 <div className="grid grid-cols-7 gap-1 w-full max-w-[560px]">
                     {calendarDays.map((day) => {
@@ -139,16 +124,13 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
                         const buEntries = Object.entries(byBU).sort((a, b) => b[1] - a[1]);
                         const dominantBUColor = getDominantBUColor(byBUCartoes, byBU);
 
-                        // Lógica de cores conforme pedido:
-                        // 1. Rascunho -> Amarelado (Prioridade visual para destaque)
-                        // 2. Agendado / Realizado -> Cor da BU
                         const dayStyle = hasDraft
-                            ? 'bg-amber-900/40 border-amber-600/50 hover:bg-amber-800/60 hover:border-amber-500/70'
+                            ? 'bg-amber-50 border-amber-300 hover:bg-amber-100'
                             : isCurrentMonth
                                 ? weekend
-                                    ? 'bg-blue-950/30 border-blue-800/40 hover:bg-blue-950/50 hover:border-blue-700/60'
+                                    ? 'bg-cyan-50 border-cyan-200 hover:bg-cyan-100'
                                     : dominantBUColor
-                                : 'bg-slate-900/20 border-slate-800/30 opacity-20';
+                                : 'bg-slate-50 border-slate-100 opacity-50';
 
                         return (
                             <div
@@ -157,15 +139,15 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
                                 className={`
                                 relative p-1 rounded-md border transition-all cursor-pointer aspect-square overflow-hidden group
                                 ${dayStyle}
-                                ${isToday ? 'ring-1 ring-blue-400 ring-offset-1 ring-offset-slate-900' : ''}
+                                ${isToday ? 'ring-1 ring-cyan-500 ring-offset-1 ring-offset-white' : ''}
                             `}
                             >
                                 <div className="absolute top-1 left-0 right-0 flex justify-center">
                                     <span className={`text-[10px] font-semibold ${isToday
-                                        ? 'text-blue-300'
+                                        ? 'text-cyan-700'
                                         : weekend
-                                            ? 'text-blue-400'
-                                            : 'text-slate-300'
+                                            ? 'text-cyan-600'
+                                            : 'text-slate-600'
                                         }`}>
                                         {format(day, 'd')}
                                     </span>

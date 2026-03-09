@@ -23,7 +23,6 @@ import { useBU } from './contexts/BUContext';
 import { format } from 'date-fns';
 import { MainLayout } from './components/layout/MainLayout';
 import { LaunchPlanner } from './components/launch-planner/LaunchPlanner';
-import { PageHeader } from './components/layout/PageHeader';
 import PaidMediaAfinzApp from './modules/paid-media-afinz/PaidMediaAfinzApp';
 import { AnimatePresence } from 'framer-motion';
 import { PageTransition } from './components/layout/PageTransition';
@@ -33,7 +32,6 @@ import { useAuth } from './context/AuthContext';
 function App() {
   const { user, loading: authLoading } = useAuth();
   const [urlHash, setUrlHash] = useState(window.location.hash);
-  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -121,21 +119,6 @@ function App() {
 
   const hasData = Object.keys(data).length > 0;
 
-  const getPageTitle = (tab: string) => {
-    switch (tab) {
-      case 'launch': return 'Launch Planner';
-      case 'jornada': return 'Jornada & Disparos';
-      case 'resultados': return 'Resultados';
-      case 'orientador': return 'Orientador';
-      case 'framework': return 'Explorador de Disparos';
-      case 'explorador': return 'Explorador de Disparos';
-      case 'diario': return 'Diario de Bordo';
-      case 'configuracoes': return 'Configuracoes';
-      case 'midia-paga': return 'Media Analytics';
-      default: return 'Dashboard';
-    }
-  };
-
   if (authLoading) {
     return <div className="h-screen w-full bg-slate-50 text-slate-500 flex items-center justify-center">Carregando...</div>;
   }
@@ -156,36 +139,23 @@ function App() {
   return (
     <MainLayout>
       {hasData && (
-        <div
-          className="sticky top-0 z-30 bg-white shadow-sm border-b border-slate-200"
-          onMouseEnter={() => setIsHeaderHovered(true)}
-          onMouseLeave={() => setIsHeaderHovered(false)}
-        >
-          <PageHeader title={getPageTitle(activeTab)} />
-          <div
-            className={`
-              overflow-hidden transform-gpu origin-top border-t border-slate-100 bg-white
-              transition-[max-height,opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
-              ${isHeaderHovered ? 'max-h-40 translate-y-0 opacity-100' : 'max-h-0 -translate-y-2 opacity-0 pointer-events-none'}
-            `}
-          >
-            <div className="px-6 py-3">
-              <InlineFilterBar
-                availableCanais={availableCanais}
-                availableJornadas={availableJornadas}
-                availableSegmentos={availableSegmentos}
-                availableParceiros={availableParceiros}
-                countByCanal={countByCanal}
-                countByJornada={countByJornada}
-                countBySegmento={countBySegmento}
-                countByParceiro={countByParceiro}
-              />
-            </div>
+        <div className="sticky top-0 z-30 bg-white shadow-sm border-b border-slate-200">
+          <div className="px-6 py-3">
+            <InlineFilterBar
+              availableCanais={availableCanais}
+              availableJornadas={availableJornadas}
+              availableSegmentos={availableSegmentos}
+              availableParceiros={availableParceiros}
+              countByCanal={countByCanal}
+              countByJornada={countByJornada}
+              countBySegmento={countBySegmento}
+              countByParceiro={countByParceiro}
+            />
           </div>
         </div>
       )}
 
-      <div className="flex-1 pb-10" onMouseEnter={() => setIsHeaderHovered(false)}>
+      <div className="flex-1 pb-10">
         {loading && !hasData && (
           <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
             <div className="text-center">

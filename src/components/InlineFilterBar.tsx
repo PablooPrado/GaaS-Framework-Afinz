@@ -2,6 +2,7 @@ import React from 'react';
 import { MessageCircle, Map, Users, HeartHandshake, ChevronDown, Check, X } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { FilterState } from '../types/framework';
+import { PeriodSelector } from './period-selector/PeriodSelector';
 
 interface InlineFilterBarProps {
     availableCanais?: string[];
@@ -141,6 +142,7 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
 
     return (
         <div className="flex items-center gap-2">
+            <PeriodSelector compact />
             <FilterDropdown
                 title="Canais"
                 icon={MessageCircle}
