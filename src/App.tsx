@@ -32,6 +32,7 @@ import { useAuth } from './context/AuthContext';
 function App() {
   const { user, loading: authLoading } = useAuth();
   const [urlHash, setUrlHash] = useState(window.location.hash);
+  const [isFilterDropOpen, setIsFilterDropOpen] = useState(false);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -139,18 +140,33 @@ function App() {
   return (
     <MainLayout>
       {hasData && (
-        <div className="sticky top-0 z-30 bg-white shadow-sm border-b border-slate-200">
-          <div className="px-6 py-3">
-            <InlineFilterBar
-              availableCanais={availableCanais}
-              availableJornadas={availableJornadas}
-              availableSegmentos={availableSegmentos}
-              availableParceiros={availableParceiros}
-              countByCanal={countByCanal}
-              countByJornada={countByJornada}
-              countBySegmento={countBySegmento}
-              countByParceiro={countByParceiro}
-            />
+        <div
+          className="sticky top-0 z-30"
+          onMouseEnter={() => setIsFilterDropOpen(true)}
+          onMouseLeave={() => setIsFilterDropOpen(false)}
+        >
+          <div
+            className={`
+              bg-white border-x border-b border-slate-200 shadow-sm transition-[max-height,opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+              ${isFilterDropOpen ? 'max-h-40 opacity-100 translate-y-0 overflow-visible' : 'max-h-0 opacity-0 -translate-y-2 overflow-hidden'}
+            `}
+          >
+            <div className="px-6 py-3">
+              <InlineFilterBar
+                availableCanais={availableCanais}
+                availableJornadas={availableJornadas}
+                availableSegmentos={availableSegmentos}
+                availableParceiros={availableParceiros}
+                countByCanal={countByCanal}
+                countByJornada={countByJornada}
+                countBySegmento={countBySegmento}
+                countByParceiro={countByParceiro}
+              />
+            </div>
+          </div>
+
+          <div className="h-2 bg-gradient-to-b from-slate-200/90 to-transparent">
+            <div className="mx-auto h-full w-24 rounded-b-full bg-slate-200/70" />
           </div>
         </div>
       )}
