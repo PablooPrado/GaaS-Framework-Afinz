@@ -52,8 +52,8 @@ export const AfinzLogo: React.FC<AfinzLogoProps> = ({ className = '', height = 3
                         position: 'absolute',
                         left: '-0.04em',
                         right: '-0.04em',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
+                        // Optical center of lowercase "z" in this type treatment.
+                        top: '0.62em',
                         height: '0.12em',
                         backgroundColor: '#00C6CC',
                         borderRadius: '0.02em',

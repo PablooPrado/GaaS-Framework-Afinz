@@ -7,28 +7,28 @@ import { subDays, format, startOfMonth, endOfDay } from 'date-fns';
 const channelChipClass = (channel: 'meta' | 'google', active: boolean): string => {
     if (channel === 'meta') {
         return active
-            ? 'bg-blue-50 border-blue-400 text-blue-700 shadow-sm'
-            : 'bg-white border-blue-200/70 text-blue-600 hover:border-blue-300';
+            ? 'bg-blue-50/40 border-blue-300/70 text-slate-700 shadow-sm'
+            : 'bg-white border-slate-200 text-slate-500 hover:border-blue-200/70';
     }
     return active
-        ? 'bg-emerald-50 border-emerald-400 text-emerald-700 shadow-sm'
-        : 'bg-white border-emerald-200/70 text-emerald-600 hover:border-emerald-300';
+        ? 'bg-emerald-50/40 border-emerald-300/70 text-slate-700 shadow-sm'
+        : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200/70';
 };
 
 const objectiveChipClass = (objective: 'marca' | 'b2c' | 'plurix', active: boolean): string => {
     if (objective === 'marca') {
         return active
-            ? 'bg-fuchsia-50 border-fuchsia-400 text-fuchsia-700 shadow-sm'
-            : 'bg-white border-fuchsia-200/70 text-fuchsia-600 hover:border-fuchsia-300';
+            ? 'bg-violet-50/40 border-violet-300/70 text-slate-700 shadow-sm'
+            : 'bg-white border-slate-200 text-slate-500 hover:border-violet-200/70';
     }
     if (objective === 'b2c') {
         return active
-            ? 'bg-orange-50 border-orange-400 text-orange-700 shadow-sm'
-            : 'bg-white border-orange-200/70 text-orange-600 hover:border-orange-300';
+            ? 'bg-orange-50/40 border-orange-300/70 text-slate-700 shadow-sm'
+            : 'bg-white border-slate-200 text-slate-500 hover:border-orange-200/70';
     }
     return active
-        ? 'bg-violet-50 border-violet-400 text-violet-700 shadow-sm'
-        : 'bg-white border-violet-200/70 text-violet-600 hover:border-violet-300';
+        ? 'bg-cyan-50/40 border-cyan-300/70 text-slate-700 shadow-sm'
+        : 'bg-white border-slate-200 text-slate-500 hover:border-cyan-200/70';
 };
 
 export const FilterBar: React.FC = () => {
