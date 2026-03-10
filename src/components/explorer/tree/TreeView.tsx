@@ -11,6 +11,7 @@ interface TreeViewProps {
   onKeyDown: (e: React.KeyboardEvent, nodeId: string) => void;
   onExpandAll: () => void;
   onCollapseAll: () => void;
+  onResetComparison?: () => void;
 }
 
 export const TreeView: React.FC<TreeViewProps> = ({
@@ -20,6 +21,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
   onKeyDown,
   onExpandAll,
   onCollapseAll,
+  onResetComparison,
 }) => {
   const { expandedNodeIds, selectedNodeIds } = useExplorerStore();
   const isAnyExpanded = expandedNodeIds.length > 0;
@@ -36,6 +38,15 @@ export const TreeView: React.FC<TreeViewProps> = ({
     <div role="tree" className="flex flex-col gap-0">
       {/* Expand/Collapse all */}
       <div className="flex items-center justify-end px-2 pb-1 gap-1">
+        {onResetComparison && (
+          <button
+            onClick={onResetComparison}
+            className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 transition-colors px-1 py-0.5 rounded"
+            title="Limpar foco da comparação"
+          >
+            <span>Limpar</span>
+          </button>
+        )}
         <button
           onClick={isAnyExpanded ? onCollapseAll : onExpandAll}
           className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors px-1 py-0.5 rounded"

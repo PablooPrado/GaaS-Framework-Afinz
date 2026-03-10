@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Loader2 } from 'lucide-react';
@@ -12,7 +12,7 @@ import { formatDateKey, parseDate } from '../../utils/formatters';
 import { useExplorerStore } from '../../store/explorerStore';
 import { useTreeData } from '../../hooks/explorer/useTreeData';
 import { useTreeNavigation } from '../../hooks/explorer/useTreeNavigation';
-import { useComparisonData } from '../../hooks/explorer/useComparisonData';
+import { explorerFocus, useComparisonData } from '../../hooks/explorer/useComparisonData';
 import { useDetailsPaneData } from '../../hooks/explorer/useDetailsPaneData';
 import { useExplorerSearch } from '../../hooks/explorer/useExplorerSearch';
 
@@ -26,11 +26,9 @@ interface DisparoExplorerProps {
 }
 
 export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFramework }) => {
-  // ── Dados ──────────────────────────────────────────────────────────────────
-  // Usa as atividades já carregadas no store global; faz fetch só se vazio
   const storeActivitiesRaw = useAppStore((state) => state.activities);
   const storeActivities = React.useMemo(() => {
-    return storeActivitiesRaw.map(a => {
+    return storeActivitiesRaw.map((a) => {
       let dateStr = '';
       try {
         if (a.dataDisparo) {
@@ -44,27 +42,23 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
           if (parsed && !isNaN(parsed.getTime())) {
             dateStr = formatDateKey(parsed);
           } else if (typeof rawDate === 'string') {
-            // Se falhou todos os parses estruturados, tentamos uma limpeza final na string
-            // Esperamos que retorne ou YYYY-MM-DD ou DD-MM-YYYY, se for DD no ínicio arrumamos
             let cleanStr = rawDate.split(' ')[0].replace(/\//g, '-');
             const parts = cleanStr.split('-');
             if (parts.length === 3) {
-              // Se primeiro valor for dia (ex: 15-03-2026) inverte para YYYY-MM-DD. 
-              // Assumindo que anos sempre tem 4 digitos
               if (parts[0].length <= 2 && parts[2].length === 4) {
                 dateStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
               } else {
-                dateStr = cleanStr; // Se já começa com ano grande, assume ok
+                dateStr = cleanStr;
               }
             } else {
               dateStr = cleanStr.substring(0, 10);
             }
           }
         }
-      } catch (e) {
-        console.warn("Falha no parse da data:", a.id, e);
-        dateStr = '2000-01-01'; // Evita strings indefinidas
+      } catch {
+        dateStr = '2000-01-01';
       }
+
       return {
         id: a.id,
         ...a.raw,
@@ -76,12 +70,13 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
       } as unknown as ActivityRow;
     });
   }, [storeActivitiesRaw]);
+
   const [fetchedActivities, setFetchedActivities] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (storeActivities.length > 0) return; // store já tem dados, não busca novamente
+    if (storeActivities.length > 0) return;
     let cancelled = false;
     setLoading(true);
     activityService.getAllActivities()
@@ -93,39 +88,35 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
 
   const activities: ActivityRow[] = storeActivities.length > 0 ? storeActivities : fetchedActivities;
 
-  // ── Período global ────────────────────────────────────────────────────────
-  // Lê do PeriodContext — o mesmo date picker visível no topo da página
   const { startDate, endDate } = usePeriod();
   const periodInicio = format(startDate, 'yyyy-MM-dd');
   const periodFim = format(endDate, 'yyyy-MM-dd');
 
-  // ── Store do Explorer (navegação, seleção, busca) ─────────────────────────
   const {
     filters,
     metric,
     searchQuery,
     selectedNodeIds,
+    comparisonFocusNodeId,
     detailsPaneNodeId,
     setFilters,
     setMetric,
     setSearchQuery,
+    setSelectedNodeIds,
+    setComparisonFocusNode,
+    resetComparisonFocus,
     deselectAll,
     setDetailsPaneNode,
   } = useExplorerStore();
 
-  // Sincroniza o período do explorerStore com o PeriodContext global
   useEffect(() => {
     setFilters({ periodo: { inicio: periodInicio, fim: periodFim } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [periodInicio, periodFim]);
 
-  // Build tree
-  const { rootNodes, nodeMap, allNodeIds } = useTreeData({ activities, filters });
+  const { rootNodes, nodeMap } = useTreeData({ activities, filters });
 
-  // Navigation
   const {
-    expandedNodeIds,
-    selectedNodeIds: _sel,
     handleToggle,
     handleSelect,
     handleExpandAll,
@@ -134,16 +125,22 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
     handleKeyDown,
   } = useTreeNavigation(rootNodes, nodeMap);
 
-  // Comparison data
-  const { barChartData, heatmapData, weekLabels } = useComparisonData({
+  const {
+    barChartData,
+    distributionLevel,
+    drillPath,
+    dailySimpleData,
+    dailyStackedData,
+    stackedKeys
+  } = useComparisonData({
     selectedNodeIds,
     nodeMap,
     metric,
     allActivities: activities,
-    periodStart: filters.periodo.inicio,
+    filters,
+    comparisonFocusNodeId,
   });
 
-  // Details pane
   const detailsData = useDetailsPaneData(
     detailsPaneNodeId,
     nodeMap,
@@ -151,10 +148,41 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
     filters.periodo
   );
 
-  // Search
   const searchResults = useExplorerSearch(nodeMap, searchQuery);
 
-  // "Ver todos disparos" handler
+  const toFocusFromNode = React.useCallback((nodeId: string): string | null => {
+    const node = nodeMap.get(nodeId);
+    if (!node) return null;
+    if (node.type === 'bu') {
+      return explorerFocus.build({ bu: node.label });
+    }
+    if (node.type === 'segmento') {
+      const parentBu = node.parentId ? nodeMap.get(node.parentId) : null;
+      if (!parentBu) return null;
+      return explorerFocus.build({ bu: parentBu.label, segmento: node.label });
+    }
+    if (node.type === 'canal') {
+      const parentSegmento = node.parentId ? nodeMap.get(node.parentId) : null;
+      const parentBu = parentSegmento?.parentId ? nodeMap.get(parentSegmento.parentId) : null;
+      if (!parentBu || !parentSegmento) return null;
+      return explorerFocus.build({ bu: parentBu.label, segmento: parentSegmento.label, canal: node.label });
+    }
+    return null;
+  }, [nodeMap]);
+
+  const allBuNodeIds = rootNodes.map((n) => n.id);
+  const allBusSelected = allBuNodeIds.length > 0 && allBuNodeIds.every(id => selectedNodeIds.includes(id));
+
+  const handleResetComparison = React.useCallback(() => {
+    if (allBusSelected) {
+      setSelectedNodeIds([]);
+    } else {
+      setSelectedNodeIds(allBuNodeIds);
+    }
+    resetComparisonFocus();
+    setDetailsPaneNode(null);
+  }, [allBusSelected, allBuNodeIds, setSelectedNodeIds, resetComparisonFocus, setDetailsPaneNode]);
+
   const handleViewAll = () => {
     if (!detailsData || !onNavigateToFramework) return;
     const { node } = detailsData;
@@ -189,65 +217,69 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
 
   return (
     <div className="flex h-full gap-4 p-4 overflow-hidden">
-      {/* LEFT — Tree Panel */}
       <aside className="w-72 shrink-0 flex flex-col gap-3 overflow-hidden">
-
-        {/* Period label — lido do PeriodContext global */}
         <div className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-sm">
           <span className="text-xs font-semibold text-slate-600">
-            {format(startDate, 'dd MMM', { locale: ptBR })} – {format(endDate, 'dd MMM yyyy', { locale: ptBR })}
+            {format(startDate, 'dd MMM', { locale: ptBR })} - {format(endDate, 'dd MMM yyyy', { locale: ptBR })}
           </span>
           <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{activities.length.toLocaleString('pt-BR')} disparos</span>
         </div>
 
-        {/* Search */}
         <QuickSearch
           query={searchQuery}
           results={searchResults}
           onChange={setSearchQuery}
           onSelect={(nodeId) => {
             handleExpandToNode(nodeId);
+            const focusId = toFocusFromNode(nodeId);
+            setComparisonFocusNode(focusId);
             setSearchQuery('');
           }}
           onClear={() => setSearchQuery('')}
         />
 
-        {/* Tree */}
         <div className="flex-1 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-sm p-2 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
           <TreeView
             rootNodes={rootNodes}
             onToggle={handleToggle}
-            onSelect={handleSelect}
+            onSelect={(nodeId, multiSelect) => {
+              handleSelect(nodeId, multiSelect);
+              const focusId = toFocusFromNode(nodeId);
+              setComparisonFocusNode(focusId);
+              setDetailsPaneNode(nodeId);
+            }}
             onKeyDown={handleKeyDown}
             onExpandAll={handleExpandAll}
             onCollapseAll={handleCollapseAll}
+            onResetComparison={handleResetComparison}
           />
         </div>
 
-        {/* Stats footer — mostra contagem no período ativo */}
         <div className="text-[11px] font-medium text-slate-500 text-center uppercase tracking-widest mt-1">
-          {rootNodes.length} BUs · {rootNodes.reduce((s, n) => s + n.count, 0).toLocaleString('pt-BR')} disparos no período
+          {rootNodes.length} BUs - {rootNodes.reduce((s, n) => s + n.count, 0).toLocaleString('pt-BR')} disparos no periodo
         </div>
       </aside>
 
-      {/* CENTER + RIGHT — Main Content */}
       <div className="flex-1 min-w-0 flex flex-col gap-4 overflow-hidden bg-slate-50/50 rounded-2xl p-4 border border-slate-200/60 shadow-inner">
-        {/* Top: Comparison Panel */}
-        <div className="flex-1 min-h-0 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-sm p-4 relative">
+        <div className="h-[60%] min-h-[320px] overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-sm p-4 relative">
           <ComparisonPanel
             barChartData={barChartData}
-            heatmapData={heatmapData}
-            weekLabels={weekLabels}
+            distributionLevel={distributionLevel}
+            drillPath={drillPath}
+            dailySimpleData={dailySimpleData}
+            dailyStackedData={dailyStackedData}
+            stackedKeys={stackedKeys}
             metric={metric}
             onMetricChange={setMetric}
-            onBarClick={(nodeId) => {
-              handleExpandToNode(nodeId);
+            onBarClick={(focusId) => {
+              if (!focusId) return;
+              setComparisonFocusNode(focusId);
+              setDetailsPaneNode(null);
             }}
           />
         </div>
 
-        {/* Bottom: Details Pane */}
-        <div className="h-72 shrink-0">
+        <div className="h-[40%] min-h-[280px] shrink-0">
           <DetailsPane
             data={detailsData}
             onClose={() => { deselectAll(); setDetailsPaneNode(null); }}

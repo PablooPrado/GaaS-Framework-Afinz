@@ -21,6 +21,7 @@ interface ExplorerStore {
   // UI State
   expandedNodeIds: string[];
   selectedNodeIds: string[];
+  comparisonFocusNodeId: string | null;
   detailsPaneNodeId: string | null;
   metric: ExplorerMetric;
 
@@ -37,7 +38,10 @@ interface ExplorerStore {
   expandToNode: (nodeId: string, nodeMap: Map<string, TreeNode>) => void;
 
   selectNode: (nodeId: string, multiSelect: boolean) => void;
+  setSelectedNodeIds: (nodeIds: string[]) => void;
   deselectAll: () => void;
+  setComparisonFocusNode: (nodeId: string | null) => void;
+  resetComparisonFocus: () => void;
 
   setDetailsPaneNode: (nodeId: string | null) => void;
   setMetric: (metric: ExplorerMetric) => void;
@@ -50,6 +54,7 @@ export const useExplorerStore = create<ExplorerStore>()(
     (set) => ({
       expandedNodeIds: [],
       selectedNodeIds: [],
+      comparisonFocusNodeId: null,
       detailsPaneNodeId: null,
       metric: 'cartoes',
       filters: defaultFilters,
@@ -102,8 +107,17 @@ export const useExplorerStore = create<ExplorerStore>()(
           };
         }),
 
+      setSelectedNodeIds: (nodeIds) =>
+        set({ selectedNodeIds: nodeIds }),
+
       deselectAll: () =>
-        set({ selectedNodeIds: [], detailsPaneNodeId: null }),
+        set({ selectedNodeIds: [], detailsPaneNodeId: null, comparisonFocusNodeId: null }),
+
+      setComparisonFocusNode: (nodeId) =>
+        set({ comparisonFocusNodeId: nodeId }),
+
+      resetComparisonFocus: () =>
+        set({ comparisonFocusNodeId: null }),
 
       setDetailsPaneNode: (nodeId) =>
         set({ detailsPaneNodeId: nodeId }),
@@ -123,6 +137,7 @@ export const useExplorerStore = create<ExplorerStore>()(
       name: 'gaas-explorer-state',
       partialize: (state) => ({
         expandedNodeIds: state.expandedNodeIds,
+        comparisonFocusNodeId: state.comparisonFocusNodeId,
         metric: state.metric,
         filters: state.filters,
       }),

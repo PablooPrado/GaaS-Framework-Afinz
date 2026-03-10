@@ -7,6 +7,8 @@ import { ActivityRow } from './activity';
 export type NodeType = 'bu' | 'segmento' | 'jornada' | 'canal';
 
 export type ExplorerMetric = 'volume' | 'cartoes' | 'cac' | 'custo';
+export type DistributionLevel = 'bu' | 'segmento' | 'canal' | 'disparo';
+export type TemporalViewMode = 'simple' | 'stacked';
 
 export interface NodeMetrics {
   baseTotal: number;
@@ -49,6 +51,7 @@ export interface BarChartDataPoint {
   color: string;
   count: number;
   nodeType: NodeType;
+  nextFocusId?: string | null;
 }
 
 export interface HeatmapCell {
@@ -59,6 +62,13 @@ export interface HeatmapCell {
   value: number;
   intensity: number;   // 0-1 for gradient
   count: number;
+}
+
+export interface DailyTowerPoint {
+  date: string;        // YYYY-MM-DD
+  label: string;       // dd/MM
+  total: number;
+  [key: string]: string | number;
 }
 
 export interface SearchResult {

@@ -15,7 +15,7 @@ import { formatMetricValue } from '../../../hooks/explorer/useComparisonData';
 interface SegmentBarChartProps {
   data: BarChartDataPoint[];
   metric: ExplorerMetric;
-  onBarClick: (nodeId: string) => void;
+  onBarClick: (focusId: string | null) => void;
 }
 
 const CustomTooltip = ({ active, payload, metric }: { active?: boolean; payload?: any[]; metric: ExplorerMetric }) => {
@@ -49,7 +49,7 @@ export const SegmentBarChart: React.FC<SegmentBarChartProps> = ({ data, metric, 
         margin={{ top: 4, right: 60, left: 8, bottom: 4 }}
         onClick={(e: any) => {
           if (e?.activePayload?.[0]) {
-            onBarClick((e.activePayload[0].payload as BarChartDataPoint).id);
+            onBarClick((e.activePayload[0].payload as BarChartDataPoint).nextFocusId ?? null);
           }
         }}
       >

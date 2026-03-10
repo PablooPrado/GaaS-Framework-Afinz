@@ -51,8 +51,8 @@ export const NAV_CONFIG: NavGroup[] = [
     {
         title: 'FRAMEWORK',
         items: [
-            { id: 'explorador', label: 'Explorador', icon: FolderTree },
-            { id: 'framework', label: 'Explorador de Disparos', icon: LayoutDashboard },
+            { id: 'explorador', label: 'Explorador Avançado', icon: FolderTree },
+            { id: 'framework', label: 'Framework', icon: LayoutDashboard },
             { id: 'configuracoes', label: 'Configurações', icon: Settings2 },
         ]
     }
