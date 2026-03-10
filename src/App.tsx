@@ -35,8 +35,8 @@ function App() {
   const [urlHash, setUrlHash] = useState(window.location.hash);
   const [isFilterDropOpen, setIsFilterDropOpen] = useState(false);
   const [isFilterMenuLocked, setIsFilterMenuLocked] = useState(false);
-  const [isFilterAreaHovered, setIsFilterAreaHovered] = useState(false);
   const filterCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filterShellRef = useRef<HTMLDivElement | null>(null);
 
   const openFilterDrop = () => {
     if (filterCloseTimeoutRef.current) {
@@ -44,11 +44,9 @@ function App() {
       filterCloseTimeoutRef.current = null;
     }
     setIsFilterDropOpen(true);
-    setIsFilterAreaHovered(true);
   };
 
   const scheduleCloseFilterDrop = () => {
-    setIsFilterAreaHovered(false);
     if (isFilterMenuLocked) return;
     if (filterCloseTimeoutRef.current) {
       clearTimeout(filterCloseTimeoutRef.current);
@@ -60,14 +58,25 @@ function App() {
   };
 
   useEffect(() => {
-    if (!isFilterMenuLocked && !isFilterAreaHovered) {
-      scheduleCloseFilterDrop();
-    } else if (isFilterMenuLocked && filterCloseTimeoutRef.current) {
+    if (isFilterMenuLocked && filterCloseTimeoutRef.current) {
       clearTimeout(filterCloseTimeoutRef.current);
       filterCloseTimeoutRef.current = null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isFilterMenuLocked, isFilterAreaHovered]);
+  }, [isFilterMenuLocked]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!isFilterDropOpen) return;
+      if (!filterShellRef.current) return;
+      if (filterShellRef.current.contains(event.target as Node)) return;
+      scheduleCloseFilterDrop();
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFilterDropOpen, isFilterMenuLocked]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -193,7 +202,7 @@ function App() {
       onHeaderMouseEnter={openFilterDrop}
     >
       {hasData && (
-        <div className="sticky top-0 z-30">
+        <div className="sticky top-0 z-30" ref={filterShellRef}>
           <div
             className={`
               bg-white border-b border-slate-200 shadow-sm transform-gpu origin-top
@@ -202,7 +211,6 @@ function App() {
             `}
             onMouseEnter={openFilterDrop}
             onMouseMove={openFilterDrop}
-            onMouseLeave={scheduleCloseFilterDrop}
           >
             <div className="px-6 py-3">
               <InlineFilterBar
@@ -226,7 +234,6 @@ function App() {
               aria-label="Area de ativacao dos filtros"
               className="absolute top-0 left-0 right-0 h-12 bg-transparent cursor-default z-10"
               onMouseEnter={openFilterDrop}
-              onMouseLeave={scheduleCloseFilterDrop}
               onFocus={openFilterDrop}
             />
           </div>
