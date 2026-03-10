@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface NavItem {
     id: string;
@@ -17,14 +16,27 @@ interface NavDropdownProps {
 
 export const NavDropdown: React.FC<NavDropdownProps> = ({ title, items, isActive }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     return (
         <div
+            ref={containerRef}
             className="relative h-full flex items-center"
-            onMouseEnter={() => setIsOpen(true)}
-            onMouseLeave={() => setIsOpen(false)}
         >
             <button
+                type="button"
+                onClick={() => setIsOpen((prev) => !prev)}
                 className={`
                     px-3 py-2 text-sm font-semibold tracking-wide transition-all duration-200 uppercase relative rounded-md
                     ${isActive || isOpen

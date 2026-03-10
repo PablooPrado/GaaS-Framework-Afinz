@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Lock, AlertCircle, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
+import { AfinzLogo } from '../modules/paid-media-afinz/components/AfinzLogo';
 
 export const SetPasswordView: React.FC<{ onPasswordSet?: () => void }> = ({ onPasswordSet }) => {
   const { user, updatePassword } = useAuth();
@@ -10,10 +11,8 @@ export const SetPasswordView: React.FC<{ onPasswordSet?: () => void }> = ({ onPa
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Check if we have a valid session with a user who needs to set password
   useEffect(() => {
     if (!user) {
-      // Redirect to login if no session
       window.location.hash = '';
     }
   }, [user]);
@@ -37,11 +36,8 @@ export const SetPasswordView: React.FC<{ onPasswordSet?: () => void }> = ({ onPa
       await updatePassword(password);
       setSuccess(true);
 
-      // Redirect after 2 seconds to let the auth state update
       setTimeout(() => {
-        // Clear the hash to go back to main app
         window.location.hash = '';
-        // Small delay to ensure auth state is updated
         setTimeout(() => {
           window.location.reload();
         }, 100);
@@ -56,61 +52,56 @@ export const SetPasswordView: React.FC<{ onPasswordSet?: () => void }> = ({ onPa
 
   if (!user) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-slate-900">
-        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+      <div className="h-screen w-full flex items-center justify-center bg-slate-50">
+        <Loader2 className="animate-spin text-cyan-500 w-8 h-8" />
       </div>
     );
   }
 
   if (success) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-slate-900 p-4">
-        <div className="bg-emerald-500/10 text-emerald-400 p-8 rounded-xl border border-emerald-500/20 text-center">
+      <div className="h-screen w-full flex items-center justify-center bg-slate-50 p-4">
+        <div className="bg-emerald-50 text-emerald-700 p-8 rounded-xl border border-emerald-200 text-center">
           <div className="text-4xl mb-4">✅</div>
           <p className="text-lg font-bold mb-2">Senha definida com sucesso!</p>
-          <p className="text-sm opacity-80">Redirecionando para a aplicação...</p>
+          <p className="text-sm text-emerald-600 opacity-80">Redirecionando para a aplicação...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-slate-900 p-4">
-      <div className="w-full max-w-md bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
-
-        <div className="relative z-10 text-center">
-          {/* Logo */}
-          <div className="mb-10 flex flex-col items-center justify-center animate-fade-in select-none">
-            <div className="bg-black p-6 rounded-2xl border border-white/10 shadow-2xl flex flex-col items-center justify-center gap-1">
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent leading-none tracking-tight">
-                GaaS
-              </h1>
-              <span className="text-sm font-bold text-white tracking-widest uppercase leading-tight opacity-90 pl-0.5">
-                AFINZ
-              </span>
+    <div className="h-screen w-full flex items-center justify-center bg-slate-50 p-4">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-8 shadow-lg">
+        <div className="text-center">
+          {/* Afinz Brand */}
+          <div className="mb-8 flex flex-col items-center gap-3 select-none">
+            <div className="flex items-center gap-3" style={{ fontFamily: "Calibri, 'Trebuchet MS', sans-serif" }}>
+              <AfinzLogo height={32} />
+              <div className="flex items-center gap-2">
+                <div className="h-5 w-0.5 rounded-full bg-[#00C6CC]" />
+                <span className="font-black text-2xl text-slate-800 tracking-tight">Growth as a Service</span>
+              </div>
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Defina sua Senha</h2>
-          <p className="text-slate-400 mb-8 text-sm leading-relaxed">
+          <h2 className="text-2xl font-bold text-slate-800 mb-2 tracking-tight">Defina sua Senha</h2>
+          <p className="text-slate-500 mb-8 text-sm leading-relaxed">
             Crie uma senha segura para acessar a plataforma
           </p>
 
           <form onSubmit={handleSetPassword} className="space-y-5">
             <div className="text-left group">
-              <label className="block text-xs font-bold text-blue-400 uppercase mb-2 tracking-wider ml-1">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider ml-1">
                 Nova Senha
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-400 transition-colors" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-cyan-500 transition-colors" />
                 <input
                   type="password"
                   required
                   minLength={6}
-                  className="w-full bg-slate-900/50 border border-slate-700 text-white pl-11 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-600"
+                  className="w-full bg-white border border-slate-300 text-slate-900 pl-11 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400 outline-none transition-all placeholder:text-slate-400"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -119,16 +110,16 @@ export const SetPasswordView: React.FC<{ onPasswordSet?: () => void }> = ({ onPa
             </div>
 
             <div className="text-left group">
-              <label className="block text-xs font-bold text-blue-400 uppercase mb-2 tracking-wider ml-1">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider ml-1">
                 Confirmar Senha
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-400 transition-colors" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-cyan-500 transition-colors" />
                 <input
                   type="password"
                   required
                   minLength={6}
-                  className="w-full bg-slate-900/50 border border-slate-700 text-white pl-11 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-600"
+                  className="w-full bg-white border border-slate-300 text-slate-900 pl-11 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400 outline-none transition-all placeholder:text-slate-400"
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -137,8 +128,8 @@ export const SetPasswordView: React.FC<{ onPasswordSet?: () => void }> = ({ onPa
             </div>
 
             {error && (
-              <div className="text-xs text-red-200 bg-red-500/20 p-3 rounded-lg flex items-center gap-2 border border-red-500/30">
-                <AlertCircle size={14} />
+              <div className="text-xs text-red-700 bg-red-50 p-3 rounded-lg flex items-center gap-2 border border-red-200">
+                <AlertCircle size={14} className="text-red-500" />
                 {error}
               </div>
             )}
@@ -146,7 +137,7 @@ export const SetPasswordView: React.FC<{ onPasswordSet?: () => void }> = ({ onPa
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmitting ? <Loader2 className="animate-spin w-5 h-5" /> : (
                 <>
@@ -157,7 +148,7 @@ export const SetPasswordView: React.FC<{ onPasswordSet?: () => void }> = ({ onPa
             </button>
           </form>
 
-          <p className="mt-8 text-xs text-slate-500 flex items-center justify-center gap-1.5 opacity-60">
+          <p className="mt-8 text-xs text-slate-400 flex items-center justify-center gap-1.5 uppercase tracking-widest font-bold">
             <ShieldCheck size={12} />
             Ambiente Seguro & Criptografado
           </p>

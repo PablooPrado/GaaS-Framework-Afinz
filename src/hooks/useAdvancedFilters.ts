@@ -1,69 +1,72 @@
 import { useMemo } from 'react';
-import { CalendarData, FilterState } from '../types/framework';
+import { CalendarData, FilterState, Activity } from '../types/framework';
+
+type FilterKey = 'canais' | 'jornadas' | 'segmentos' | 'parceiros';
+
+const normalizeDayStart = (date: Date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const normalizeDayEnd = (date: Date) => {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+};
+
+const parseISODate = (value?: string) => {
+  if (!value) return null;
+  const [y, m, d] = value.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+};
 
 export const useAdvancedFilters = (data: CalendarData, filters: FilterState) => {
+  const allActivities = useMemo(() => Object.values(data).flat(), [data]);
+
+  const matchActivity = (activity: Activity, omit: FilterKey[] = []) => {
+    if (!omit.includes('canais') && filters.canais.length > 0 && !filters.canais.includes(activity.canal)) {
+      return false;
+    }
+
+    if (!omit.includes('jornadas') && filters.jornadas.length > 0 && !filters.jornadas.includes(activity.jornada)) {
+      return false;
+    }
+
+    if (!omit.includes('segmentos') && filters.segmentos.length > 0 && !filters.segmentos.includes(activity.segmento)) {
+      return false;
+    }
+
+    if (!omit.includes('parceiros') && filters.parceiros.length > 0 && !filters.parceiros.includes(activity.parceiro)) {
+      return false;
+    }
+
+    if (filters.bu.length > 0 && !filters.bu.includes(activity.bu)) {
+      return false;
+    }
+
+    const startDate = parseISODate(filters.dataInicio);
+    if (startDate) {
+      const activityDate = normalizeDayStart(new Date(activity.dataDisparo));
+      if (activityDate < normalizeDayStart(startDate)) return false;
+    }
+
+    const endDate = parseISODate(filters.dataFim);
+    if (endDate) {
+      const activityDate = normalizeDayStart(new Date(activity.dataDisparo));
+      if (activityDate > normalizeDayEnd(endDate)) return false;
+    }
+
+    return true;
+  };
+
   const filteredData = useMemo(() => {
     try {
       const result: CalendarData = {};
 
       Object.entries(data).forEach(([dateKey, activities]) => {
-        const filtered = activities.filter(activity => {
-          // Filtro por BU
-          if (filters.bu.length > 0 && !filters.bu.includes(activity.bu)) {
-            return false;
-          }
-
-          // Filtro por Canal
-          if (filters.canais.length > 0 && !filters.canais.includes(activity.canal)) {
-            return false;
-          }
-
-          // Filtro por Jornada (NEW)
-          if (filters.jornadas.length > 0 && !filters.jornadas.includes(activity.jornada)) {
-            return false;
-          }
-
-          // Filtro por Segmento
-          if (filters.segmentos.length > 0 && !filters.segmentos.includes(activity.segmento)) {
-            return false;
-          }
-
-          // Filtro por Parceiro
-          if (filters.parceiros.length > 0 && !filters.parceiros.includes(activity.parceiro)) {
-            return false;
-          }
-
-          // Filtro por Data (Período)
-          if (filters.dataInicio) {
-            const [y, m, d] = filters.dataInicio.split('-').map(Number);
-            const startDate = new Date(y, m - 1, d);
-            // Reset hours to ensure fair comparison
-            startDate.setHours(0, 0, 0, 0);
-            const activityDate = new Date(activity.dataDisparo);
-            activityDate.setHours(0, 0, 0, 0);
-
-            if (activityDate < startDate) return false;
-          }
-
-          if (filters.dataFim) {
-            const [y, m, d] = filters.dataFim.split('-').map(Number);
-            const endDate = new Date(y, m - 1, d);
-            endDate.setHours(23, 59, 59, 999); // End of day
-            const activityDate = new Date(activity.dataDisparo);
-            activityDate.setHours(0, 0, 0, 0);
-
-            if (activityDate > endDate) {
-              // DEBUG: Log rejection
-              if (activityDate.getDate() > 15) {
-                // console.warn(`🚫 Rejected date > 15: ${activity.dataDisparo} > ${filters.dataFim}`);
-              }
-              return false;
-            }
-          }
-
-          return true;
-        });
-
+        const filtered = activities.filter(activity => matchActivity(activity));
         if (filtered.length > 0) {
           result[dateKey] = filtered;
         }
@@ -76,95 +79,77 @@ export const useAdvancedFilters = (data: CalendarData, filters: FilterState) => 
     }
   }, [data, filters]);
 
-  // Calcula contadores para exibir no sidebar
   const availableCanais = useMemo(() => {
     const canais = new Set<string>();
-    Object.values(data).forEach(activities => {
-      activities.forEach(activity => {
-        if (activity.canal) {
-          canais.add(activity.canal);
-        }
-      });
+    allActivities.forEach(activity => {
+      if (activity.canal) canais.add(activity.canal);
     });
     return Array.from(canais).sort();
-  }, [data]);
+  }, [allActivities]);
 
   const availableJornadas = useMemo(() => {
     const jornadas = new Set<string>();
-    Object.values(data).forEach(activities => {
-      activities.forEach(activity => {
-        if (activity.jornada) {
-          jornadas.add(activity.jornada);
-        }
-      });
+    allActivities.forEach(activity => {
+      if (activity.jornada) jornadas.add(activity.jornada);
     });
     return Array.from(jornadas).sort();
-  }, [data]);
+  }, [allActivities]);
 
   const availableSegmentos = useMemo(() => {
     const segmentos = new Set<string>();
-    Object.values(data).forEach(activities => {
-      activities.forEach(activity => {
-        if (activity.segmento) {
-          segmentos.add(activity.segmento);
-        }
-      });
+    allActivities.forEach(activity => {
+      if (activity.segmento) segmentos.add(activity.segmento);
     });
     return Array.from(segmentos).sort();
-  }, [data]);
-
-  // Conta atividades por canal/segmento
-  const countByCanal = useMemo(() => {
-    const counts: { [canal: string]: number } = {};
-    Object.values(filteredData).forEach(activities => {
-      activities.forEach(activity => {
-        counts[activity.canal] = (counts[activity.canal] || 0) + 1;
-      });
-    });
-    return counts;
-  }, [filteredData]);
-
-  const countByJornada = useMemo(() => {
-    const counts: { [jornada: string]: number } = {};
-    Object.values(filteredData).forEach(activities => {
-      activities.forEach(activity => {
-        counts[activity.jornada] = (counts[activity.jornada] || 0) + 1;
-      });
-    });
-    return counts;
-  }, [filteredData]);
-
-  const countBySegmento = useMemo(() => {
-    const counts: { [segmento: string]: number } = {};
-    Object.values(filteredData).forEach(activities => {
-      activities.forEach(activity => {
-        counts[activity.segmento] = (counts[activity.segmento] || 0) + 1;
-      });
-    });
-    return counts;
-  }, [filteredData]);
+  }, [allActivities]);
 
   const availableParceiros = useMemo(() => {
     const parceiros = new Set<string>();
-    Object.values(data).forEach(activities => {
-      activities.forEach(activity => {
-        if (activity.parceiro) {
-          parceiros.add(activity.parceiro);
-        }
-      });
+    allActivities.forEach(activity => {
+      if (activity.parceiro) parceiros.add(activity.parceiro);
     });
     return Array.from(parceiros).sort();
-  }, [data]);
+  }, [allActivities]);
+
+  const countByCanal = useMemo(() => {
+    const counts: { [canal: string]: number } = {};
+    allActivities
+      .filter(activity => matchActivity(activity, ['canais']))
+      .forEach(activity => {
+        counts[activity.canal] = (counts[activity.canal] || 0) + 1;
+      });
+    return counts;
+  }, [allActivities, filters]);
+
+  const countByJornada = useMemo(() => {
+    const counts: { [jornada: string]: number } = {};
+    allActivities
+      .filter(activity => matchActivity(activity, ['jornadas']))
+      .forEach(activity => {
+        counts[activity.jornada] = (counts[activity.jornada] || 0) + 1;
+      });
+    return counts;
+  }, [allActivities, filters]);
+
+  const countBySegmento = useMemo(() => {
+    const counts: { [segmento: string]: number } = {};
+    allActivities
+      .filter(activity => matchActivity(activity, ['segmentos']))
+      .forEach(activity => {
+        counts[activity.segmento] = (counts[activity.segmento] || 0) + 1;
+      });
+    return counts;
+  }, [allActivities, filters]);
 
   const countByParceiro = useMemo(() => {
     const counts: { [parceiro: string]: number } = {};
-    Object.values(filteredData).forEach(activities => {
-      activities.forEach(activity => {
+    allActivities
+      .filter(activity => matchActivity(activity, ['parceiros']))
+      .forEach(activity => {
         counts[activity.parceiro] = (counts[activity.parceiro] || 0) + 1;
       });
-    });
     return counts;
-  }, [filteredData]);
+  }, [allActivities, filters]);
 
   return {
     filteredData,

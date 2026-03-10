@@ -12,6 +12,7 @@ import {
     BookOpen,
     Lock
 } from 'lucide-react';
+import { AfinzLogo } from '../../modules/paid-media-afinz/components/AfinzLogo';
 import { useAppStore } from '../../store/useAppStore';
 import { NavDropdown } from './NavDropdown';
 import { useBU, BU } from '../../contexts/BUContext';
@@ -73,13 +74,12 @@ export const GlobalHeader: React.FC = () => {
     return (
         <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shadow-sm">
             <div className="flex items-center gap-8">
-                <div className="flex flex-col items-center justify-center gap-0 shrink-0">
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-teal-500 bg-clip-text text-transparent tracking-widest leading-none">
-                        GaaS
-                    </h1>
-                    <span className="text-[10px] font-bold text-slate-600 tracking-wider uppercase leading-tight">
-                        AFINZ
-                    </span>
+                <div className="flex items-center gap-3 shrink-0" style={{ fontFamily: "Calibri, 'Trebuchet MS', sans-serif" }}>
+                    <AfinzLogo height={28} />
+                    <div className="flex items-center gap-2">
+                        <div className="h-4 w-0.5 rounded-full bg-[#00C6CC]" />
+                        <h1 className="font-black text-xl text-slate-800 tracking-tight">Growth as a Service</h1>
+                    </div>
                 </div>
 
                 <nav className="hidden lg:flex items-center gap-1 h-16">
@@ -103,14 +103,14 @@ export const GlobalHeader: React.FC = () => {
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hidden xl:block">BU:</span>
                         {isBULocked && <Lock size={12} className="text-amber-500" title="BU locked by your role" />}
                     </div>
-                    <div className="flex bg-slate-100 rounded-lg p-1 gap-1 border border-slate-200">
+                    <div className="flex bg-slate-100 rounded-md p-0.5 gap-0.5 border border-slate-200">
                         {buOptions.map((bu) => (
                             <button
                                 key={bu.id}
                                 onClick={() => toggleBU(bu.id)}
                                 disabled={isBULocked}
                                 className={`
-                                    px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5
+                                    px-2 py-1 rounded text-[11px] font-medium transition-all flex items-center gap-1
                                     ${isBULocked ? 'opacity-50 cursor-not-allowed' : ''}
                                     ${isBUSelected(bu.id)
                                         ? 'bg-white text-slate-800 shadow-sm border border-slate-200'
@@ -119,8 +119,8 @@ export const GlobalHeader: React.FC = () => {
                                 `}
                                 title={isBULocked ? `BU locked to ${bu.label}` : `Filtrar por ${bu.label}`}
                             >
-                                <div className={`w-2 h-2 rounded-full ${bu.color} ${isBUSelected(bu.id) ? 'opacity-100 shadow-[0_0_4px_currentColor]' : 'opacity-40'}`} />
-                                <span className={!isBUSelected(bu.id) ? 'hidden xl:inline' : ''}>{bu.label}</span>
+                                <div className={`w-1.5 h-1.5 rounded-full ${bu.color} ${isBUSelected(bu.id) ? 'opacity-100' : 'opacity-40'}`} />
+                                <span>{bu.label}</span>
                             </button>
                         ))}
                     </div>

@@ -1,73 +1,62 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
-interface AfinzLogoProps {
+interface GaaSLogoProps {
     className?: string;
     height?: number;
 }
 
 /**
- * Afinz Logo — Calibri Bold como tipografia de sistema.
- *
- * Estratégia de posicionamento da barra teal (#00C6CC):
- *   X + Width → SVG getBBox() do texto invisível "afin" (onde o 'z' começa).
- *   Y (centro) → Canvas 2D actualBoundingBoxAscent/Descent do glifo 'z'.
- *               Única API que retorna os limites reais da tinta, sem line-height.
- *
- * Calibri Bold está disponível nativamente no Windows (fonte de sistema).
- * Fallback: Trebuchet MS → sans-serif genérico.
+ * GaaS Logo — Calibri Bold, teal bar (#00C6CC) centrada na tinta do 'S'.
+ * Mesma técnica do AfinzLogo:
+ *   X → SVG getBBox() do texto invisível "Gaa" (onde o 'S' começa)
+ *   Y → Canvas actualBoundingBoxAscent/Descent do glifo 'S'
  */
-export const AfinzLogo: React.FC<AfinzLogoProps> = ({ className = '', height = 32 }) => {
+export const GaaSLogo: React.FC<GaaSLogoProps> = ({ className = '', height = 32 }) => {
     const textRef = useRef<SVGTextElement>(null);
-    const afinRef = useRef<SVGTextElement>(null);
+    const prefixRef = useRef<SVGTextElement>(null);
 
-    // Calibri: baseline tipicamente a ~80% do tamanho do font
-    const fontSize = Math.round(height * 0.88);
-    const baseline = Math.round(height * 0.80);
+    const fontSize  = Math.round(height * 0.88);
+    const baseline  = Math.round(height * 0.80);
+    const fontDecl  = `bold ${fontSize}px Calibri, 'Trebuchet MS', sans-serif`;
 
-    const fontDecl = `bold ${fontSize}px Calibri, 'Trebuchet MS', sans-serif`;
-
-    const [svgWidth, setSvgWidth] = useState(height * 3.6);
-    const [bar, setBar] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+    const [svgWidth, setSvgWidth] = useState(height * 2.8);
+    const [bar, setBar]  = useState<{ x: number; y: number; w: number; h: number } | null>(null);
 
     const measure = useCallback(() => {
-        const full = textRef.current;
-        const afin = afinRef.current;
-        if (!full || !afin) return;
+        const full   = textRef.current;
+        const prefix = prefixRef.current;
+        if (!full || !prefix) return;
 
         try {
-            /* ── X / Width via SVG getBBox ─────────────────────────── */
-            const fullBox = full.getBBox();
-            const afinBox = afin.getBBox();
-            const zX = afinBox.x + afinBox.width;
-            const zW = (fullBox.x + fullBox.width) - zX;
+            const fullBox   = full.getBBox();
+            const prefixBox = prefix.getBBox();
+            const sX = prefixBox.x + prefixBox.width;
+            const sW = (fullBox.x + fullBox.width) - sX;
             setSvgWidth(fullBox.x + fullBox.width + 2);
 
-            /* ── Y via Canvas actualBoundingBox ────────────────────── */
             const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx || zW <= 0) return;
+            const ctx    = canvas.getContext('2d');
+            if (!ctx || sW <= 0) return;
 
             ctx.font = fontDecl;
-            const m = ctx.measureText('z');
+            const m = ctx.measureText('S');
 
             let barH: number;
             let barY: number;
 
             if (m.actualBoundingBoxAscent != null) {
-                // Limites reais da tinta do glifo 'z'
                 const inkTop    = baseline - m.actualBoundingBoxAscent;
                 const inkBottom = baseline + (m.actualBoundingBoxDescent ?? 0);
                 const inkH      = inkBottom - inkTop;
                 barH = Math.max(inkH * 0.20, 1.8);
-                barY = inkTop + (inkH - barH) / 2;   // centro geométrico exato
+                barY = inkTop + (inkH - barH) / 2;
             } else {
-                // Fallback: x-height Calibri ≈ 0.53 × fontSize
-                const xH = fontSize * 0.53;
-                barH = Math.max(xH * 0.20, 1.8);
-                barY = baseline - xH / 2 - barH / 2;
+                const capH = fontSize * 0.72;
+                barH = Math.max(capH * 0.20, 1.8);
+                barY = baseline - capH / 2 - barH / 2;
             }
 
-            setBar({ x: zX, y: barY, w: zW, h: barH });
+            setBar({ x: sX, y: barY, w: sW, h: barH });
         } catch {
             /* silently retry */
         }
@@ -93,7 +82,7 @@ export const AfinzLogo: React.FC<AfinzLogoProps> = ({ className = '', height = 3
             height={height}
             width={svgWidth}
             xmlns="http://www.w3.org/2000/svg"
-            aria-label="afinz"
+            aria-label="GaaS"
             className={`select-none ${className}`}
             style={{ display: 'block', overflow: 'visible' }}
         >
@@ -109,12 +98,12 @@ export const AfinzLogo: React.FC<AfinzLogoProps> = ({ className = '', height = 3
                 strokeLinejoin="round"
                 textAnchor="start"
             >
-                afinz
+                GaaS
             </text>
 
-            {/* "afin" invisível — apenas para medir onde 'z' inicia no eixo X */}
+            {/* "Gaa" invisível — mede onde 'S' começa no eixo X */}
             <text
-                ref={afinRef}
+                ref={prefixRef}
                 x={0}
                 y={baseline}
                 style={textStyle}
@@ -122,10 +111,10 @@ export const AfinzLogo: React.FC<AfinzLogoProps> = ({ className = '', height = 3
                 aria-hidden="true"
                 textAnchor="start"
             >
-                afin
+                Gaa
             </text>
 
-            {/* Barra teal centrada na tinta do 'z' */}
+            {/* Barra teal centrada na tinta do 'S' */}
             {bar && (
                 <rect
                     x={bar.x}

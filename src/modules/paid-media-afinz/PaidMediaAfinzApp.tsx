@@ -78,7 +78,7 @@ const DashboardContent: React.FC<PaidMediaAfinzAppProps> = ({ onBack }) => {
         </div>
         <div className="text-center mb-10 animate-fade-in-up">
           <AfinzLogo height={48} className="mx-auto mb-6" />
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 mb-2">
+          <h1 className="text-5xl font-black tracking-tight text-slate-900 mb-2">
             Media Analytics
           </h1>
           <p className="text-slate-500 font-light">
@@ -105,7 +105,7 @@ const DashboardContent: React.FC<PaidMediaAfinzAppProps> = ({ onBack }) => {
 
   return (
     // ── Dashboard (light) ──────────────────────────────────────────────
-    <div className="fixed inset-0 z-50 bg-slate-50 text-slate-900 flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-slate-50 text-slate-900 flex flex-col overflow-hidden" style={{ fontFamily: "Calibri, 'Trebuchet MS', sans-serif" }}>
       {/* Header */}
       <header
         className="bg-white border-b border-slate-200 sticky top-0 z-[60] shadow-sm transition-all duration-300"
@@ -124,10 +124,9 @@ const DashboardContent: React.FC<PaidMediaAfinzAppProps> = ({ onBack }) => {
             )}
             <div className="flex items-center gap-3">
               <AfinzLogo height={28} />
-              <div className="h-5 w-px bg-slate-200 mx-1" />
               <div className="flex items-center gap-2">
                 <div className="h-4 w-0.5 rounded-full bg-[#00C6CC]" />
-                <h1 className="font-black text-sm text-slate-800 tracking-tight">Media Analytics</h1>
+                <h1 className="font-black text-xl text-slate-800 tracking-tight">Media Analytics</h1>
               </div>
             </div>
           </div>

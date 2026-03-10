@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email,
             password,
             options: {
-                emailRedirectTo: window.location.origin
+                emailRedirectTo: `${window.location.origin}${window.location.pathname}`
             }
         });
         if (error) throw error;
@@ -85,8 +85,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const resetPassword = async (email: string) => {
         console.log('🔐 resetPassword INICIADO para:', email);
 
-        const baseUrl = window.location.origin;
-        const redirectUrl = `${baseUrl}/#type=recovery`;
+        const baseUrl = `${window.location.origin}${window.location.pathname}`;
+        const redirectUrl = `${baseUrl}#type=recovery`;
         console.log('🔗 Redirect URL:', redirectUrl);
 
         const result = await supabase.auth.resetPasswordForEmail(email, {
@@ -111,8 +111,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const inviteUser = async (email: string, fullName: string, role: 'admin' | 'growth_b2c' | 'analista_plurix') => {
         console.log('👤 inviteUser INICIADO para:', email, 'role:', role);
 
-        const baseUrl = window.location.origin;
-        const redirectUrl = `${baseUrl}/#type=invite`;
+        const baseUrl = `${window.location.origin}${window.location.pathname}`;
+        const redirectUrl = `${baseUrl}#type=invite`;
         console.log('🔗 Redirect URL:', redirectUrl);
 
         const result = await supabase.auth.signInWithOtp({
