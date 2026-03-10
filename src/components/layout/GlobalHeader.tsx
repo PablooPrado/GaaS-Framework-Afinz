@@ -18,7 +18,11 @@ import { NavDropdown } from './NavDropdown';
 import { useBU, BU } from '../../contexts/BUContext';
 import { useUserRole } from '../../context/UserRoleContext';
 
-export const GlobalHeader: React.FC = () => {
+interface GlobalHeaderProps {
+    onMouseEnter?: () => void;
+}
+
+export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
     const { setTab, viewSettings } = useAppStore();
     const activeTab = viewSettings.abaAtual;
     const { toggleBU, isBUSelected, isBULocked } = useBU();
@@ -72,7 +76,10 @@ export const GlobalHeader: React.FC = () => {
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shadow-sm">
+        <header
+            className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shadow-sm"
+            onMouseEnter={onMouseEnter}
+        >
             <div className="flex items-center gap-8">
                 <div className="flex items-center gap-3 shrink-0" style={{ fontFamily: "Calibri, 'Trebuchet MS', sans-serif" }}>
                     <AfinzLogo height={28} />
