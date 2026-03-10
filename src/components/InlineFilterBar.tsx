@@ -15,6 +15,127 @@ interface InlineFilterBarProps {
     countByParceiro?: { [parceiro: string]: number };
 }
 
+interface FilterDropdownProps {
+    title: string;
+    icon: any;
+    items: string[];
+    field: keyof FilterState;
+    counts: Record<string, number>;
+    align?: 'left' | 'right';
+}
+
+const FilterDropdown: React.FC<FilterDropdownProps> = ({ title, icon: Icon, items, field, counts, align = 'left' }) => {
+    const { viewSettings, setGlobalFilters } = useAppStore();
+    const filters = viewSettings.filtrosGlobais;
+    const [isOpen, setIsOpen] = React.useState(false);
+    const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    if (items.length === 0) return null;
+
+    const toggleItem = (value: string) => {
+        const currentList = filters[field] as string[];
+        const newList = currentList.includes(value)
+            ? currentList.filter(item => item !== value)
+            : [...currentList, value];
+        setGlobalFilters({ [field]: newList });
+    };
+
+    const toggleAll = () => {
+        const currentList = filters[field] as string[];
+        const allSelected = items.length > 0 && items.every(i => currentList.includes(i));
+        if (allSelected) {
+            const newList = currentList.filter(i => !items.includes(i));
+            setGlobalFilters({ [field]: newList });
+        } else {
+            const toAdd = items.filter(i => !currentList.includes(i));
+            setGlobalFilters({ [field]: [...currentList, ...toAdd] });
+        }
+    };
+
+    const isAllSelected = items.length > 0 && items.every(i => (filters[field] as string[]).includes(i));
+    const selectedCount = (filters[field] as string[]).length;
+    const isActive = selectedCount > 0;
+
+    const handleMouseEnter = () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        setIsOpen(true);
+    };
+
+    const handleMouseLeave = () => {
+        timeoutRef.current = setTimeout(() => {
+            setIsOpen(false);
+        }, 300); // 300ms hover delay bridge
+    };
+
+    return (
+        <div
+            className="relative"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+        >
+            <button className={`flex items-center gap-2 px-3 py-2 rounded-lg transition border shadow-sm ${isActive || isOpen
+                ? 'bg-white border-slate-400 text-slate-800'
+                : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300 text-slate-600'
+                }`}>
+                <Icon size={16} className={isActive ? 'text-slate-600' : 'text-slate-400'} />
+                <span className="text-sm font-medium">{title}</span>
+                {isActive && (
+                    <span className="bg-slate-100 text-slate-700 text-[10px] px-1.5 py-0.5 rounded-full ml-1 border border-slate-300">
+                        {selectedCount}
+                    </span>
+                )}
+                <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-180 opacity-100' : 'opacity-50'}`} />
+            </button>
+
+            {/* A wrapper with dropdown items. We add an invisible safe zone to trap the mouse */}
+            <div className={`absolute top-full pt-1.5 min-w-64 max-w-sm z-50 transition-all duration-200 transform origin-top-left ${isOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-1 pointer-events-none'
+                } ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'}`}>
+                {/* INVISIBLE BRIDGE to prevent mouse slip */}
+                <div
+                    className="absolute -inset-x-8 -top-3 -bottom-8 bg-transparent -z-10"
+                    aria-hidden="true"
+                />
+
+                <div className="bg-white border border-slate-200 rounded-xl shadow-[0_12px_45px_-8px_rgba(0,0,0,0.2)] p-2 relative overflow-hidden ring-1 ring-slate-900/5">
+                    <div className="flex items-center justify-between px-3 py-2.5 mb-1 border-b border-slate-100 bg-slate-50/80 -mx-2 -mt-2">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{title}</span>
+                        <button
+                            onClick={toggleAll}
+                            className="text-[10px] text-blue-600 hover:text-blue-800 font-bold uppercase tracking-wider transition-colors"
+                        >
+                            {isAllSelected ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                        </button>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto space-y-0.5 custom-scrollbar py-1">
+                        {items.map(item => {
+                            const selected = (filters[field] as string[]).includes(item);
+                            return (
+                                <label
+                                    key={item}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        toggleItem(item);
+                                    }}
+                                    className="flex items-center gap-3 cursor-pointer px-2 py-2 hover:bg-slate-50/80 rounded-lg transition group/item"
+                                >
+                                    <div className={`w-4 h-4 rounded shadow-sm flex items-center justify-center transition ${selected
+                                        ? 'bg-blue-600 border-transparent text-white'
+                                        : 'bg-white border text-transparent border-slate-300 group-hover/item:border-blue-400'
+                                        }`}>
+                                        <Check size={12} strokeWidth={3} className={selected ? "opacity-100" : "opacity-0"} />
+                                    </div>
+                                    <span className={`text-sm truncate flex-1 font-medium leading-none mt-0.5 transition-colors ${selected ? 'text-slate-800' : 'text-slate-600'}`}>{item}</span>
+                                    <span className="text-slate-400 text-xs tabular-nums bg-slate-50 border border-slate-100 rounded px-1 group-hover/item:bg-white transition-colors">{counts[item] || 0}</span>
+                                </label>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
     availableCanais = [],
     availableJornadas = [],
@@ -28,33 +149,6 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
     const { viewSettings, setGlobalFilters } = useAppStore();
     const filters = viewSettings.filtrosGlobais;
 
-    const toggleItem = (field: keyof FilterState, value: string) => {
-        const currentList = filters[field] as string[];
-        const newList = currentList.includes(value)
-            ? currentList.filter(item => item !== value)
-            : [...currentList, value];
-
-        setGlobalFilters({ [field]: newList });
-    };
-
-    const toggleAll = (field: keyof FilterState, available: string[]) => {
-        const currentList = filters[field] as string[];
-        const allSelected = available.every(item => currentList.includes(item));
-
-        if (allSelected) {
-            const newList = currentList.filter(item => !available.includes(item));
-            setGlobalFilters({ [field]: newList });
-        } else {
-            const toAdd = available.filter(item => !currentList.includes(item));
-            setGlobalFilters({ [field]: [...currentList, ...toAdd] });
-        }
-    };
-
-    const areAllSelected = (field: keyof FilterState, available: string[]) => {
-        const currentList = filters[field] as string[];
-        return available.length > 0 && available.every(item => currentList.includes(item));
-    };
-
     const clearFilters = () => {
         setGlobalFilters({
             canais: [],
@@ -66,81 +160,6 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
     };
 
     const hasActiveFilters = filters.canais.length > 0 || filters.jornadas.length > 0 || filters.segmentos.length > 0 || filters.parceiros.length > 0;
-
-    const FilterDropdown = ({
-        title,
-        icon: Icon,
-        items,
-        field,
-        counts,
-        align = 'left'
-    }: {
-        title: string,
-        icon: any,
-        items: string[],
-        field: keyof FilterState,
-        counts: Record<string, number>,
-        align?: 'left' | 'right'
-    }) => {
-        if (items.length === 0) return null;
-
-        const selectedCount = (filters[field] as string[]).length;
-        const isAllSelected = areAllSelected(field, items);
-        const isActive = selectedCount > 0;
-
-        return (
-            <div className="relative group">
-                <button className={`flex items-center gap-2 px-3 py-2 rounded-lg transition border shadow-sm ${isActive
-                    ? 'bg-white border-slate-400 text-slate-800'
-                    : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300 text-slate-600'
-                    }`}>
-                    <Icon size={16} className={isActive ? 'text-slate-600' : 'text-slate-400'} />
-                    <span className="text-sm font-medium">{title}</span>
-                    {isActive && (
-                        <span className="bg-slate-100 text-slate-700 text-[10px] px-1.5 py-0.5 rounded-full ml-1 border border-slate-300">
-                            {selectedCount}
-                        </span>
-                    )}
-                    <ChevronDown size={14} className="opacity-50 group-hover:opacity-100 transition-opacity" />
-                </button>
-
-                <div className={`absolute top-full pt-2 w-64 bg-transparent z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 transform origin-top-left ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'}`}>
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-2xl p-2">
-                    <div className="flex items-center justify-between px-2 py-1 mb-2 border-b border-slate-100">
-                        <span className="text-xs font-bold text-slate-500 uppercase">{title}</span>
-                        <button
-                            onClick={() => toggleAll(field, items)}
-                            className="text-[10px] text-slate-600 hover:text-slate-800 font-medium"
-                        >
-                            {isAllSelected ? 'Desmarcar Todos' : 'Selecionar Todos'}
-                        </button>
-                    </div>
-                    <div className="max-h-64 overflow-y-auto space-y-1 custom-scrollbar">
-                        {items.map(item => (
-                            <label
-                                key={item}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    toggleItem(field, item);
-                                }}
-                                className="flex items-center gap-3 cursor-pointer p-2 hover:bg-slate-50 rounded-lg transition group/item"
-                            >
-                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${(filters[field] as string[]).includes(item)
-                                    ? 'bg-slate-700 border-slate-700'
-                                    : 'border-slate-300 group-hover/item:border-slate-400'
-                                    }`}>
-                                    {(filters[field] as string[]).includes(item) && <Check size={10} className="text-white" />}
-                                </div>
-                                <span className="text-slate-700 text-sm truncate flex-1">{item}</span>
-                                <span className="text-slate-400 text-xs">({counts[item] || 0})</span>
-                            </label>
-                        ))}
-                    </div>
-                    </div>
-                </div>
-            </div>
-        );
-    };
 
     return (
         <div className="flex items-center gap-2">
