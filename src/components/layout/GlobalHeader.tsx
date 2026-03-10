@@ -32,13 +32,23 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
     const allNavGroups = [
         {
             title: 'Planejamento',
+            direct: false,
             items: [
                 { id: 'launch', label: 'Launch Planner', icon: Calendar, onClick: () => setTab('launch') },
                 { id: 'diario', label: 'Diario de Bordo', icon: BookOpen, onClick: () => setTab('diario') },
             ]
         },
+        // Framework: clique direto — sem sub-menu
+        {
+            title: 'Framework',
+            direct: true,
+            items: [
+                { id: 'explorador', label: 'Explorador Avançado', icon: LayoutDashboard, onClick: () => setTab('explorador') },
+            ]
+        },
         {
             title: 'Análise',
+            direct: false,
             items: [
                 { id: 'jornada', label: 'Jornada & Disparos', icon: TrendingUp, onClick: () => setTab('jornada') },
                 { id: 'resultados', label: 'Resultados', icon: BarChart3, onClick: () => setTab('resultados') },
@@ -48,13 +58,8 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
             ]
         },
         {
-            title: 'Framework',
-            items: [
-                { id: 'explorador', label: 'Explorador Avançado', icon: LayoutDashboard, onClick: () => setTab('explorador') },
-            ]
-        },
-        {
             title: 'Mídia Paga',
+            direct: true,
             items: [
                 { id: 'midia-paga', label: 'Media Analytics', icon: undefined, onClick: () => setTab('midia-paga') },
             ]
@@ -78,40 +83,71 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
 
     return (
         <header
-            className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 shadow-sm"
+            className="fixed top-0 left-0 right-0 z-50 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm flex items-center px-6 gap-4"
             onMouseEnter={onMouseEnter}
         >
-            <div className="flex items-center gap-8">
-                <div className="flex items-center gap-3 shrink-0" style={{ fontFamily: "Calibri, 'Trebuchet MS', sans-serif" }}>
-                    <AfinzLogo height={28} />
-                    <div className="flex items-center gap-2">
-                        <div className="h-4 w-0.5 rounded-full bg-[#00C6CC]" />
-                        <h1
-                            className="font-black text-xl text-slate-800 tracking-tight leading-none"
-                            style={{ fontFamily: "'Trebuchet MS', Calibri, sans-serif" }}
-                        >
-                            Growth as a Service
-                        </h1>
-                    </div>
+            {/* ── LEFT: Brand ────────────────────────────────────────── */}
+            <div
+                className="shrink-0 flex items-center gap-3"
+                style={{ fontFamily: "Calibri, 'Trebuchet MS', sans-serif" }}
+            >
+                <AfinzLogo height={28} />
+                <div className="flex items-center gap-2">
+                    <div className="h-4 w-0.5 rounded-full bg-[#00C6CC]" />
+                    <h1
+                        className="font-black text-xl text-slate-800 tracking-tight leading-none"
+                        style={{ fontFamily: "'Trebuchet MS', Calibri, sans-serif" }}
+                    >
+                        Growth as a Service
+                    </h1>
                 </div>
+            </div>
 
+            {/* ── CENTER: Navigation ─────────────────────────────────── */}
+            <div className="flex-1 flex justify-center">
                 <nav className="hidden lg:flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
-                    {navGroups.map((group) => (
-                        <NavDropdown
-                            key={group.title}
-                            title={group.title}
-                            items={group.items.map(item => ({
-                                ...item,
-                                isActive: activeTab === item.id
-                            }))}
-                            isActive={isGroupActive(group.items)}
-                        />
-                    ))}
+                    {navGroups.map((group) => {
+                        // Grupos com clique direto (sem dropdown)
+                        if (group.direct || group.items.length === 1) {
+                            const item = group.items[0];
+                            const isActive = activeTab === item.id;
+                            return (
+                                <button
+                                    key={group.title}
+                                    type="button"
+                                    onClick={item.onClick}
+                                    className={[
+                                        'flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200',
+                                        isActive
+                                            ? 'bg-white text-slate-800 shadow-sm border border-slate-200'
+                                            : 'text-slate-500 hover:text-slate-800 hover:bg-white/60',
+                                    ].join(' ')}
+                                >
+                                    {group.title}
+                                </button>
+                            );
+                        }
+
+                        // Grupos com múltiplos itens → dropdown
+                        return (
+                            <NavDropdown
+                                key={group.title}
+                                title={group.title}
+                                items={group.items.map(item => ({
+                                    ...item,
+                                    isActive: activeTab === item.id
+                                }))}
+                                isActive={isGroupActive(group.items)}
+                            />
+                        );
+                    })}
                 </nav>
             </div>
 
-            <div className="flex items-center justify-end gap-4 flex-1 max-w-2xl">
-                <div className="flex items-center gap-2 px-2 border-r border-slate-200 mr-2">
+            {/* ── RIGHT: Controls ────────────────────────────────────── */}
+            <div className="shrink-0 flex items-center gap-3">
+                {/* BU Filter */}
+                <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1">
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hidden xl:block">BU:</span>
                         {isBULocked && <Lock size={12} className="text-amber-500" title="BU locked by your role" />}
@@ -122,14 +158,13 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
                                 key={bu.id}
                                 onClick={() => toggleBU(bu.id)}
                                 disabled={isBULocked}
-                                className={`
-                                    px-2 py-1 rounded text-[11px] font-medium transition-all flex items-center gap-1
-                                    ${isBULocked ? 'opacity-50 cursor-not-allowed' : ''}
-                                    ${isBUSelected(bu.id)
+                                className={[
+                                    'px-2 py-1 rounded text-[11px] font-medium transition-all flex items-center gap-1',
+                                    isBULocked ? 'opacity-50 cursor-not-allowed' : '',
+                                    isBUSelected(bu.id)
                                         ? 'bg-white text-slate-800 shadow-sm border border-slate-200'
-                                        : 'text-slate-500 hover:text-slate-700 hover:bg-white'
-                                    }
-                                `}
+                                        : 'text-slate-500 hover:text-slate-700 hover:bg-white',
+                                ].join(' ')}
                                 title={isBULocked ? `BU locked to ${bu.label}` : `Filtrar por ${bu.label}`}
                             >
                                 <div className={`w-1.5 h-1.5 rounded-full ${bu.color} ${isBUSelected(bu.id) ? 'opacity-100' : 'opacity-40'}`} />
@@ -139,8 +174,12 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
                     </div>
                 </div>
 
-                <div className="hidden md:flex items-center bg-slate-50 border border-slate-200 rounded-full px-4 py-1.5 w-64 transition-all focus-within:w-80 focus-within:bg-white focus-within:border-cyan-400">
-                    <Search size={16} className="text-slate-500 mr-2" />
+                {/* Divider */}
+                <div className="h-6 w-px bg-slate-200" />
+
+                {/* Search */}
+                <div className="hidden md:flex items-center bg-slate-50 border border-slate-200 rounded-full px-4 py-1.5 w-52 transition-all focus-within:w-72 focus-within:bg-white focus-within:border-cyan-400">
+                    <Search size={14} className="text-slate-400 mr-2 shrink-0" />
                     <input
                         type="text"
                         placeholder="Buscar..."
@@ -148,19 +187,22 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
                     />
                 </div>
 
-                <div className="h-8 w-[1px] bg-slate-200 mx-2"></div>
+                {/* Divider */}
+                <div className="h-6 w-px bg-slate-200" />
 
+                {/* Settings */}
                 <button
                     onClick={() => setTab('configuracoes')}
-                    className={`p-2 rounded-full transition relative ${activeTab === 'configuracoes' ? 'text-slate-800 bg-slate-100' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
-                    title="Configuracoes"
+                    className={`p-2 rounded-lg transition-all ${activeTab === 'configuracoes' ? 'text-slate-800 bg-slate-100' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
+                    title="Configurações"
                 >
-                    <Settings size={20} />
+                    <Settings size={18} />
                 </button>
 
-                <div className="flex items-center gap-3 cursor-pointer hover:bg-slate-100 p-1.5 rounded-lg transition group">
+                {/* Avatar */}
+                <div className="flex items-center cursor-pointer hover:bg-slate-100 p-1 rounded-lg transition-all group">
                     <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-full flex items-center justify-center ring-2 ring-cyan-100 group-hover:ring-cyan-200 transition-all">
-                        <User size={16} className="text-white" />
+                        <User size={15} className="text-white" />
                     </div>
                 </div>
             </div>
