@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Menu } from 'lucide-react';
 import { CSVUpload } from './components/CSVUpload';
 import { InlineFilterBar } from './components/InlineFilterBar';
@@ -33,6 +33,25 @@ function App() {
   const { user, loading: authLoading } = useAuth();
   const [urlHash, setUrlHash] = useState(window.location.hash);
   const [isFilterDropOpen, setIsFilterDropOpen] = useState(false);
+  const filterCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openFilterDrop = () => {
+    if (filterCloseTimeoutRef.current) {
+      clearTimeout(filterCloseTimeoutRef.current);
+      filterCloseTimeoutRef.current = null;
+    }
+    setIsFilterDropOpen(true);
+  };
+
+  const scheduleCloseFilterDrop = () => {
+    if (filterCloseTimeoutRef.current) {
+      clearTimeout(filterCloseTimeoutRef.current);
+    }
+    filterCloseTimeoutRef.current = setTimeout(() => {
+      setIsFilterDropOpen(false);
+      filterCloseTimeoutRef.current = null;
+    }, 140);
+  };
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -40,6 +59,14 @@ function App() {
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (filterCloseTimeoutRef.current) {
+        clearTimeout(filterCloseTimeoutRef.current);
+      }
+    };
   }, []);
 
   const {
@@ -140,17 +167,15 @@ function App() {
   return (
     <MainLayout>
       {hasData && (
-        <div
-          className="sticky top-0 z-30"
-          onMouseEnter={() => setIsFilterDropOpen(true)}
-          onMouseLeave={() => setIsFilterDropOpen(false)}
-        >
+        <div className="sticky top-0 z-30">
           <div
             className={`
               bg-white border-b border-slate-200 shadow-sm transform-gpu origin-top
               transition-[max-height,opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
               ${isFilterDropOpen ? 'max-h-44 opacity-100 translate-y-0 overflow-visible' : 'max-h-0 opacity-0 -translate-y-3 overflow-hidden pointer-events-none'}
             `}
+            onMouseEnter={openFilterDrop}
+            onMouseLeave={scheduleCloseFilterDrop}
           >
             <div className="px-6 py-3">
               <InlineFilterBar
@@ -166,12 +191,16 @@ function App() {
             </div>
           </div>
 
-          <button
-            type="button"
-            aria-label="Abrir filtros"
-            className="block w-full h-7 bg-transparent cursor-default"
-            onFocus={() => setIsFilterDropOpen(true)}
-          />
+          <div className="relative h-0">
+            <button
+              type="button"
+              aria-label="Area de ativacao dos filtros"
+              className="absolute top-0 left-0 right-0 h-8 bg-transparent cursor-default z-10"
+              onMouseEnter={openFilterDrop}
+              onMouseLeave={scheduleCloseFilterDrop}
+              onFocus={openFilterDrop}
+            />
+          </div>
         </div>
       )}
 
