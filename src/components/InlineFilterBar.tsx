@@ -40,8 +40,10 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     const { viewSettings, setGlobalFilters } = useAppStore();
     const filters = viewSettings.filtrosGlobais;
     const [isOpen, setIsOpen] = React.useState(false);
+    const [isPinnedOpen, setIsPinnedOpen] = React.useState(false);
     const [searchTerm, setSearchTerm] = React.useState('');
     const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const containerRef = React.useRef<HTMLDivElement | null>(null);
 
     if (items.length === 0) return null;
 
@@ -52,29 +54,38 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
         return items.filter(item => item.toLowerCase().includes(q));
     }, [items, searchable, searchTerm]);
 
+    const selectedList = filters[field] as string[];
+    const selectedSet = React.useMemo(() => new Set(selectedList), [selectedList]);
+
     const toggleItem = (value: string) => {
-        const currentList = filters[field] as string[];
-        const newList = currentList.includes(value)
-            ? currentList.filter(item => item !== value)
-            : [...currentList, value];
-        setGlobalFilters({ [field]: newList });
+        const nextSet = new Set(selectedSet);
+        if (nextSet.has(value)) {
+            nextSet.delete(value);
+        } else {
+            nextSet.add(value);
+        }
+        setGlobalFilters({ [field]: Array.from(nextSet) });
     };
 
     const toggleAll = () => {
-        const currentList = filters[field] as string[];
         const targetItems = visibleItems;
-        const allSelected = targetItems.length > 0 && targetItems.every(i => currentList.includes(i));
+        const allSelected = targetItems.length > 0 && targetItems.every(i => selectedSet.has(i));
+        const nextSet = new Set(selectedSet);
+
         if (allSelected) {
-            const newList = currentList.filter(i => !targetItems.includes(i));
-            setGlobalFilters({ [field]: newList });
+            targetItems.forEach(item => nextSet.delete(item));
         } else {
-            const toAdd = targetItems.filter(i => !currentList.includes(i));
-            setGlobalFilters({ [field]: [...currentList, ...toAdd] });
+            targetItems.forEach(item => nextSet.add(item));
+        }
+
+        // Avoid no-op updates when nothing effectively changes
+        if (nextSet.size !== selectedSet.size || Array.from(nextSet).some(item => !selectedSet.has(item))) {
+            setGlobalFilters({ [field]: Array.from(nextSet) });
         }
     };
 
-    const isAllSelected = visibleItems.length > 0 && visibleItems.every(i => (filters[field] as string[]).includes(i));
-    const selectedCount = (filters[field] as string[]).length;
+    const isAllSelected = visibleItems.length > 0 && visibleItems.every(i => selectedSet.has(i));
+    const selectedCount = selectedSet.size;
     const isActive = selectedCount > 0;
 
     const handleMouseEnter = () => {
@@ -83,22 +94,65 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     };
 
     const handleMouseLeave = () => {
+        if (isPinnedOpen) return;
         timeoutRef.current = setTimeout(() => {
             setIsOpen(false);
             setSearchTerm('');
         }, 300); // 300ms hover delay bridge
     };
 
+    React.useEffect(() => {
+        if (!isPinnedOpen) return;
+
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (!containerRef.current) return;
+            if (!containerRef.current.contains(event.target as Node)) {
+                setIsPinnedOpen(false);
+                setIsOpen(false);
+                setSearchTerm('');
+            }
+        };
+
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsPinnedOpen(false);
+                setIsOpen(false);
+                setSearchTerm('');
+            }
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        document.addEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [isPinnedOpen]);
+
     return (
         <div
+            ref={containerRef}
             className="relative"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
         >
-            <button className={`flex items-center gap-2 px-3 py-2 rounded-lg transition border shadow-sm ${isActive || isOpen
-                ? 'bg-white border-slate-400 text-slate-800'
-                : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300 text-slate-600'
-                }`}>
+            <button
+                onClick={() => {
+                    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                    if (isPinnedOpen) {
+                        setIsPinnedOpen(false);
+                        setIsOpen(false);
+                        setSearchTerm('');
+                    } else {
+                        setIsPinnedOpen(true);
+                        setIsOpen(true);
+                    }
+                }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition border shadow-sm ${isActive || isOpen
+                    ? 'bg-white border-slate-400 text-slate-800'
+                    : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300 text-slate-600'
+                    }`}
+            >
                 <Icon size={16} className={isActive ? 'text-slate-600' : 'text-slate-400'} />
                 <span className="text-sm font-medium">{title}</span>
                 {isActive && (
@@ -114,7 +168,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                 } ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'}`}>
                 {/* INVISIBLE BRIDGE to prevent mouse slip */}
                 <div
-                    className="absolute -inset-x-8 -top-3 -bottom-8 bg-transparent -z-10"
+                    className="absolute -inset-x-12 -top-5 -bottom-12 bg-transparent -z-10"
                     aria-hidden="true"
                 />
 
@@ -127,7 +181,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                         >
                             {isAllSelected
                                 ? (searchTerm ? 'Desmarcar Visiveis' : 'Desmarcar Todos')
-                                : (searchTerm ? 'Selecionar Visiveis' : 'Selecionar Todos')}
+                                : (searchTerm ? `Selecionar Visiveis (${visibleItems.length})` : `Selecionar Todos (${items.length})`)}
                         </button>
                     </div>
                     {searchable && (
@@ -151,7 +205,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                             </div>
                         )}
                         {visibleItems.map(item => {
-                            const selected = (filters[field] as string[]).includes(item);
+                            const selected = selectedSet.has(item);
                             return (
                                 <label
                                     key={item}
