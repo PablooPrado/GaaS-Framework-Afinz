@@ -18,7 +18,6 @@ import {
     Lightbulb,
     PieChart,
     Wallet,
-    LayoutDashboard,
     FolderTree,
     Settings2,
     ClipboardList
@@ -52,7 +51,6 @@ export const NAV_CONFIG: NavGroup[] = [
         title: 'FRAMEWORK',
         items: [
             { id: 'explorador', label: 'Explorador Avançado', icon: FolderTree },
-            { id: 'framework', label: 'Framework', icon: LayoutDashboard },
             { id: 'configuracoes', label: 'Configurações', icon: Settings2 },
         ]
     }

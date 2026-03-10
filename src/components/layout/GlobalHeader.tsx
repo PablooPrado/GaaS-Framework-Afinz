@@ -50,7 +50,6 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
         {
             title: 'Framework',
             items: [
-                { id: 'framework', label: 'Framework', icon: LayoutDashboard, onClick: () => setTab('framework') },
                 { id: 'explorador', label: 'Explorador Avançado', icon: LayoutDashboard, onClick: () => setTab('explorador') },
             ]
         },

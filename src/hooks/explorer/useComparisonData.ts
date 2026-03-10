@@ -43,7 +43,7 @@ const getMetricValueFromActivity = (a: ActivityRow, metric: ExplorerMetric): num
     case 'volume':
       return a['Base Total'] ?? 0;
     case 'cartoes':
-      return a['CartÃµes Gerados'] ?? 0;
+      return (a['Cartões Gerados'] ?? (a as Record<string, number>)['CartÃµes Gerados']) ?? 0;
     case 'cac':
       return a.CAC ?? 0;
     case 'custo':
