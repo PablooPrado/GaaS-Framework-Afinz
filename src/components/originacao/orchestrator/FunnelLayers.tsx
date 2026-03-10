@@ -6,7 +6,7 @@ import { Tooltip } from '../../Tooltip'; // Adjust import path if needed
 const TooltipWrapper = ({ content, children }: { content: string, children: React.ReactNode }) => (
     <div className="group relative flex items-center gap-1 cursor-help">
         {children}
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 text-slate-200 text-xs rounded border border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-white text-slate-900 text-xs rounded border border-slate-200 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
             {content}
         </div>
     </div>
@@ -56,7 +56,7 @@ const FunnelStage: React.FC<FunnelStageProps> = ({ label, value, subValue, color
             {/* Conversion Connector */}
             {conversion && (
                 <div className="h-8 flex items-center justify-center relative -my-1 z-10">
-                    <div className="bg-slate-800 text-slate-300 text-xs font-bold px-2 py-0.5 rounded-full border border-slate-600 flex items-center gap-1 shadow-sm">
+                    <div className="bg-white text-slate-700 text-xs font-bold px-2 py-0.5 rounded-full border border-slate-300 flex items-center gap-1 shadow-sm">
                         <ArrowDown size={10} />
                         {conversion}
                     </div>

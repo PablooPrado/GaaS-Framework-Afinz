@@ -145,10 +145,10 @@ export const PerformanceEvolutionChart: React.FC<PerformanceEvolutionChartProps>
     }, [chartData]);
 
     return (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+        <div className="bg-white border border-slate-200 rounded-lg p-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
                 <div>
-                    <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                         📊 Análise Temporal
                         <InfoTooltip content="Evolução das métricas ao longo do tempo com comparação e agrupamento." />
                     </h2>
@@ -156,11 +156,11 @@ export const PerformanceEvolutionChart: React.FC<PerformanceEvolutionChartProps>
 
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="flex flex-col">
-                        <label className="text-[10px] text-slate-400 uppercase font-bold mb-1">Métrica</label>
+                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Métrica</label>
                         <select
                             value={metric}
                             onChange={(e) => setMetric(e.target.value as MetricType)}
-                            className="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded px-2 py-1.5"
+                            className="bg-white border border-slate-300 text-slate-900 text-xs rounded px-2 py-1.5"
                         >
                             <option value="conversao">Taxa de Conversão</option>
                             <option value="cac">CAC</option>
@@ -170,18 +170,18 @@ export const PerformanceEvolutionChart: React.FC<PerformanceEvolutionChartProps>
                     </div>
 
                     <div className="flex flex-col">
-                        <label className="text-[10px] text-slate-400 uppercase font-bold mb-1">Agrupamento</label>
-                        <div className="flex bg-slate-900 rounded p-0.5 border border-slate-700">
+                        <label className="text-[10px] text-slate-500 uppercase font-bold mb-1">Agrupamento</label>
+                        <div className="flex bg-slate-100 rounded p-0.5 border border-slate-200">
                             <button
                                 onClick={() => setGroupBy('daily')}
-                                className={`px-2 py-1 text-xs font-medium rounded transition ${groupBy === 'daily' ? 'bg-blue-600 text-white' : 'text-slate-400'
+                                className={`px-2 py-1 text-xs font-medium rounded transition ${groupBy === 'daily' ? 'bg-blue-600 text-white' : 'text-slate-500'
                                     }`}
                             >
                                 Diário
                             </button>
                             <button
                                 onClick={() => setGroupBy('weekly')}
-                                className={`px-2 py-1 text-xs font-medium rounded transition ${groupBy === 'weekly' ? 'bg-blue-600 text-white' : 'text-slate-400'
+                                className={`px-2 py-1 text-xs font-medium rounded transition ${groupBy === 'weekly' ? 'bg-blue-600 text-white' : 'text-slate-500'
                                     }`}
                             >
                                 Semanal
@@ -194,15 +194,15 @@ export const PerformanceEvolutionChart: React.FC<PerformanceEvolutionChartProps>
             <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                         <XAxis
                             dataKey="label"
-                            stroke="#94a3b8"
-                            tick={{ fill: '#94a3b8', fontSize: 10 }}
+                            stroke="#94A3B8"
+                            tick={{ fill: '#94A3B8', fontSize: 10 }}
                         />
-                        <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                        <YAxis stroke="#94A3B8" tick={{ fill: '#94A3B8', fontSize: 10 }} />
                         <Tooltip
-                            contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155' }}
+                            contentStyle={{ backgroundColor: '#ffffff', borderColor: '#E2E8F0', color: '#1e293b' }}
                             formatter={(value: number) => [
                                 `${value.toFixed(2)}${metric === 'cac' ? '' : '%'}`,
                                 metric === 'cac' ? 'CAC' : 'Taxa'
@@ -224,19 +224,19 @@ export const PerformanceEvolutionChart: React.FC<PerformanceEvolutionChartProps>
                 </ResponsiveContainer>
             </div>
 
-            <div className="mt-4 pt-4 border-t border-slate-700 flex gap-6 text-sm">
+            <div className="mt-4 pt-4 border-t border-slate-200 flex gap-6 text-sm">
                 <div>
                     <span className="text-slate-500 mr-2">Média:</span>
-                    <span className="text-slate-200 font-bold">{stats.avg}{metric === 'cac' ? '' : '%'}</span>
+                    <span className="text-slate-900 font-bold">{stats.avg}{metric === 'cac' ? '' : '%'}</span>
                 </div>
                 <div>
                     <span className="text-slate-500 mr-2">Máx:</span>
-                    <span className="text-slate-200 font-bold">{stats.max}{metric === 'cac' ? '' : '%'}</span>
+                    <span className="text-slate-900 font-bold">{stats.max}{metric === 'cac' ? '' : '%'}</span>
                     <span className="text-xs text-slate-500 ml-1">({stats.maxDate})</span>
                 </div>
                 <div>
                     <span className="text-slate-500 mr-2">Mín:</span>
-                    <span className="text-slate-200 font-bold">{stats.min}{metric === 'cac' ? '' : '%'}</span>
+                    <span className="text-slate-900 font-bold">{stats.min}{metric === 'cac' ? '' : '%'}</span>
                     <span className="text-xs text-slate-500 ml-1">({stats.minDate})</span>
                 </div>
             </div>

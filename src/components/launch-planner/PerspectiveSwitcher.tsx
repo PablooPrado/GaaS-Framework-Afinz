@@ -7,9 +7,9 @@ export const PerspectiveSwitcher: React.FC = () => {
     const perspective = viewSettings.perspective;
 
     const modes = [
-        { id: 'crm', label: 'Mundo CRM', icon: Users, color: 'text-blue-400' },
-        { id: 'total', label: 'Banco Total', icon: LayoutDashboard, color: 'text-emerald-400' },
-        { id: 'b2c', label: 'B2C Direto', icon: Zap, color: 'text-orange-400' },
+        { id: 'crm', label: 'Mundo CRM', icon: Users, color: 'text-blue-600' },
+        { id: 'total', label: 'Banco Total', icon: LayoutDashboard, color: 'text-emerald-600' },
+        { id: 'b2c', label: 'B2C Direto', icon: Zap, color: 'text-orange-600' },
     ];
 
     const currentIndex = modes.findIndex(m => m.id === perspective);
@@ -23,12 +23,12 @@ export const PerspectiveSwitcher: React.FC = () => {
     return (
         <button
             onClick={cycleMode}
-            className="flex items-center gap-2 px-3 py-1 bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 rounded-md transition-all group"
+            className="flex items-center gap-2 px-3 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md transition-all group"
             title="Alternar visão (CRM / Total / B2C)"
         >
             <div className={`w-1.5 h-1.5 rounded-full ${currentMode.color.replace('text-', 'bg-')} shadow-[0_0_8px_currentColor]`} />
-            <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">{currentMode.label}</span>
-            <ChevronRight size={12} className="text-slate-600 group-hover:translate-x-0.5 transition-transform" />
+            <span className="text-[10px] text-slate-700 font-bold uppercase tracking-wider">{currentMode.label}</span>
+            <ChevronRight size={12} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
         </button>
     );
 };

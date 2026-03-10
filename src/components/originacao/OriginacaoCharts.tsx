@@ -98,15 +98,15 @@ export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareT
     return (
         <div className="mt-8">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-slate-100 opacity-90">Análise Gráfica</h3>
-                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                <h3 className="text-lg font-bold text-slate-900">Análise Gráfica</h3>
+                <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
                     {(['daily', 'weekly', 'monthly'] as const).map((mode) => (
                         <button
                             key={mode}
                             onClick={() => setViewMode(mode)}
                             className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${viewMode === mode
                                 ? 'bg-blue-600 text-white shadow-sm'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+                                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'
                                 }`}
                         >
                             {mode === 'daily' ? 'Dia' : mode === 'weekly' ? 'Semana' : 'Mês'}
@@ -118,17 +118,17 @@ export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareT
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
                 {/* 1. Volume: Propostas CRM vs B2C */}
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700/50">
-                    <h3 className="text-sm font-bold text-slate-300 mb-4">Volume de Propostas: CRM vs B2C Total</h3>
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-700 mb-4">Volume de Propostas: CRM vs B2C Total</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={chartData} onClick={handleChartClick}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                                 <XAxis dataKey="displayDate" stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
-                                    cursor={{ fill: '#1e293b', opacity: 0.4 }}
+                                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#E2E8F0' }}
+                                    cursor={{ fill: '#E2E8F0', opacity: 0.4 }}
                                     formatter={tooltipFormatter}
                                 />
                                 <Legend />
@@ -140,16 +140,16 @@ export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareT
                 </div>
 
                 {/* 2. Taxa de Conversão Comparativa */}
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700/50">
-                    <h3 className="text-sm font-bold text-slate-300 mb-4">Taxa de Conversão: CRM vs Média B2C</h3>
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-700 mb-4">Taxa de Conversão: CRM vs Média B2C</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData} onClick={handleChartClick}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                                 <XAxis dataKey="displayDate" stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <YAxis stroke="#64748b" tick={{ fontSize: 10 }} unit="%" />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
+                                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#E2E8F0' }}
                                     formatter={tooltipFormatter}
                                 />
                                 <Legend />
@@ -161,17 +161,17 @@ export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareT
                 </div>
 
                 {/* 3. Tendência Share CRM (%) [Was #4] */}
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700/50">
-                    <h3 className="text-sm font-bold text-slate-300 mb-4">Tendência Share CRM (%)</h3>
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-700 mb-4">Tendência Share CRM (%)</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData} onClick={handleChartClick}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                                 <XAxis dataKey="displayDate" stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <YAxis stroke="#64748b" tick={{ fontSize: 10 }} unit="%" />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
-                                    itemStyle={{ color: '#e2e8f0' }}
+                                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#E2E8F0' }}
+                                    itemStyle={{ color: '#1e293b' }}
                                     formatter={tooltipFormatter}
                                 />
                                 <Legend />
@@ -198,17 +198,17 @@ export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareT
                 </div>
 
                 {/* 4. Volume de Emissões: CRM vs B2C [Was #3] */}
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700/50">
-                    <h3 className="text-sm font-bold text-slate-300 mb-4">Volume de Emissões: CRM vs B2C</h3>
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-700 mb-4">Volume de Emissões: CRM vs B2C</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={chartData} onClick={handleChartClick}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                                 <XAxis dataKey="displayDate" stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
-                                    cursor={{ fill: '#1e293b', opacity: 0.4 }}
+                                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#E2E8F0' }}
+                                    cursor={{ fill: '#E2E8F0', opacity: 0.4 }}
                                     formatter={tooltipFormatter}
                                 />
                                 <Legend />
@@ -220,16 +220,16 @@ export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareT
                 </div>
 
                 {/* 5. CAC Evolution (R$) [Was #6] */}
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700/50">
-                    <h3 className="text-sm font-bold text-slate-300 mb-4">CAC Evolution (R$)</h3>
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-700 mb-4">CAC Evolution (R$)</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData} onClick={handleChartClick}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                                 <XAxis dataKey="displayDate" stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
+                                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#E2E8F0' }}
                                     formatter={tooltipFormatter}
                                 />
                                 <Legend />
@@ -247,17 +247,17 @@ export const OriginacaoCharts: React.FC<OriginacaoChartsProps> = ({ data, shareT
                 </div>
 
                 {/* 6. Share por Dia da Semana [Was #5] */}
-                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700/50 flex flex-col">
-                    <h3 className="text-sm font-bold text-slate-300 mb-4">Share por Dia da Semana</h3>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col">
+                    <h3 className="text-sm font-bold text-slate-700 mb-4">Share por Dia da Semana</h3>
                     <div className="flex-1 flex items-end gap-2 h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={shareByDay}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                                 <XAxis dataKey="dia" stroke="#64748b" fontSize={10} />
                                 <YAxis stroke="#64748b" unit="%" fontSize={10} />
                                 <Tooltip
                                     cursor={{ fill: 'transparent' }}
-                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
+                                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#E2E8F0' }}
                                     formatter={(val: number) => fmt(val, true)}
                                 />
                                 <Bar dataKey="share" name="Share Médio" fill="#f59e0b" radius={[4, 4, 0, 0]} />

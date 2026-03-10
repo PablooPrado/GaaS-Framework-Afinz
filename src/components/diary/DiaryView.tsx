@@ -18,10 +18,10 @@ const BU_BADGE: { [key: string]: string } = {
 };
 
 const STATUS_CONFIG = {
-    'hipotese': { label: 'Hipótese', icon: HelpCircle, color: 'text-amber-400 bg-amber-400/10' },
-    'rodando': { label: 'Rodando', icon: Clock, color: 'text-blue-400 bg-blue-400/10' },
-    'concluido': { label: 'Concluído', icon: CheckCircle, color: 'text-emerald-400 bg-emerald-400/10' },
-    'aprendizado': { label: 'Aprendizado', icon: Lightbulb, color: 'text-purple-400 bg-purple-400/10' },
+    'hipotese': { label: 'Hipótese', icon: HelpCircle, color: 'text-amber-600 bg-amber-50' },
+    'rodando': { label: 'Rodando', icon: Clock, color: 'text-blue-600 bg-blue-50' },
+    'concluido': { label: 'Concluído', icon: CheckCircle, color: 'text-emerald-600 bg-emerald-50' },
+    'aprendizado': { label: 'Aprendizado', icon: Lightbulb, color: 'text-purple-600 bg-purple-50' },
 };
 
 const INITIAL_FORM: Omit<DiaryEntry, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -226,10 +226,10 @@ export const DiaryView: React.FC = () => {
     const sortedEntries = [...filteredEntries].sort((a, b) => b.date.localeCompare(a.date));
 
     return (
-        <div className="flex flex-col flex-1 min-h-0 bg-gradient-to-br from-slate-900 to-slate-800 p-4 gap-4 overflow-hidden">
+        <div className="flex flex-col flex-1 min-h-0 bg-white p-4 gap-4 overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between shrink-0">
-                <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                     📔 Diário de Bordo
                 </h2>
                 <div className="flex gap-2">
@@ -263,24 +263,24 @@ export const DiaryView: React.FC = () => {
             </div>
 
             {/* Form Nova/Edit Anotação */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 shrink-0 overflow-y-auto max-h-[400px]">
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 shrink-0 overflow-y-auto max-h-[400px]">
                 <div className="space-y-4">
                     <div className="grid grid-cols-3 gap-3">
                         <div>
-                            <label className="block text-xs font-semibold text-slate-300 mb-1">Data</label>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">Data</label>
                             <input
                                 type="date"
                                 value={formData.date}
                                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                className="w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                                className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-900 focus:outline-none focus:border-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-slate-300 mb-1">BU</label>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">BU</label>
                             <select
                                 value={formData.bu}
                                 onChange={(e) => setFormData({ ...formData, bu: e.target.value as any })}
-                                className="w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                                className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs text-slate-900 focus:outline-none focus:border-blue-500"
                             >
                                 <option value="B2C">B2C</option>
                                 <option value="B2B2C">B2B2C</option>
@@ -288,15 +288,15 @@ export const DiaryView: React.FC = () => {
                             </select>
                         </div>
                         <div className="flex items-end">
-                            <label className="flex items-center gap-2 cursor-pointer bg-slate-700 px-3 py-1.5 rounded border border-slate-600 w-full hover:bg-slate-600 transition">
+                            <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded border border-slate-300 w-full hover:bg-slate-50 transition">
                                 <input
                                     type="checkbox"
                                     checked={formData.isTesteAB}
                                     onChange={(e) => setFormData({ ...formData, isTesteAB: e.target.checked })}
-                                    className="rounded border-slate-500 text-blue-500 focus:ring-blue-500 bg-slate-800"
+                                    className="rounded border-slate-300 text-blue-500 focus:ring-blue-500 bg-white"
                                 />
-                                <span className="text-xs font-semibold text-slate-200 flex items-center gap-1">
-                                    <Beaker size={14} className={formData.isTesteAB ? 'text-blue-400' : 'text-slate-400'} />
+                                <span className="text-xs font-semibold text-slate-900 flex items-center gap-1">
+                                    <Beaker size={14} className={formData.isTesteAB ? 'text-blue-600' : 'text-slate-500'} />
                                     É Teste A/B?
                                 </span>
                             </label>
@@ -304,25 +304,25 @@ export const DiaryView: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-xs font-semibold text-slate-300 mb-1">Anotação Principal</label>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Anotação Principal</label>
                         <textarea
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             placeholder="Descreva o evento ou observação..."
-                            className="w-full px-2 py-2 bg-slate-700 border border-slate-600 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+                            className="w-full px-2 py-2 bg-white border border-slate-300 rounded text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 resize-none"
                             style={{ minHeight: '60px' }}
                         />
                     </div>
 
                     {formData.isTesteAB && (
-                        <div className="bg-blue-900/20 border border-blue-500/30 rounded p-3 space-y-3 animate-in fade-in slide-in-from-top-2">
+                        <div className="bg-blue-50 border border-blue-200 rounded p-3 space-y-3 animate-in fade-in slide-in-from-top-2">
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-semibold text-blue-300 mb-1">Status do Experimento</label>
+                                    <label className="block text-xs font-semibold text-blue-700 mb-1">Status do Experimento</label>
                                     <select
                                         value={formData.statusExperimento}
                                         onChange={(e) => setFormData({ ...formData, statusExperimento: e.target.value as any })}
-                                        className="w-full px-2 py-1.5 bg-slate-800 border border-blue-500/30 rounded text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                                        className="w-full px-2 py-1.5 bg-white border border-blue-200 rounded text-xs text-slate-900 focus:outline-none focus:border-blue-500"
                                     >
                                         <option value="hipotese">🧪 Hipótese</option>
                                         <option value="rodando">⏳ Rodando</option>
@@ -331,34 +331,34 @@ export const DiaryView: React.FC = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-blue-300 mb-1">Campanhas Relacionadas</label>
+                                    <label className="block text-xs font-semibold text-blue-700 mb-1">Campanhas Relacionadas</label>
                                     <input
                                         type="text"
                                         value={formData.campanhasRelacionadas?.join(', ')}
                                         onChange={(e) => setFormData({ ...formData, campanhasRelacionadas: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
                                         placeholder="Ex: Campanha X, Campanha Y"
-                                        className="w-full px-2 py-1.5 bg-slate-800 border border-blue-500/30 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                                        className="w-full px-2 py-1.5 bg-white border border-blue-200 rounded text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500"
                                     />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-semibold text-blue-300 mb-1">Hipótese</label>
+                                    <label className="block text-xs font-semibold text-blue-700 mb-1">Hipótese</label>
                                     <textarea
                                         value={formData.hipotese}
                                         onChange={(e) => setFormData({ ...formData, hipotese: e.target.value })}
                                         placeholder="O que esperamos que aconteça?"
-                                        className="w-full px-2 py-2 bg-slate-800 border border-blue-500/30 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none h-20"
+                                        className="w-full px-2 py-2 bg-white border border-blue-200 rounded text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 resize-none h-20"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-semibold text-blue-300 mb-1">Conclusão / Resultados</label>
+                                    <label className="block text-xs font-semibold text-blue-700 mb-1">Conclusão / Resultados</label>
                                     <textarea
                                         value={formData.conclusao}
                                         onChange={(e) => setFormData({ ...formData, conclusao: e.target.value })}
                                         placeholder="O que aprendemos?"
-                                        className="w-full px-2 py-2 bg-slate-800 border border-blue-500/30 rounded text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 resize-none h-20"
+                                        className="w-full px-2 py-2 bg-white border border-blue-200 rounded text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 resize-none h-20"
                                     />
                                 </div>
                             </div>
@@ -406,28 +406,28 @@ export const DiaryView: React.FC = () => {
             {/* Lista de Anotações */}
             <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-2">
                 {sortedEntries.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-32 text-slate-400">
+                    <div className="flex flex-col items-center justify-center h-32 text-slate-500">
                         <p className="text-xs">📝 Nenhuma anotação ainda</p>
                         <p className="text-xs italic mt-1">Comece adicionando uma acima</p>
                     </div>
                 ) : (
                     sortedEntries.map((entry) => (
-                        <div key={entry.id} className={`${BU_COLORS[entry.bu]} border rounded-lg overflow-hidden transition hover:shadow-lg relative group`}>
+                        <div key={entry.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden transition hover:shadow-md relative group">
                             <div className="p-4">
                                 <div className="flex items-start justify-between mb-3">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <span className="text-xs font-semibold text-slate-200">{formatDate(entry.date)}</span>
+                                        <span className="text-xs font-semibold text-slate-900">{formatDate(entry.date)}</span>
                                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${BU_BADGE[entry.bu]}`}>
                                             {entry.bu}
                                         </span>
                                         {entry.isTesteAB && (
-                                            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
                                                 <Beaker size={12} />
                                                 Teste A/B
                                             </span>
                                         )}
                                         {entry.isTesteAB && entry.statusExperimento && (
-                                            <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border border-white/10 ${STATUS_CONFIG[entry.statusExperimento].color}`}>
+                                            <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border border-slate-200 ${STATUS_CONFIG[entry.statusExperimento].color}`}>
                                                 {React.createElement(STATUS_CONFIG[entry.statusExperimento].icon, { size: 12 })}
                                                 {STATUS_CONFIG[entry.statusExperimento].label}
                                             </span>
@@ -436,14 +436,14 @@ export const DiaryView: React.FC = () => {
                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             onClick={() => handleStartEdit(entry)}
-                                            className="p-1.5 hover:bg-white/10 rounded transition text-slate-300 hover:text-white"
+                                            className="p-1.5 hover:bg-slate-100 rounded transition text-slate-500 hover:text-slate-900"
                                             title="Editar"
                                         >
                                             <Edit2 size={14} />
                                         </button>
                                         <button
                                             onClick={() => handleDelete(entry.id)}
-                                            className="p-1.5 hover:bg-red-500/20 rounded transition text-slate-300 hover:text-red-400"
+                                            className="p-1.5 hover:bg-red-50 rounded transition text-slate-500 hover:text-red-600"
                                             title="Deletar"
                                         >
                                             <Trash2 size={14} />
@@ -451,40 +451,40 @@ export const DiaryView: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <p className="text-sm leading-relaxed whitespace-pre-wrap text-slate-200 mb-3">{entry.title}</p>
+                                <p className="text-sm leading-relaxed whitespace-pre-wrap text-slate-900 mb-3">{entry.title}</p>
                                 {entry.description && (
-                                    <p className="text-xs leading-relaxed whitespace-pre-wrap text-slate-400 mb-3 border-l-2 border-slate-600 pl-2">{entry.description}</p>
+                                    <p className="text-xs leading-relaxed whitespace-pre-wrap text-slate-500 mb-3 border-l-2 border-slate-300 pl-2">{entry.description}</p>
                                 )}
 
                                 {entry.isTesteAB && (
-                                    <div className="grid grid-cols-2 gap-4 mt-3 mb-3 bg-black/20 p-3 rounded border border-white/5">
+                                    <div className="grid grid-cols-2 gap-4 mt-3 mb-3 bg-slate-50 p-3 rounded border border-slate-200">
                                         {entry.hipotese && (
                                             <div>
-                                                <span className="text-[10px] uppercase font-bold text-slate-400 mb-1 block">Hipótese</span>
-                                                <p className="text-xs text-slate-300">{entry.hipotese}</p>
+                                                <span className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Hipótese</span>
+                                                <p className="text-xs text-slate-700">{entry.hipotese}</p>
                                             </div>
                                         )}
                                         {entry.conclusao && (
                                             <div>
-                                                <span className="text-[10px] uppercase font-bold text-slate-400 mb-1 block">Conclusão</span>
-                                                <p className="text-xs text-slate-300">{entry.conclusao}</p>
+                                                <span className="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Conclusão</span>
+                                                <p className="text-xs text-slate-700">{entry.conclusao}</p>
                                             </div>
                                         )}
                                     </div>
                                 )}
 
-                                <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-white/5">
+                                <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-slate-100">
                                     {entry.campanhasRelacionadas && entry.campanhasRelacionadas.length > 0 && (
-                                        <div className="flex items-center gap-1 text-xs text-slate-400 mr-2">
+                                        <div className="flex items-center gap-1 text-xs text-slate-500 mr-2">
                                             <LinkIcon size={12} />
                                             {entry.campanhasRelacionadas.join(', ')}
                                         </div>
                                     )}
                                     {entry.segmentos && entry.segmentos.length > 0 && (
-                                        <span className="text-xs text-slate-400">🏷️ {entry.segmentos.join(', ')}</span>
+                                        <span className="text-xs text-slate-500">🏷️ {entry.segmentos.join(', ')}</span>
                                     )}
                                     {entry.parceiros && entry.parceiros.length > 0 && (
-                                        <span className="text-xs text-slate-400">🤝 {entry.parceiros.join(', ')}</span>
+                                        <span className="text-xs text-slate-500">🤝 {entry.parceiros.join(', ')}</span>
                                     )}
                                 </div>
                             </div>

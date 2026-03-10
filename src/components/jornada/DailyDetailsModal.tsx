@@ -47,22 +47,22 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({
     });
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white border border-slate-200 rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-white/10 shrink-0">
+                <div className="flex items-center justify-between p-4 border-b border-slate-200 shrink-0">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                             {titleOverride ? titleOverride : `Detalhes do Dia: ${date?.toLocaleDateString('pt-BR')}`}
                         </h2>
-                        <p className="text-sm text-slate-400 mt-1">
+                        <p className="text-sm text-slate-500 mt-1">
                             {filteredActivities.length} atividades registradas {anomalyFilters.length > 0 && '(Filtrado)'}
                         </p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-slate-200"
+                        className="p-2 hover:bg-slate-100 rounded-lg transition text-slate-500 hover:text-slate-900"
                     >
                         <X size={20} />
                     </button>
@@ -87,15 +87,15 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({
                         const cardBorderColor = isDraft ? 'border-slate-700/50' : (buColors[activity.bu as keyof typeof buColors] || 'border-slate-700/50');
 
                         return (
-                            <div key={activity.id} className={`bg-slate-800/50 border rounded-lg p-3 transition ${cardBorderColor}`}>
+                            <div key={activity.id} className={`bg-slate-50 border rounded-lg p-3 transition ${cardBorderColor}`}>
                                 <div className="flex items-start justify-between mb-2">
                                     <div className="flex-1">
-                                        <h3 className="text-sm font-bold text-slate-100 mb-1">{activity.id}</h3>
+                                        <h3 className="text-sm font-bold text-slate-900 mb-1">{activity.id}</h3>
                                         <div className="flex flex-wrap gap-2 text-xs">
-                                            <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded">{activity.bu}</span>
-                                            <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded">{activity.canal}</span>
-                                            {isPending && <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded">Pendente</span>}
-                                            {isDraft && <span className="px-2 py-0.5 bg-slate-500/20 text-slate-400 rounded">Rascunho</span>}
+                                            <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded">{activity.bu}</span>
+                                            <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded">{activity.canal}</span>
+                                            {isPending && <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded">Pendente</span>}
+                                            {isDraft && <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded">Rascunho</span>}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1">
@@ -103,7 +103,7 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({
                                         {isDraft && onConfirmDraft && (
                                             <button
                                                 onClick={() => onConfirmDraft(activity)}
-                                                className="p-1.5 hover:bg-green-900/30 rounded transition text-green-500 hover:text-green-400 border border-green-500/30"
+                                                className="p-1.5 hover:bg-green-50 rounded transition text-green-600 hover:text-green-700 border border-green-300"
                                                 title="Confirmar disparo"
                                             >
                                                 <Check size={14} />
@@ -113,7 +113,7 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({
                                         {onEdit && (
                                             <button
                                                 onClick={() => onEdit(activity)}
-                                                className="p-1.5 hover:bg-slate-700 rounded transition text-slate-400 hover:text-blue-400"
+                                                className="p-1.5 hover:bg-slate-100 rounded transition text-slate-500 hover:text-blue-600"
                                                 title="Editar disparo"
                                             >
                                                 <Edit2 size={14} />
@@ -122,47 +122,47 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-2">
-                                    <div className="bg-slate-900/50 p-2 rounded">
+                                    <div className="bg-white p-2 rounded border border-slate-100">
                                         <div className="text-[10px] text-slate-500 mb-0.5 flex items-center gap-1">
                                             Enviado <Info size={10} className="opacity-30" />
                                         </div>
-                                        <div className="text-xs font-semibold text-slate-200">{activity.kpis.baseEnviada || 0}</div>
+                                        <div className="text-xs font-semibold text-slate-900">{activity.kpis.baseEnviada || 0}</div>
                                     </div>
-                                    <div className="bg-slate-900/50 p-2 rounded">
+                                    <div className="bg-white p-2 rounded border border-slate-100">
                                         <div className="text-[10px] text-slate-500 mb-0.5 flex items-center gap-1">
                                             Entregue <Info size={10} className="opacity-30" />
                                         </div>
-                                        <div className="text-xs font-semibold text-slate-200">
+                                        <div className="text-xs font-semibold text-slate-900">
                                             {activity.kpis.baseEntregue || 0}
                                         </div>
                                     </div>
-                                    <div className="bg-slate-900/50 p-2 rounded">
+                                    <div className="bg-white p-2 rounded border border-slate-100">
                                         <div className="text-[10px] text-slate-500 mb-0.5 flex items-center gap-1">
                                             Cartões <Info size={10} className="opacity-30" />
                                         </div>
-                                        <div className="text-xs font-semibold text-blue-400">{activity.kpis.cartoes || 0}</div>
+                                        <div className="text-xs font-semibold text-blue-600">{activity.kpis.cartoes || 0}</div>
                                     </div>
-                                    <div className="bg-slate-900/50 p-2 rounded">
+                                    <div className="bg-white p-2 rounded border border-slate-100">
                                         <div className="text-[10px] text-slate-500 mb-0.5 flex items-center gap-1">
                                             Conversão <Info size={10} className="opacity-30" />
                                         </div>
-                                        <div className="text-xs font-semibold text-emerald-400">
+                                        <div className="text-xs font-semibold text-emerald-600">
                                             {activity.kpis.taxaConversao ? (activity.kpis.taxaConversao * 100).toFixed(2) : 0}%
                                         </div>
                                     </div>
-                                    <div className="bg-slate-900/50 p-2 rounded">
+                                    <div className="bg-white p-2 rounded border border-slate-100">
                                         <div className="text-[10px] text-slate-500 mb-0.5 flex items-center gap-1">
                                             Custo <Info size={10} className="opacity-30" />
                                         </div>
-                                        <div className="text-xs font-semibold text-slate-200">
+                                        <div className="text-xs font-semibold text-slate-900">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(activity.kpis.custoTotal || 0)}
                                         </div>
                                     </div>
-                                    <div className="bg-slate-900/50 p-2 rounded">
+                                    <div className="bg-white p-2 rounded border border-slate-100">
                                         <div className="text-[10px] text-slate-500 mb-0.5 flex items-center gap-1">
                                             CAC <Info size={10} className="opacity-30" />
                                         </div>
-                                        <div className="text-xs font-semibold text-slate-200">
+                                        <div className="text-xs font-semibold text-slate-900">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(activity.kpis.cac || 0)}
                                         </div>
                                     </div>
@@ -173,10 +173,10 @@ export const DailyDetailsModal: React.FC<DailyDetailsModalProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-800 flex justify-end shrink-0">
+                <div className="p-4 border-t border-slate-200 flex justify-end shrink-0">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-medium transition"
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-lg text-sm font-medium transition"
                     >
                         Fechar
                     </button>

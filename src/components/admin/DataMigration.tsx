@@ -213,28 +213,28 @@ export const DataMigration = () => {
     };
 
     return (
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 shadow-xl backdrop-blur-sm relative overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xl relative overflow-hidden">
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 relative z-10">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-indigo-500/20 rounded-xl text-indigo-400 shadow-inner">
+                    <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 shadow-inner">
                         <Database size={24} />
                     </div>
                     <div>
-                        <h3 className="text-xl font-bold text-white">Migração de Dados (SQL)</h3>
-                        <p className="text-sm text-slate-400">Transfira dados do navegador para o Supabase DB.</p>
+                        <h3 className="text-xl font-bold text-slate-900">Migração de Dados (SQL)</h3>
+                        <p className="text-sm text-slate-500">Transfira dados do navegador para o Supabase DB.</p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-slate-900/50 rounded p-4 mb-6 border border-slate-700/50">
+            <div className="bg-slate-50 rounded p-4 mb-6 border border-slate-200">
                 <div className="flex justify-between items-center mb-2">
-                    <span className="text-slate-400">Registros em Memória (CSV):</span>
-                    <span className="text-2xl font-bold text-white">{activities.length}</span>
+                    <span className="text-slate-500">Registros em Memória (CSV):</span>
+                    <span className="text-2xl font-bold text-slate-900">{activities.length}</span>
                 </div>
 
                 {activities.length !== 511 && (
-                    <div className="flex items-center gap-2 text-amber-400 text-sm bg-amber-900/20 p-2 rounded border border-amber-900/50 mt-2">
+                    <div className="flex items-center gap-2 text-amber-600 text-sm bg-amber-50 p-2 rounded border border-amber-200 mt-2">
                         <AlertTriangle size={16} />
                         <span>Atenção: Esperado 511. Encontrado {activities.length}. Re-importe o CSV se necessário.</span>
                     </div>
@@ -246,7 +246,7 @@ export const DataMigration = () => {
                     onClick={handleMigration}
                     disabled={activities.length === 0}
                     className={`w-full py-4 rounded-lg font-bold text-lg flex items-center justify-center gap-2 transition
-                        ${activities.length === 0 ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}
+                        ${activities.length === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}
                     `}
                 >
                     <UploadCloud />
@@ -256,15 +256,15 @@ export const DataMigration = () => {
 
             {status !== 'idle' && (
                 <div className="space-y-4">
-                    <div className="w-full bg-slate-700 rounded-full h-4 overflow-hidden">
+                    <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden">
                         <div
                             className={`h-full transition-all duration-300 ${status === 'error' ? 'bg-red-500' : 'bg-green-500'}`}
                             style={{ width: `${progress}%` }}
                         />
                     </div>
-                    <div className="text-center text-white font-bold">{progress}%</div>
+                    <div className="text-center text-slate-900 font-bold">{progress}%</div>
 
-                    <div className="bg-black/50 p-4 rounded h-40 overflow-y-auto font-mono text-xs text-green-400 border border-slate-700">
+                    <div className="bg-slate-900 p-4 rounded h-40 overflow-y-auto font-mono text-xs text-green-400 border border-slate-700">
                         {log.map((l, i) => <div key={i}>{l}</div>)}
                     </div>
                 </div>

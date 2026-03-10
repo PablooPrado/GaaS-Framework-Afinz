@@ -61,17 +61,17 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, index, onC
                     </div>
 
                     {/* Tooltip on hover */}
-                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-50 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-2 text-xs">
-                        <div className="font-bold text-white mb-1">{activity.id}</div>
-                        <div className="text-slate-400 mb-2">{activity.canal} - {activity.segmento}</div>
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-50 w-48 bg-white border border-slate-200 rounded-lg shadow-xl p-2 text-xs">
+                        <div className="font-bold text-slate-900 mb-1">{activity.id}</div>
+                        <div className="text-slate-500 mb-2">{activity.canal} - {activity.segmento}</div>
                         <div className="grid grid-cols-2 gap-2">
                             <div>
                                 <span className="text-slate-500 block">Cartões</span>
-                                <span className="text-white font-medium">{activity.kpis.cartoes || 0}</span>
+                                <span className="text-slate-900 font-medium">{activity.kpis.cartoes || 0}</span>
                             </div>
                             <div>
                                 <span className="text-slate-500 block">Custo</span>
-                                <span className="text-white font-medium">
+                                <span className="text-slate-900 font-medium">
                                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(activity.kpis.custoTotal || 0)}
                                 </span>
                             </div>

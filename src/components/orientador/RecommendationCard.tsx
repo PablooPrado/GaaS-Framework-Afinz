@@ -12,19 +12,19 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommen
     const { combo, score, metrics, insights } = recommendation;
 
     const getScoreColor = (score: number) => {
-        if (score >= 80) return 'text-emerald-400 border-emerald-500/50 bg-emerald-500/10';
-        if (score >= 60) return 'text-yellow-400 border-yellow-500/50 bg-yellow-500/10';
-        if (score >= 40) return 'text-orange-400 border-orange-500/50 bg-orange-500/10';
-        return 'text-red-400 border-red-500/50 bg-red-500/10';
+        if (score >= 80) return 'text-emerald-600 border-emerald-400 bg-emerald-50';
+        if (score >= 60) return 'text-yellow-600 border-yellow-400 bg-yellow-50';
+        if (score >= 40) return 'text-orange-600 border-orange-400 bg-orange-50';
+        return 'text-red-600 border-red-400 bg-red-50';
     };
 
     const getChannelColor = (canal: string) => {
         const c = canal.toLowerCase();
-        if (c.includes('email') || c.includes('e-mail')) return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-        if (c.includes('sms')) return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
-        if (c.includes('push')) return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
-        if (c.includes('whats')) return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
-        return 'bg-slate-700 text-slate-300 border-slate-600';
+        if (c.includes('email') || c.includes('e-mail')) return 'bg-blue-50 text-blue-700 border-blue-200';
+        if (c.includes('sms')) return 'bg-amber-50 text-amber-700 border-amber-200';
+        if (c.includes('push')) return 'bg-purple-50 text-purple-700 border-purple-200';
+        if (c.includes('whats')) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        return 'bg-slate-100 text-slate-700 border-slate-300';
     };
 
     const getRecencyInfo = (date: Date | null) => {
@@ -44,7 +44,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommen
     return (
         <div
             onClick={onClick}
-            className={`bg-slate-800/50 border rounded-lg p-4 transition cursor-pointer group relative overflow-hidden hover:shadow-lg ${scoreColorClass.replace('text-', 'border-').split(' ')[1]}`}
+            className={`bg-white border rounded-lg p-4 transition cursor-pointer group relative overflow-hidden hover:shadow-lg ${scoreColorClass.replace('text-', 'border-').split(' ')[1]}`}
         >
             {/* Background Gradient based on score */}
             <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent rounded-bl-full -mr-10 -mt-10 transition-opacity opacity-0 group-hover:opacity-100 pointer-events-none`} />
@@ -56,11 +56,11 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommen
                             {combo.canal}
                         </span>
                         <span className="text-xs text-slate-400">•</span>
-                        <span className="text-xs font-medium text-slate-300">{combo.segmento}</span>
+                        <span className="text-xs font-medium text-slate-700">{combo.segmento}</span>
                         {combo.promocional && (
                             <>
                                 <span className="text-xs text-slate-400">•</span>
-                                <span className="text-[10px] bg-pink-500/10 text-pink-300 px-1.5 py-0.5 rounded border border-pink-500/20">
+                                <span className="text-[10px] bg-pink-50 text-pink-700 px-1.5 py-0.5 rounded border border-pink-200">
                                     {combo.promocional}
                                 </span>
                             </>
@@ -68,7 +68,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommen
 
                         {/* Oferta 2 - Cyan/Teal */}
                         <span className="text-xs text-slate-400">•</span>
-                        <span className="text-[10px] bg-cyan-500/10 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                        <span className="text-[10px] bg-cyan-50 text-cyan-700 px-1.5 py-0.5 rounded border border-cyan-200">
                             {combo.oferta2}
                         </span>
 
@@ -76,13 +76,13 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommen
                         {combo.promocional2 && (
                             <>
                                 <span className="text-xs text-slate-400">•</span>
-                                <span className="text-[10px] bg-indigo-500/10 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-500/20">
+                                <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-200">
                                     {combo.promocional2}
                                 </span>
                             </>
                         )}
                     </div>
-                    <h3 className="text-sm font-bold text-slate-100 line-clamp-2" title={combo.oferta}>
+                    <h3 className="text-sm font-bold text-slate-900 line-clamp-2" title={combo.oferta}>
                         {combo.oferta}
                     </h3>
                 </div>
@@ -95,38 +95,38 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommen
 
             <div className="grid grid-cols-4 gap-2 mb-4">
                 <Tooltip content="Custo de Aquisição Médio das campanhas">
-                    <div className="bg-slate-900/50 rounded p-2 text-center group/metric relative cursor-help">
-                        <div className="flex items-center justify-center gap-1 text-[10px] text-slate-400 mb-1">
+                    <div className="bg-slate-50 rounded p-2 text-center group/metric relative cursor-help border border-slate-100">
+                        <div className="flex items-center justify-center gap-1 text-[10px] text-slate-500 mb-1">
                             <DollarSign size={10} /> CAC
                         </div>
-                        <div className="text-xs font-semibold text-slate-200">
+                        <div className="text-xs font-semibold text-slate-900">
                             {metrics.avgCAC > 0 ? `R$ ${metrics.avgCAC.toFixed(0)}` : '-'}
                         </div>
                     </div>
                 </Tooltip>
                 <Tooltip content="Taxa de Conversão Média (Aprovados / Entregues)">
-                    <div className="bg-slate-900/50 rounded p-2 text-center group/metric relative cursor-help">
-                        <div className="flex items-center justify-center gap-1 text-[10px] text-slate-400 mb-1">
+                    <div className="bg-slate-50 rounded p-2 text-center group/metric relative cursor-help border border-slate-100">
+                        <div className="flex items-center justify-center gap-1 text-[10px] text-slate-500 mb-1">
                             <TrendingUp size={10} /> Conv.
                         </div>
-                        <div className="text-xs font-semibold text-slate-200">
+                        <div className="text-xs font-semibold text-slate-900">
                             {(metrics.avgConversion * 100).toFixed(1)}%
                         </div>
                     </div>
                 </Tooltip>
                 <Tooltip content="Número total de execuções desta combinação">
-                    <div className="bg-slate-900/50 rounded p-2 text-center group/metric relative cursor-help">
-                        <div className="flex items-center justify-center gap-1 text-[10px] text-slate-400 mb-1">
+                    <div className="bg-slate-50 rounded p-2 text-center group/metric relative cursor-help border border-slate-100">
+                        <div className="flex items-center justify-center gap-1 text-[10px] text-slate-500 mb-1">
                             <Users size={10} /> Vol.
                         </div>
-                        <div className="text-xs font-semibold text-slate-200">
+                        <div className="text-xs font-semibold text-slate-900">
                             {metrics.totalVolume}
                         </div>
                     </div>
                 </Tooltip>
                 <Tooltip content="Data da última execução registrada">
-                    <div className="bg-slate-900/50 rounded p-2 text-center group/metric relative cursor-help">
-                        <div className="flex items-center justify-center gap-1 text-[10px] text-slate-400 mb-1">
+                    <div className="bg-slate-50 rounded p-2 text-center group/metric relative cursor-help border border-slate-100">
+                        <div className="flex items-center justify-center gap-1 text-[10px] text-slate-500 mb-1">
                             <Clock size={10} /> Última
                         </div>
                         <div className={`text-[10px] font-semibold ${recency.color} leading-tight`}>
@@ -138,9 +138,9 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommen
 
             <div className="space-y-1">
                 {insights.slice(0, 2).map((insight, idx) => (
-                    <div key={idx} className={`flex items-center gap-1.5 text-[10px] px-2 py-1 rounded ${insight.type === 'positive' ? 'bg-emerald-500/10 text-emerald-300' :
-                        insight.type === 'negative' ? 'bg-red-500/10 text-red-300' :
-                            'bg-slate-700/50 text-slate-400'
+                    <div key={idx} className={`flex items-center gap-1.5 text-[10px] px-2 py-1 rounded ${insight.type === 'positive' ? 'bg-emerald-50 text-emerald-700' :
+                        insight.type === 'negative' ? 'bg-red-50 text-red-700' :
+                            'bg-slate-100 text-slate-500'
                         }`}>
                         {insight.type === 'positive' ? <TrendingUp size={10} /> :
                             insight.type === 'negative' ? <TrendingDown size={10} /> :

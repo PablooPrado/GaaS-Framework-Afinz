@@ -26,10 +26,10 @@ export const MultiSelectChips: React.FC<MultiSelectChipsProps> = ({
 
     return (
         <div className="space-y-2">
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
                 {label}
             </label>
-            <div className="flex flex-wrap gap-2 p-3 bg-slate-900/30 rounded-lg border border-slate-700/50 min-h-[60px]">
+            <div className="flex flex-wrap gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200 min-h-[60px]">
                 {options.length === 0 ? (
                     <span className="text-xs text-slate-500 italic">Nenhuma opção disponível</span>
                 ) : (
@@ -42,15 +42,12 @@ export const MultiSelectChips: React.FC<MultiSelectChipsProps> = ({
                         // Determine styles based on selection and custom colors
                         if (isSelected) {
                             if (customColor) {
-                                // Use custom color if provided (assuming tailwind classes or hex not supported directly in class string easily without arbitrary values, 
-                                // but here we expect colorMap to provide partial class strings or we use default active style)
-                                // For simplicity, let's stick to a default active style unless we want complex logic
-                                baseClasses += " bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-900/20";
+                                baseClasses += " bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-200";
                             } else {
-                                baseClasses += " bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-900/20";
+                                baseClasses += " bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-200";
                             }
                         } else {
-                            baseClasses += " bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-slate-200 hover:border-slate-600";
+                            baseClasses += " bg-white border-slate-300 text-slate-500 hover:bg-slate-100 hover:text-slate-900 hover:border-slate-400";
                         }
 
                         return (

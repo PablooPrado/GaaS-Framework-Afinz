@@ -47,12 +47,12 @@ export const ConfidenceBar: React.FC<ConfidenceBarProps> = ({
         <div className="w-full">
             {showLabel && (
                 <div className="flex justify-between items-center mb-1">
-                    <span className="text-[8px] text-slate-400 uppercase font-medium">
+                    <span className="text-[8px] text-slate-500 uppercase font-medium">
                         Confianca
                     </span>
                     <span className={`text-[9px] font-bold ${
-                        confidence >= 70 ? 'text-emerald-400' :
-                        confidence >= 40 ? 'text-amber-400' : 'text-red-400'
+                        confidence >= 70 ? 'text-emerald-600' :
+                        confidence >= 40 ? 'text-amber-600' : 'text-red-600'
                     }`}>
                         {getLabel()}
                     </span>
@@ -69,8 +69,8 @@ export const ConfidenceBar: React.FC<ConfidenceBarProps> = ({
 
                 {showPercentage && (
                     <span className={`text-[9px] font-bold min-w-[28px] text-right ${
-                        confidence >= 70 ? 'text-emerald-400' :
-                        confidence >= 40 ? 'text-amber-400' : 'text-red-400'
+                        confidence >= 70 ? 'text-emerald-600' :
+                        confidence >= 40 ? 'text-amber-600' : 'text-red-600'
                     }`}>
                         {Math.round(confidence)}%
                     </span>

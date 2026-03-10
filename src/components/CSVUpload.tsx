@@ -104,9 +104,9 @@ export const CSVUpload: React.FC<CSVUploadProps> = ({
       )}
 
       {totalActivities !== undefined && totalActivities > 0 && !loading && !error && (
-        <div className="mt-4 p-3 bg-green-900 border border-green-700 rounded flex items-center gap-2">
-          <CheckCircle className="w-5 h-5 text-green-400" />
-          <span className="text-green-300">
+        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          <span className="text-green-700">
             ✅ {totalActivities} atividades carregadas com sucesso
           </span>
         </div>

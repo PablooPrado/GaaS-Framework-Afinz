@@ -37,8 +37,8 @@ export const AIProjectionBlock: React.FC = () => {
         if (missing.length > 0) {
             return {
                 text: `Preencha ${missing.join(', ')} para gerar projeções`,
-                color: 'text-amber-400',
-                bgColor: 'bg-amber-500/10',
+                color: 'text-amber-600',
+                bgColor: 'bg-amber-50',
                 borderColor: 'border-amber-500/20',
                 isWarning: true
             };
@@ -49,24 +49,24 @@ export const AIProjectionBlock: React.FC = () => {
             case 'partial':
                 return {
                     text: 'Projeções básicas. Adicione Oferta e Jornada para melhorar',
-                    color: 'text-blue-400',
-                    bgColor: 'bg-blue-500/10',
+                    color: 'text-blue-600',
+                    bgColor: 'bg-blue-50',
                     borderColor: 'border-blue-500/20',
                     isWarning: false
                 };
             case 'good':
                 return {
                     text: 'Projeções com boa confiança',
-                    color: 'text-emerald-400',
-                    bgColor: 'bg-emerald-500/10',
+                    color: 'text-emerald-600',
+                    bgColor: 'bg-emerald-50',
                     borderColor: 'border-emerald-500/20',
                     isWarning: false
                 };
             case 'excellent':
                 return {
                     text: 'Projeções de alta precisão',
-                    color: 'text-emerald-400',
-                    bgColor: 'bg-emerald-500/10',
+                    color: 'text-emerald-600',
+                    bgColor: 'bg-emerald-50',
                     borderColor: 'border-emerald-500/20',
                     isWarning: false
                 };
@@ -108,15 +108,15 @@ export const AIProjectionBlock: React.FC = () => {
 
     return (
         <div className="w-full h-full">
-            <div className="bg-indigo-950/20 p-3 rounded-lg border border-indigo-500/20 shadow-sm flex flex-col h-full hover:border-indigo-500/40 transition-colors">
+            <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-500/20 shadow-sm flex flex-col h-full hover:border-indigo-500/40 transition-colors">
                 {/* Header */}
                 <div className="flex items-center justify-between pb-2 border-b border-indigo-500/20 mb-3">
-                    <h3 className="text-[10px] font-bold text-indigo-400 flex items-center gap-1.5 uppercase tracking-wide">
+                    <h3 className="text-[10px] font-bold text-indigo-600 flex items-center gap-1.5 uppercase tracking-wide">
                         <TrendingUp size={14} />
                         Projecao IA
-                        <Sparkles size={10} className="text-indigo-300/50" />
+                        <Sparkles size={10} className="text-indigo-400/50" />
                     </h3>
-                    <span className="px-1 py-0.5 bg-indigo-500/10 rounded text-[8px] text-indigo-400 font-bold">
+                    <span className="px-1 py-0.5 bg-indigo-100 rounded text-[8px] text-indigo-600 font-bold">
                         5
                     </span>
                 </div>
@@ -207,11 +207,11 @@ export const AIProjectionBlock: React.FC = () => {
                             {/* Normal: mostrar sample size + readiness message */}
                             <div>
                                 {sampleSize > 0 ? (
-                                    <span className="text-indigo-400/50">
-                                        Baseado em <span className="font-bold text-indigo-400">{sampleSize}</span> disparos similares
+                                    <span className="text-indigo-500">
+                                        Baseado em <span className="font-bold text-indigo-600">{sampleSize}</span> disparos similares
                                     </span>
                                 ) : (
-                                    <span className="text-indigo-400/50">Processando projeções...</span>
+                                    <span className="text-indigo-500">Processando projeções...</span>
                                 )}
                             </div>
 

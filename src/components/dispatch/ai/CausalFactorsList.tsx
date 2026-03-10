@@ -66,14 +66,14 @@ const CausalFactorItem: React.FC<CausalFactorItemProps> = ({ factor, compact }) 
     // Cores baseadas em direcao e intensidade
     const colorClasses = {
         positive: {
-            high: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-            medium: 'text-emerald-400/80 bg-emerald-500/5 border-emerald-500/20',
-            low: 'text-emerald-400/60 bg-emerald-500/5 border-emerald-500/10'
+            high: 'text-emerald-700 bg-emerald-50 border-emerald-500/30',
+            medium: 'text-emerald-600 bg-emerald-50 border-emerald-500/20',
+            low: 'text-emerald-500 bg-emerald-50 border-emerald-500/10'
         },
         negative: {
-            high: 'text-red-400 bg-red-500/10 border-red-500/30',
-            medium: 'text-red-400/80 bg-red-500/5 border-red-500/20',
-            low: 'text-red-400/60 bg-red-500/5 border-red-500/10'
+            high: 'text-red-700 bg-red-50 border-red-500/30',
+            medium: 'text-red-600 bg-red-50 border-red-500/20',
+            low: 'text-red-500 bg-red-50 border-red-500/10'
         }
     };
 
@@ -111,13 +111,13 @@ const CausalFactorItem: React.FC<CausalFactorItemProps> = ({ factor, compact }) 
                         {factor.feature}
                     </span>
                     {factor.isConfounder && (
-                        <span title="Confounder detectado" className="text-amber-400">
+                        <span title="Confounder detectado" className="text-amber-600">
                             <AlertTriangle size={9} />
                         </span>
                     )}
                 </div>
 
-                <div className="text-[9px] text-slate-300 truncate">
+                <div className="text-[9px] text-slate-600 truncate">
                     "{factor.value}"
                 </div>
 

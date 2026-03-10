@@ -163,7 +163,7 @@ export const BottleneckAnalysis: React.FC<BottleneckAnalysisProps> = ({
         if (direction === 'stable') return <span className="text-slate-500 flex items-center"><Minus size={14} className="mr-1" /> {Math.abs(value).toFixed(1)}%</span>;
 
         const isPositive = direction === 'up';
-        const color = isPositive ? 'text-emerald-400' : 'text-red-400';
+        const color = isPositive ? 'text-emerald-600' : 'text-red-600';
         const Icon = isPositive ? TrendingUp : TrendingDown;
 
         return (
@@ -175,35 +175,35 @@ export const BottleneckAnalysis: React.FC<BottleneckAnalysisProps> = ({
     };
 
     return (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-            <h2 className="text-lg font-bold text-slate-100 mb-6 flex items-center gap-2">
-                <AlertCircle size={20} className="text-amber-400" />
+        <div className="bg-white border border-slate-200 rounded-lg p-6">
+            <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                <AlertCircle size={20} className="text-amber-600" />
                 Análise de Gargalos
                 <Tooltip content="Identifica a etapa do funil onde você mais perde volume. O maior gargalo é destacado com causas prováveis e ação. Cores: Verde (>50%), Amarelo (10-50%), Vermelho (<10%)." />
             </h2>
 
             {biggestBottleneck ? (
-                <div className="mb-8 bg-slate-900/50 border border-red-900/50 rounded-lg overflow-hidden">
-                    <div className="bg-red-900/20 px-4 py-2 border-b border-red-900/30 flex items-center gap-2">
+                <div className="mb-8 bg-white border border-red-200 rounded-lg overflow-hidden">
+                    <div className="bg-red-50 px-4 py-2 border-b border-red-200 flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                        <span className="text-red-200 font-bold text-sm uppercase tracking-wider">Maior Gargalo Detectado</span>
+                        <span className="text-red-700 font-bold text-sm uppercase tracking-wider">Maior Gargalo Detectado</span>
                     </div>
 
                     <div className="p-6">
                         <div className="mb-6">
-                            <h3 className="text-xl font-bold text-slate-100 mb-1">{biggestBottleneck.name}</h3>
+                            <h3 className="text-xl font-bold text-slate-900 mb-1">{biggestBottleneck.name}</h3>
                             <div className="flex items-center gap-6 text-sm">
                                 <div className="flex flex-col">
-                                    <span className="text-slate-400 text-xs">Taxa de Conversão</span>
-                                    <span className="text-2xl font-bold text-red-400">{biggestBottleneck.conversionRate.toFixed(1)}%</span>
+                                    <span className="text-slate-500 text-xs">Taxa de Conversão</span>
+                                    <span className="text-2xl font-bold text-red-600">{biggestBottleneck.conversionRate.toFixed(1)}%</span>
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-slate-400 text-xs">Volume Perdido</span>
-                                    <span className="text-2xl font-bold text-slate-200">{biggestBottleneck.drop.toLocaleString('pt-BR')}</span>
+                                    <span className="text-slate-500 text-xs">Volume Perdido</span>
+                                    <span className="text-2xl font-bold text-slate-900">{biggestBottleneck.drop.toLocaleString('pt-BR')}</span>
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-slate-400 text-xs">Tendência</span>
-                                    <span className="text-lg font-bold text-slate-400 flex items-center">
+                                    <span className="text-slate-500 text-xs">Tendência</span>
+                                    <span className="text-lg font-bold text-slate-500 flex items-center">
                                         {renderTrend(biggestBottleneck.trend)}
                                     </span>
                                 </div>
@@ -211,25 +211,25 @@ export const BottleneckAnalysis: React.FC<BottleneckAnalysisProps> = ({
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-slate-800/50 rounded p-4 border border-slate-700/50">
-                                <h4 className="font-bold text-amber-400 text-sm mb-3 flex items-center gap-2">
+                            <div className="bg-slate-50 rounded p-4 border border-slate-200">
+                                <h4 className="font-bold text-amber-600 text-sm mb-3 flex items-center gap-2">
                                     💡 Possíveis Causas
                                 </h4>
                                 <ul className="space-y-1">
                                     {getCausesAndActions(biggestBottleneck.name).causes.map((cause, idx) => (
-                                        <li key={idx} className="text-slate-300 text-sm flex items-start gap-2">
-                                            <span className="text-slate-600 mt-1">•</span>
+                                        <li key={idx} className="text-slate-700 text-sm flex items-start gap-2">
+                                            <span className="text-slate-400 mt-1">•</span>
                                             {cause}
                                         </li>
                                     ))}
                                 </ul>
                             </div>
 
-                            <div className="bg-blue-900/10 rounded p-4 border border-blue-900/30">
-                                <h4 className="font-bold text-blue-400 text-sm mb-3 flex items-center gap-2">
+                            <div className="bg-blue-50 rounded p-4 border border-blue-200">
+                                <h4 className="font-bold text-blue-600 text-sm mb-3 flex items-center gap-2">
                                     🎯 Ação Sugerida
                                 </h4>
-                                <p className="text-slate-300 text-sm">
+                                <p className="text-slate-700 text-sm">
                                     {getCausesAndActions(biggestBottleneck.name).action}
                                 </p>
                             </div>
@@ -237,8 +237,8 @@ export const BottleneckAnalysis: React.FC<BottleneckAnalysisProps> = ({
                     </div>
                 </div>
             ) : (
-                <div className="mb-8 p-6 bg-emerald-900/10 border border-emerald-900/30 rounded-lg text-center">
-                    <p className="text-emerald-400 font-medium">Nenhum gargalo crítico identificado. O funil está saudável!</p>
+                <div className="mb-8 p-6 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
+                    <p className="text-emerald-600 font-medium">Nenhum gargalo crítico identificado. O funil está saudável!</p>
                 </div>
             )}
 
@@ -246,19 +246,19 @@ export const BottleneckAnalysis: React.FC<BottleneckAnalysisProps> = ({
                 {analysis.map((stage, idx) => (
                     <div
                         key={idx}
-                        className={`p-4 rounded-lg border-l-4 transition ${stage.severity === 'critical' ? 'border-red-500 bg-red-500/10' :
-                            stage.severity === 'warning' ? 'border-yellow-500 bg-yellow-500/10' :
-                                'border-green-500 bg-green-500/10'
+                        className={`p-4 rounded-lg border-l-4 transition ${stage.severity === 'critical' ? 'border-red-500 bg-red-50' :
+                            stage.severity === 'warning' ? 'border-yellow-500 bg-yellow-50' :
+                                'border-green-500 bg-green-50'
                             }`}
                     >
                         <div className="flex justify-between items-start mb-2">
-                            <span className="text-xs font-medium text-slate-400">{stage.name}</span>
+                            <span className="text-xs font-medium text-slate-500">{stage.name}</span>
                         </div>
-                        <div className="text-xl font-bold text-slate-200 mb-1">
+                        <div className="text-xl font-bold text-slate-900 mb-1">
                             {stage.conversionRate.toFixed(1)}%
                         </div>
                         <div className="flex justify-between items-center">
-                            <div className="text-xs text-red-400 flex items-center gap-1">
+                            <div className="text-xs text-red-600 flex items-center gap-1">
                                 <TrendingDown size={12} />
                                 -{stage.drop.toLocaleString('pt-BR')}
                             </div>

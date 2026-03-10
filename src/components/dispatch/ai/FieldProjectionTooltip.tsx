@@ -101,23 +101,23 @@ export const FieldProjectionTooltip: React.FC<FieldProjectionTooltipProps> = ({
     return (
         <div
             ref={tooltipRef}
-            className="fixed z-[100] w-[320px] bg-slate-900 border border-indigo-500/30 rounded-xl shadow-2xl shadow-black/50 animate-in fade-in zoom-in-95 duration-200"
+            className="fixed z-[100] w-[320px] bg-white border border-indigo-500/30 rounded-xl shadow-2xl shadow-slate-900/20 animate-in fade-in zoom-in-95 duration-200"
             style={{
                 top: tooltipPosition.top,
                 left: tooltipPosition.left,
             }}
         >
             {/* Header */}
-            <div className="flex items-center justify-between px-3 py-2 bg-indigo-950/50 border-b border-indigo-500/20 rounded-t-xl">
+            <div className="flex items-center justify-between px-3 py-2 bg-indigo-50 border-b border-indigo-500/20 rounded-t-xl">
                 <div className="flex items-center gap-2">
-                    <Sparkles size={14} className="text-indigo-400" />
-                    <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wide">
+                    <Sparkles size={14} className="text-indigo-600" />
+                    <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wide">
                         {generateTooltipTitle(field)}
                     </span>
                 </div>
                 <button
                     onClick={onClose}
-                    className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+                    className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
                 >
                     <X size={14} />
                 </button>
@@ -127,10 +127,10 @@ export const FieldProjectionTooltip: React.FC<FieldProjectionTooltipProps> = ({
             <div className="p-3 space-y-3">
                 {/* Valor Projetado */}
                 <div className="text-center py-2">
-                    <div className="text-[10px] text-slate-400 uppercase mb-1">
+                    <div className="text-[10px] text-slate-500 uppercase mb-1">
                         Valor Sugerido
                     </div>
-                    <div className="text-2xl font-bold text-indigo-300">
+                    <div className="text-2xl font-bold text-indigo-700">
                         {formattedValue}
                     </div>
                     <div className="text-[10px] text-slate-500 mt-1">
@@ -139,7 +139,7 @@ export const FieldProjectionTooltip: React.FC<FieldProjectionTooltipProps> = ({
                 </div>
 
                 {/* Barra de Confianca */}
-                <div className="bg-slate-800/50 rounded-lg p-2">
+                <div className="bg-slate-50 rounded-lg p-2">
                     <ConfidenceBar
                         confidence={confidence}
                         size="md"
@@ -149,7 +149,7 @@ export const FieldProjectionTooltip: React.FC<FieldProjectionTooltipProps> = ({
                 </div>
 
                 {/* Resumo */}
-                <div className="flex items-start gap-2 text-[10px] text-slate-400 bg-slate-800/30 rounded-lg px-2 py-1.5">
+                <div className="flex items-start gap-2 text-[10px] text-slate-600 bg-slate-50 rounded-lg px-2 py-1.5">
                     <Info size={12} className="shrink-0 mt-0.5" />
                     <span>{explanation.summary}</span>
                 </div>
@@ -157,7 +157,7 @@ export const FieldProjectionTooltip: React.FC<FieldProjectionTooltipProps> = ({
                 {/* Toggle Detalhes */}
                 <button
                     onClick={() => setShowDetails(!showDetails)}
-                    className="w-full flex items-center justify-center gap-1 text-[10px] text-indigo-400 hover:text-indigo-300 py-1 transition-colors"
+                    className="w-full flex items-center justify-center gap-1 text-[10px] text-indigo-600 hover:text-indigo-700 py-1 transition-colors"
                 >
                     {showDetails ? (
                         <>
@@ -178,7 +178,7 @@ export const FieldProjectionTooltip: React.FC<FieldProjectionTooltipProps> = ({
                         {/* Fatores Causais */}
                         {explanation.causalFactors.length > 0 && (
                             <div>
-                                <div className="text-[9px] text-slate-500 uppercase font-bold mb-1.5">
+                                <div className="text-[9px] text-slate-600 uppercase font-bold mb-1.5">
                                     Fatores Causais
                                 </div>
                                 <CausalFactorsList
@@ -192,7 +192,7 @@ export const FieldProjectionTooltip: React.FC<FieldProjectionTooltipProps> = ({
                         {/* Campanhas Similares */}
                         {similarCampaigns.length > 0 && (
                             <div>
-                                <div className="text-[9px] text-slate-500 uppercase font-bold mb-1.5">
+                                <div className="text-[9px] text-slate-600 uppercase font-bold mb-1.5">
                                     Campanhas Similares
                                 </div>
                                 <SimilarCampaignsList
@@ -204,7 +204,7 @@ export const FieldProjectionTooltip: React.FC<FieldProjectionTooltipProps> = ({
                         )}
 
                         {/* Metadata */}
-                        <div className="flex justify-between text-[8px] text-slate-600 pt-1 border-t border-slate-700/50">
+                        <div className="flex justify-between text-[8px] text-slate-500 pt-1 border-t border-slate-200">
                             <span>Metodo: {explanation.matchLevel}</span>
                             <span>{explanation.sampleSize} amostras</span>
                         </div>
@@ -213,13 +213,13 @@ export const FieldProjectionTooltip: React.FC<FieldProjectionTooltipProps> = ({
             </div>
 
             {/* Footer - Botoes */}
-            <div className="flex gap-2 px-3 py-2 bg-slate-800/50 border-t border-slate-700/50 rounded-b-xl">
+            <div className="flex gap-2 px-3 py-2 bg-slate-50 border-t border-slate-200 rounded-b-xl">
                 <button
                     onClick={() => {
                         onReject();
                         onClose();
                     }}
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-[11px] font-medium text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-[11px] font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
                 >
                     <X size={14} />
                     Rejeitar

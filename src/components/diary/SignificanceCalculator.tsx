@@ -78,23 +78,23 @@ export const SignificanceCalculator: React.FC<SignificanceCalculatorProps> = ({ 
     };
 
     return (
-        <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-            <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
-                <Calculator size={16} className="text-blue-400" />
+        <div className="bg-white p-4 rounded-lg border border-slate-200">
+            <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                <Calculator size={16} className="text-blue-600" />
                 Calculadora de Significância
             </h3>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
                 {/* Control */}
                 <div className="space-y-2">
-                    <p className="text-xs font-semibold text-slate-400 uppercase">Controle (A)</p>
+                    <p className="text-xs font-semibold text-slate-500 uppercase">Controle (A)</p>
                     <div>
                         <label className="text-xs text-slate-500">Disparos/Visitantes</label>
                         <input
                             type="number"
                             value={control.visitors}
                             onChange={(e) => setControl({ ...control, visitors: Number(e.target.value) })}
-                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200"
+                            className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm text-slate-900"
                         />
                     </div>
                     <div>
@@ -103,24 +103,24 @@ export const SignificanceCalculator: React.FC<SignificanceCalculatorProps> = ({ 
                             type="number"
                             value={control.conversions}
                             onChange={(e) => setControl({ ...control, conversions: Number(e.target.value) })}
-                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200"
+                            className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm text-slate-900"
                         />
                     </div>
-                    <div className="text-xs text-slate-400 pt-1">
+                    <div className="text-xs text-slate-500 pt-1">
                         Taxa: {control.visitors > 0 ? ((control.conversions / control.visitors) * 100).toFixed(2) : 0}%
                     </div>
                 </div>
 
                 {/* Variant */}
                 <div className="space-y-2">
-                    <p className="text-xs font-semibold text-slate-400 uppercase">Variante (B)</p>
+                    <p className="text-xs font-semibold text-slate-500 uppercase">Variante (B)</p>
                     <div>
                         <label className="text-xs text-slate-500">Disparos/Visitantes</label>
                         <input
                             type="number"
                             value={variant.visitors}
                             onChange={(e) => setVariant({ ...variant, visitors: Number(e.target.value) })}
-                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200"
+                            className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm text-slate-900"
                         />
                     </div>
                     <div>
@@ -129,10 +129,10 @@ export const SignificanceCalculator: React.FC<SignificanceCalculatorProps> = ({ 
                             type="number"
                             value={variant.conversions}
                             onChange={(e) => setVariant({ ...variant, conversions: Number(e.target.value) })}
-                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200"
+                            className="w-full bg-white border border-slate-300 rounded px-2 py-1 text-sm text-slate-900"
                         />
                     </div>
-                    <div className="text-xs text-slate-400 pt-1">
+                    <div className="text-xs text-slate-500 pt-1">
                         Taxa: {variant.visitors > 0 ? ((variant.conversions / variant.visitors) * 100).toFixed(2) : 0}%
                     </div>
                 </div>
@@ -146,23 +146,23 @@ export const SignificanceCalculator: React.FC<SignificanceCalculatorProps> = ({ 
             </button>
 
             {result && (
-                <div className={`p-3 rounded-lg border ${result.isSignificant ? 'bg-emerald-900/20 border-emerald-500/30' : 'bg-slate-700/30 border-slate-600'}`}>
+                <div className={`p-3 rounded-lg border ${result.isSignificant ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
                     <div className="flex items-center gap-2 mb-1">
                         {result.isSignificant ? (
-                            <CheckCircle size={16} className="text-emerald-400" />
+                            <CheckCircle size={16} className="text-emerald-600" />
                         ) : (
-                            <AlertCircle size={16} className="text-slate-400" />
+                            <AlertCircle size={16} className="text-slate-500" />
                         )}
-                        <span className={`font-bold ${result.isSignificant ? 'text-emerald-400' : 'text-slate-300'}`}>
+                        <span className={`font-bold ${result.isSignificant ? 'text-emerald-600' : 'text-slate-700'}`}>
                             {result.isSignificant ? 'Resultado Significativo!' : 'Inconclusivo'}
                         </span>
                     </div>
-                    <p className="text-xs text-slate-400">
-                        Confiança estatística: <span className="text-slate-200 font-bold">{result.confidence}%</span>
+                    <p className="text-xs text-slate-500">
+                        Confiança estatística: <span className="text-slate-900 font-bold">{result.confidence}%</span>
                     </p>
                     {result.isSignificant && (
-                        <p className="text-xs text-slate-400 mt-1">
-                            Vencedor: <span className="text-emerald-400 font-bold uppercase">{result.winner === 'control' ? 'Controle (A)' : 'Variante (B)'}</span>
+                        <p className="text-xs text-slate-500 mt-1">
+                            Vencedor: <span className="text-emerald-600 font-bold uppercase">{result.winner === 'control' ? 'Controle (A)' : 'Variante (B)'}</span>
                         </p>
                     )}
                 </div>

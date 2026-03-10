@@ -13,37 +13,37 @@ export const FunnelOrchestrator: React.FC = () => {
     const [activeView, setActiveView] = useState<'funnel' | 'matrix' | 'estimates'>('funnel');
 
     return (
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 space-y-6 animate-fade-in">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <Zap className="text-yellow-500" />
                         Orquestrador de Funil
                     </h2>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-slate-500">
                         Análise integrada de mídia, conversão e influência para maximizar emissão de cartões.
                     </p>
                 </div>
 
                 {/* View Toggles */}
-                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
                     <button
                         onClick={() => setActiveView('funnel')}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeView === 'funnel' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeView === 'funnel' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'}`}
                     >
                         <Layers size={16} />
                         Funil Visual
                     </button>
                     <button
                         onClick={() => setActiveView('matrix')}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeView === 'matrix' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeView === 'matrix' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'}`}
                     >
                         <BarChart3 size={16} />
                         Matriz de Influência
                     </button>
                     <button
                         onClick={() => setActiveView('estimates')}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeView === 'estimates' ? 'bg-green-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${activeView === 'estimates' ? 'bg-green-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200'}`}
                     >
                         <Calculator size={16} />
                         Estimativas
@@ -52,7 +52,7 @@ export const FunnelOrchestrator: React.FC = () => {
             </div>
 
             {/* Filters Section */}
-            <div className="border-t border-slate-800 pt-4">
+            <div className="border-t border-slate-200 pt-4">
                 <OrchestratorFilters />
             </div>
 
@@ -95,8 +95,8 @@ export const FunnelOrchestrator: React.FC = () => {
             </div>
 
             {/* Action Levers (Always Visible or Conditional?) */}
-            <div className="border-t border-slate-800 pt-6">
-                <h3 className="text-lg font-bold text-white mb-4">Alavancas de Ação</h3>
+            <div className="border-t border-slate-200 pt-6">
+                <h3 className="text-lg font-bold text-slate-900 mb-4">Alavancas de Ação</h3>
                 <ActionLevers />
             </div>
         </div>

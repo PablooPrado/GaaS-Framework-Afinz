@@ -57,8 +57,8 @@ export const SmartInput = forwardRef<HTMLInputElement, SmartInputProps>(({
                             className={`
                                 ml-auto p-0.5 rounded transition-all
                                 ${isProjectionLoading
-                                    ? 'text-indigo-500/50 cursor-wait'
-                                    : 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 cursor-pointer'
+                                    ? 'text-indigo-400/50 cursor-wait'
+                                    : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer'
                                 }
                             `}
                             title="Clique para ver projecao de IA"
@@ -74,12 +74,12 @@ export const SmartInput = forwardRef<HTMLInputElement, SmartInputProps>(({
                     ref={ref}
                     className={`
                         w-full px-2 py-1.5
-                        bg-slate-800/50 border rounded
-                        text-[11px] font-medium text-slate-200
-                        placeholder:text-slate-600
-                        focus:outline-none focus:ring-1 focus:ring-blue-500/50
+                        bg-white border rounded
+                        text-[11px] font-medium text-slate-900
+                        placeholder:text-slate-400
+                        focus:outline-none focus:ring-1 focus:ring-cyan-400/30
                         transition-all
-                        ${error ? 'border-red-500/50 focus:border-red-500' : 'border-slate-700 focus:border-blue-500'}
+                        ${error ? 'border-red-500/50 focus:border-red-500' : 'border-slate-300 focus:border-cyan-400'}
                         ${projectionField && hasProjection ? 'pr-7' : ''}
                         ${className}
                     `}
@@ -96,8 +96,8 @@ export const SmartInput = forwardRef<HTMLInputElement, SmartInputProps>(({
                             absolute right-2 top-1/2 -translate-y-1/2
                             p-0.5 rounded transition-all
                             ${isProjectionLoading
-                                ? 'text-indigo-500/50 cursor-wait'
-                                : 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 cursor-pointer'
+                                ? 'text-indigo-400/50 cursor-wait'
+                                : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 cursor-pointer'
                             }
                         `}
                         title="Clique para ver projecao de IA"
@@ -107,7 +107,7 @@ export const SmartInput = forwardRef<HTMLInputElement, SmartInputProps>(({
                 )}
 
                 {error && (
-                    <span className="absolute -bottom-3 left-0 text-[8px] text-red-400 font-medium truncate max-w-full">
+                    <span className="absolute -bottom-3 left-0 text-[8px] text-red-600 font-medium truncate max-w-full">
                         {error}
                     </span>
                 )}
