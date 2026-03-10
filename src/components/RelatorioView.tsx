@@ -244,12 +244,18 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
         <div style={{ background: `linear-gradient(135deg, ${TEAL} 0%, #00A8B0 100%)` }} className="px-8 py-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Relatório de Performance</h1>
-              <p className="text-cyan-100 mt-1 text-sm">
+              <div className="flex items-center gap-3 mb-1">
+                <h1 className="text-2xl font-bold text-white tracking-tight">Relatório de Performance</h1>
+                <span className="text-[11px] font-semibold bg-white/20 text-white border border-white/30 rounded-full px-2.5 py-0.5 tracking-wide uppercase">
+                  Histórico Completo
+                </span>
+              </div>
+              <p className="text-cyan-100 text-sm">
                 {allActivities.length} disparos analisados
                 {selectedBU ? ` · BU: ${selectedBU}` : ' · Todas as BUs'}
                 {' · '}
                 {segmentoRows.length} segmentos · {canalRows.length} canais
+                <span className="ml-2 opacity-70">· sem filtro de período</span>
               </p>
             </div>
             <button

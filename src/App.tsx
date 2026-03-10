@@ -310,7 +310,7 @@ function App() {
               {activeTab === 'relatorio' && (
                 <PageTransition>
                   <RelatorioView
-                    data={filteredData}
+                    data={advancedFilteredData}
                     selectedBU={selectedBUs.length === 1 ? selectedBUs[0] : undefined}
                   />
                 </PageTransition>
