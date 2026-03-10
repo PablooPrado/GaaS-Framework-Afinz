@@ -42,7 +42,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
             items: [
                 { id: 'jornada', label: 'Jornada & Disparos', icon: TrendingUp, onClick: () => setTab('jornada') },
                 { id: 'resultados', label: 'Resultados', icon: BarChart3, onClick: () => setTab('resultados') },
-                { id: 'relatorio', label: 'Relatório', icon: ClipboardList, onClick: () => setTab('relatorio') },
+                { id: 'relatorio', label: 'Relatórios', icon: ClipboardList, onClick: () => setTab('relatorio') },
                 { id: 'orientador', label: 'Orientador', icon: Lightbulb, onClick: () => setTab('orientador') },
                 { id: 'originacao-b2c', label: 'Originacao B2C', icon: PieChart, onClick: () => setTab('originacao-b2c') },
             ]

@@ -221,10 +221,42 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
   }, [detailRows]);
 
   const exportAll = useCallback(() => {
-    exportSegmento();
-    exportCanal();
-    exportDetail();
-  }, [exportSegmento, exportCanal, exportDetail]);
+    const escape = (cell: string) => `"${String(cell).replace(/"/g, '""')}"`;
+    const toLine = (cols: string[]) => cols.map(escape).join(',');
+
+    // ── Section 1: Performance Campanhas ──────────────────────────────────
+    const segHeaders = ['Segmento', 'Base Enviada', 'Base Entregue', '% Entrega', 'Propostas', '% Proposta', 'Aprovados', '% Aprovação', 'Emissões', '% Finalização', 'Custo/Cartão', 'Custo Total', '% Conv da Base'];
+    const toSegRow = (r: AggregatedRow) => [r.label, fmtN(r.baseEnviada), fmtN(r.baseEntregue), fmtPct(r.taxaEntrega), fmtN(r.propostas), fmtPct(r.taxaProposta), fmtN(r.aprovados), fmtPct(r.taxaAprovacao), fmtN(r.emissoes), fmtPct(r.taxaFinalizacao), fmtBRL(r.custoPorCartao), fmtBRL(r.custoTotal), fmtPct4(r.taxaConversaoBase)];
+
+    const segLines = [
+      toLine(['=== PERFORMANCE CAMPANHAS ===']),
+      toLine(segHeaders),
+      ...[...segmentoRows, segmentoTotal].map(r => toLine(toSegRow(r))),
+    ];
+
+    // ── Section 2: Performance Canais ─────────────────────────────────────
+    const canalHeaders = ['Canal', 'Base Enviada', 'Base Entregue', '% Entrega', 'Propostas', '% Proposta', 'Aprovados', '% Aprovação', 'Emissões', '% Finalização', 'Custo/Cartão', 'Custo Total', '% Conv da Base', '% Participação'];
+    const toCanalRow = (r: AggregatedRow, isTotal = false) => [r.label, fmtN(r.baseEnviada), fmtN(r.baseEntregue), fmtPct(r.taxaEntrega), fmtN(r.propostas), fmtPct(r.taxaProposta), fmtN(r.aprovados), fmtPct(r.taxaAprovacao), fmtN(r.emissoes), fmtPct(r.taxaFinalizacao), fmtBRL(r.custoPorCartao), fmtBRL(r.custoTotal), fmtPct4(r.taxaConversaoBase), isTotal ? '100%' : (totalCanalEmissoes > 0 ? fmtPct(r.emissoes / totalCanalEmissoes, 0) : '0%')];
+
+    const canalLines = [
+      toLine(['=== PERFORMANCE CANAIS ===']),
+      toLine(canalHeaders),
+      ...[...canalRows.map(r => toCanalRow(r)), toCanalRow(canalTotal, true)].map(r => toLine(r)),
+    ];
+
+    // ── Section 3: Detalhamento por Disparo ───────────────────────────────
+    const detailHeaders = ['Data', 'Jornada', 'Activity Name', 'Segmento', 'Canal', 'Propostas', '% Proposta', 'Aprovados', '% Aprovação', 'Emissões', '% Finalização', 'Custo/Cartão', 'Custo Total', '% Conv da Base'];
+    const detailLines = [
+      toLine(['=== DETALHAMENTO POR DISPARO ===']),
+      toLine(detailHeaders),
+      ...detailRows.map(r => toLine([format(r.date, 'dd/MM/yyyy'), r.jornada, r.activityName, r.segmento, r.canal, fmtN(r.propostas), fmtPct(r.taxaProposta), fmtN(r.aprovados), fmtPct(r.taxaAprovacao), fmtN(r.emissoes), fmtPct(r.taxaFinalizacao), fmtBRL(r.custoPorCartao), fmtBRL(r.custoTotal), fmtPct4(r.taxaConversaoBase)])),
+    ];
+
+    // ── Combine all sections with blank separators ─────────────────────────
+    const allLines = [...segLines, '', ...canalLines, '', ...detailLines];
+    const blob = new Blob(['\uFEFF' + allLines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, `relatorio_completo_${format(new Date(), 'yyyyMMdd')}.csv`);
+  }, [segmentoRows, segmentoTotal, canalRows, canalTotal, totalCanalEmissoes, detailRows]);
 
   if (allActivities.length === 0) {
     return (
