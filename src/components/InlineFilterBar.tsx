@@ -14,6 +14,7 @@ interface InlineFilterBarProps {
     countBySegmento?: { [segmento: string]: number };
     countByParceiro?: { [parceiro: string]: number };
     totalRemainingDisparos?: number;
+    onMenuLockChange?: (locked: boolean) => void;
 }
 
 interface FilterDropdownProps {
@@ -25,6 +26,7 @@ interface FilterDropdownProps {
     align?: 'left' | 'right';
     searchable?: boolean;
     searchPlaceholder?: string;
+    onOpenChange?: (isOpen: boolean) => void;
 }
 
 const FilterDropdown: React.FC<FilterDropdownProps> = ({
@@ -35,7 +37,8 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     counts,
     align = 'left',
     searchable = false,
-    searchPlaceholder = 'Buscar...'
+    searchPlaceholder = 'Buscar...',
+    onOpenChange
 }) => {
     const { viewSettings, setGlobalFilters } = useAppStore();
     const filters = viewSettings.filtrosGlobais;
@@ -128,6 +131,10 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
             document.removeEventListener('keydown', handleEscape);
         };
     }, [isPinnedOpen]);
+
+    React.useEffect(() => {
+        onOpenChange?.(isOpen || isPinnedOpen);
+    }, [isOpen, isPinnedOpen, onOpenChange]);
 
     return (
         <div
@@ -242,7 +249,8 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
     countByJornada = {},
     countBySegmento = {},
     countByParceiro = {},
-    totalRemainingDisparos = 0
+    totalRemainingDisparos = 0,
+    onMenuLockChange
 }) => {
     const { viewSettings, setGlobalFilters } = useAppStore();
     const filters = viewSettings.filtrosGlobais;
@@ -259,16 +267,27 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
     };
 
     const hasActiveFilters = filters.canais.length > 0 || filters.jornadas.length > 0 || filters.segmentos.length > 0 || filters.parceiros.length > 0;
+    const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
+
+    const handleMenuOpenChange = React.useCallback((menuId: string, isOpen: boolean) => {
+        setOpenMenus(prev => ({ ...prev, [menuId]: isOpen }));
+    }, []);
+
+    React.useEffect(() => {
+        const locked = Object.values(openMenus).some(Boolean);
+        onMenuLockChange?.(locked);
+    }, [openMenus, onMenuLockChange]);
 
     return (
         <div className="flex items-center gap-2">
-            <PeriodSelector compact />
+            <PeriodSelector compact onOpenChange={(isOpen) => handleMenuOpenChange('period', isOpen)} />
             <FilterDropdown
                 title="Canais"
                 icon={MessageCircle}
                 items={availableCanais}
                 field="canais"
                 counts={countByCanal}
+                onOpenChange={(isOpen) => handleMenuOpenChange('canais', isOpen)}
             />
             <FilterDropdown
                 title="Jornadas"
@@ -278,6 +297,7 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
                 counts={countByJornada}
                 searchable
                 searchPlaceholder="Buscar jornada..."
+                onOpenChange={(isOpen) => handleMenuOpenChange('jornadas', isOpen)}
             />
             <FilterDropdown
                 title="Segmentos"
@@ -285,6 +305,7 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
                 items={availableSegmentos}
                 field="segmentos"
                 counts={countBySegmento}
+                onOpenChange={(isOpen) => handleMenuOpenChange('segmentos', isOpen)}
             />
             <FilterDropdown
                 title="Parceiros"
@@ -293,6 +314,7 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
                 field="parceiros"
                 counts={countByParceiro}
                 align="right"
+                onOpenChange={(isOpen) => handleMenuOpenChange('parceiros', isOpen)}
             />
 
             {hasActiveFilters && (

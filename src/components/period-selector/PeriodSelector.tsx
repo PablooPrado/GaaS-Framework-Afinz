@@ -7,9 +7,10 @@ import { DateRangePicker } from './DateRangePicker';
 
 interface PeriodSelectorProps {
     compact?: boolean;
+    onOpenChange?: (isOpen: boolean) => void;
 }
 
-export const PeriodSelector: React.FC<PeriodSelectorProps> = ({ compact = false }) => {
+export const PeriodSelector: React.FC<PeriodSelectorProps> = ({ compact = false, onOpenChange }) => {
     const { startDate, endDate, setPeriod, compareEnabled, toggleCompare } = usePeriod();
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -27,6 +28,10 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({ compact = false 
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    useEffect(() => {
+        onOpenChange?.(isOpen);
+    }, [isOpen, onOpenChange]);
 
     const handleApply = (start: Date, end: Date, compare: boolean) => {
         setPeriod(start, end);

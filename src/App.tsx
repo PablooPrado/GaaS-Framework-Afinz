@@ -34,6 +34,8 @@ function App() {
   const { user, loading: authLoading } = useAuth();
   const [urlHash, setUrlHash] = useState(window.location.hash);
   const [isFilterDropOpen, setIsFilterDropOpen] = useState(false);
+  const [isFilterMenuLocked, setIsFilterMenuLocked] = useState(false);
+  const [isFilterAreaHovered, setIsFilterAreaHovered] = useState(false);
   const filterCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openFilterDrop = () => {
@@ -42,9 +44,12 @@ function App() {
       filterCloseTimeoutRef.current = null;
     }
     setIsFilterDropOpen(true);
+    setIsFilterAreaHovered(true);
   };
 
   const scheduleCloseFilterDrop = () => {
+    setIsFilterAreaHovered(false);
+    if (isFilterMenuLocked) return;
     if (filterCloseTimeoutRef.current) {
       clearTimeout(filterCloseTimeoutRef.current);
     }
@@ -53,6 +58,16 @@ function App() {
       filterCloseTimeoutRef.current = null;
     }, 260);
   };
+
+  useEffect(() => {
+    if (!isFilterMenuLocked && !isFilterAreaHovered) {
+      scheduleCloseFilterDrop();
+    } else if (isFilterMenuLocked && filterCloseTimeoutRef.current) {
+      clearTimeout(filterCloseTimeoutRef.current);
+      filterCloseTimeoutRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFilterMenuLocked, isFilterAreaHovered]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -176,7 +191,6 @@ function App() {
   return (
     <MainLayout
       onHeaderMouseEnter={openFilterDrop}
-      onContentMouseEnter={scheduleCloseFilterDrop}
     >
       {hasData && (
         <div className="sticky top-0 z-30">
@@ -201,6 +215,7 @@ function App() {
                 countBySegmento={countBySegmento}
                 countByParceiro={countByParceiro}
                 totalRemainingDisparos={totalRemainingDisparos}
+                onMenuLockChange={setIsFilterMenuLocked}
               />
             </div>
           </div>
