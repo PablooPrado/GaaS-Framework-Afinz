@@ -7,6 +7,7 @@ import { ActivityRow } from '../../types/activity';
 import { activityService } from '../../services/activityService';
 import { useAppStore } from '../../store/useAppStore';
 import { usePeriod } from '../../contexts/PeriodContext';
+import { formatDateKey, parseDate } from '../../utils/formatters';
 
 import { useExplorerStore } from '../../store/explorerStore';
 import { useTreeData } from '../../hooks/explorer/useTreeData';
@@ -31,11 +32,26 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
   const storeActivities = React.useMemo(() => {
     return storeActivitiesRaw.map(a => {
       let dateStr = '';
-      if (a.dataDisparo) {
-        dateStr = format(new Date(a.dataDisparo), 'yyyy-MM-dd');
-      } else if (a.raw['Data de Disparo']) {
-        const rawDate = a.raw['Data de Disparo'];
-        dateStr = typeof rawDate === 'string' ? rawDate.substring(0, 10) : format(new Date(rawDate), 'yyyy-MM-dd');
+      try {
+        if (a.dataDisparo) {
+          const dateVal = formatDateKey(a.dataDisparo);
+          if (dateVal !== 'UNKNOWN') dateStr = dateVal;
+        }
+
+        if (!dateStr && a.raw && a.raw['Data de Disparo']) {
+          const rawDate = a.raw['Data de Disparo'];
+          const parsed = parseDate(rawDate as string | number);
+          if (parsed && !isNaN(parsed.getTime())) {
+            dateStr = formatDateKey(parsed);
+          } else if (typeof rawDate === 'string') {
+            dateStr = rawDate.includes('/')
+              ? rawDate.split(' ')[0].split('/').reverse().join('-')
+              : rawDate.substring(0, 10);
+          }
+        }
+      } catch (e) {
+        console.warn("Falha no parse da data:", a.id, e);
+        dateStr = '2000-01-01'; // Evita strings indefinidas
       }
       return {
         id: a.id,
