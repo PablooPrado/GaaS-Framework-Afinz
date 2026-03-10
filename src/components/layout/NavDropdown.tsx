@@ -10,11 +10,12 @@ interface NavItem {
 
 interface NavDropdownProps {
     title: string;
+    icon?: React.ElementType;
     items: NavItem[];
     isActive?: boolean;
 }
 
-export const NavDropdown: React.FC<NavDropdownProps> = ({ title, items, isActive }) => {
+export const NavDropdown: React.FC<NavDropdownProps> = ({ title, icon: TitleIcon, items, isActive }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -38,18 +39,15 @@ export const NavDropdown: React.FC<NavDropdownProps> = ({ title, items, isActive
                 type="button"
                 onClick={() => setIsOpen((prev) => !prev)}
                 className={`
-                    px-3 py-2 text-sm font-semibold tracking-wide transition-all duration-200 uppercase relative rounded-md
+                    flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200
                     ${isActive || isOpen
-                        ? 'text-slate-800 bg-slate-100'
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                        ? 'bg-white text-slate-800 shadow-sm border border-slate-200'
+                        : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
                     }
                 `}
             >
+                {TitleIcon && <TitleIcon size={15} />}
                 {title}
-                {/* Active Indicator Line */}
-                {(isActive || isOpen) && (
-                    <span className="absolute bottom-0 left-0 w-full h-[2px] bg-cyan-500"></span>
-                )}
             </button>
 
             {/* Dropdown Menu */}
@@ -70,7 +68,7 @@ export const NavDropdown: React.FC<NavDropdownProps> = ({ title, items, isActive
                             className={`
                                 w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all text-left
                                 ${item.isActive
-                                    ? 'bg-cyan-50 text-cyan-700 border border-cyan-200'
+                                    ? 'bg-slate-100 text-slate-800 border border-slate-200'
                                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                                 }
                             `}

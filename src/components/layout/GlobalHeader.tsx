@@ -30,14 +30,16 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
 
     const allNavGroups = [
         {
-            title: 'PLANEJAMENTO',
+            title: 'Planejamento',
+            icon: Calendar,
             items: [
                 { id: 'launch', label: 'Launch Planner', icon: Calendar, onClick: () => setTab('launch') },
                 { id: 'diario', label: 'Diario de Bordo', icon: BookOpen, onClick: () => setTab('diario') },
             ]
         },
         {
-            title: 'ANALISE',
+            title: 'Analise',
+            icon: TrendingUp,
             items: [
                 { id: 'jornada', label: 'Jornada & Disparos', icon: TrendingUp, onClick: () => setTab('jornada') },
                 { id: 'resultados', label: 'Resultados', icon: BarChart3, onClick: () => setTab('resultados') },
@@ -46,14 +48,16 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
             ]
         },
         {
-            title: 'FRAMEWORK',
+            title: 'Framework',
+            icon: LayoutDashboard,
             items: [
                 { id: 'framework', label: 'Explorador de Disparos', icon: LayoutDashboard, onClick: () => setTab('framework') },
                 { id: 'explorador', label: 'Explorador Avancado', icon: LayoutDashboard, onClick: () => setTab('explorador') },
             ]
         },
         {
-            title: 'MIDIA PAGA',
+            title: 'Midia Paga',
+            icon: PieChart,
             items: [
                 { id: 'midia-paga', label: 'Media Analytics', icon: undefined, onClick: () => setTab('midia-paga') },
             ]
@@ -85,15 +89,21 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
                     <AfinzLogo height={28} />
                     <div className="flex items-center gap-2">
                         <div className="h-4 w-0.5 rounded-full bg-[#00C6CC]" />
-                        <h1 className="font-black text-xl text-slate-800 tracking-tight">Growth as a Service</h1>
+                        <h1
+                            className="font-black text-xl text-slate-800 tracking-tight leading-none"
+                            style={{ fontFamily: "'Trebuchet MS', Calibri, sans-serif" }}
+                        >
+                            Growth as a Service
+                        </h1>
                     </div>
                 </div>
 
-                <nav className="hidden lg:flex items-center gap-1 h-16">
+                <nav className="hidden lg:flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
                     {navGroups.map((group) => (
                         <NavDropdown
                             key={group.title}
                             title={group.title}
+                            icon={group.icon}
                             items={group.items.map(item => ({
                                 ...item,
                                 isActive: activeTab === item.id
