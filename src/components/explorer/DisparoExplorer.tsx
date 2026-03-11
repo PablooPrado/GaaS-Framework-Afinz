@@ -291,6 +291,13 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
           onTemporalMetricChange={setTemporalMetric}
           onBarClick={(focusId) => {
             if (!focusId) return;
+            // Clique em barra de disparo individual → abre DisparoDetailModal
+            if (focusId.startsWith('disparo:')) {
+              const activityId = focusId.replace('disparo:', '');
+              const act = activities.find((a) => a.id === activityId);
+              if (act) setDisparoModalActivity(act);
+              return; // não avança drill-down
+            }
             setComparisonFocusNode(focusId);
             setDetailsPaneNode(null);
           }}
