@@ -90,7 +90,7 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
 
   const activities: ActivityRow[] = storeActivities.length > 0 ? storeActivities : fetchedActivities;
 
-  const { startDate, endDate } = usePeriod();
+  const { startDate, endDate, compareEnabled } = usePeriod();
   const periodInicio = format(startDate, 'yyyy-MM-dd');
   const periodFim = format(endDate, 'yyyy-MM-dd');
 
@@ -144,13 +144,15 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
     allActivities: activities,
     filters,
     comparisonFocusNodeId,
+    compareEnabled,
   });
 
   const detailsData = useDetailsPaneData(
     detailsPaneNodeId,
     nodeMap,
     activities,
-    filters.periodo
+    filters.periodo,
+    compareEnabled
   );
 
   const searchResults = useExplorerSearch(nodeMap, searchQuery);
