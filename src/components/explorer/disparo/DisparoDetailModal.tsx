@@ -567,7 +567,7 @@ export const DisparoDetailModal: React.FC<DisparoDetailModalProps> = ({ activity
           >
             {/* KPIs de destaque */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-              <KpiCard label="Cartões Gerados" value={fmt(a['Cartões Gerados'])} accent icon={BarChart2} />
+              <KpiCard label="Cartões Gerados" value={fmt(a['Cartões Gerados'])} icon={BarChart2} />
               <KpiCard label="CAC" value={fmtBRL(a.CAC)} icon={DollarSign} />
               <KpiCard label="Base Total" value={fmt(a['Base Total'])} icon={Hash} />
               <KpiCard label="Custo Total" value={fmtBRL(a['Custo Total Campanha'])} icon={DollarSign} />
