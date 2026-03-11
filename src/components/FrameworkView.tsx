@@ -137,24 +137,31 @@ function StatusBadge({ value }: { value: string }) {
 
 interface SelectedNode { bu?: string; segmento?: string; canal?: string }
 
-// ─── Activity Detail Modal ────────────────────────────────────────────────────
+// ─── Inline Detail Panel ──────────────────────────────────────────────────────
 
-interface ActivityDetailModalProps {
+interface DetailPanelProps {
     row: (FrameworkRow & { _origIdx: number }) | null;
     allColumns: string[];
     onClose: () => void;
 }
 
-const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ row, allColumns, onClose }) => {
-    // Close on ESC
-    useEffect(() => {
-        if (!row) return;
-        const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-        window.addEventListener('keydown', handler);
-        return () => window.removeEventListener('keydown', handler);
-    }, [row, onClose]);
+const DetailPanel: React.FC<DetailPanelProps> = ({ row, allColumns, onClose }) => {
+    const extraKeys = allColumns.filter(c => c !== '_origIdx' && !KNOWN_KEYS.has(c));
 
-    if (!row) return null;
+    const renderValue = (val: any) => {
+        const s = String(val ?? '');
+        if (!s || s === 'N/A' || s === 'undefined') return <span className="text-slate-300">—</span>;
+        return <span className="text-slate-800 font-semibold text-xs">{s}</span>;
+    };
+
+    if (!row) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-300 px-4">
+                <FileText size={32} className="opacity-30" />
+                <p className="text-xs text-center">Clique em uma linha para ver os detalhes</p>
+            </div>
+        );
+    }
 
     const taxonomia = String((row as any)['Activity name / Taxonomia'] ?? '—');
     const bu = String((row as any)['BU'] ?? '');
@@ -162,118 +169,72 @@ const ActivityDetailModal: React.FC<ActivityDetailModalProps> = ({ row, allColum
     const dataDisparo = String((row as any)['Data de Disparo'] ?? '');
     const buCfg = BU_CONFIG[bu] || BU_CONFIG['B2C'];
 
-    // Extra keys not in any known section
-    const extraKeys = allColumns.filter(c => c !== '_origIdx' && !KNOWN_KEYS.has(c));
-
-    const renderValue = (val: any) => {
-        const s = String(val ?? '');
-        if (!s || s === 'N/A' || s === 'undefined') return <span className="text-slate-300">—</span>;
-        return <span className="text-slate-800 font-semibold">{s}</span>;
-    };
-
     return (
-        <>
-            {/* Backdrop */}
-            <div
-                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 animate-fade-in"
-                onClick={onClose}
-            />
-
-            {/* Drawer */}
-            <div className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col animate-fade-in">
-
-                {/* Modal Header */}
-                <div className="flex items-start gap-3 px-6 py-4 border-b border-slate-100 shrink-0 bg-slate-50">
+        <div className="flex flex-col h-full">
+            {/* Panel Header */}
+            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 shrink-0">
+                <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                            {bu && (
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${buCfg.bg} ${buCfg.text} ${buCfg.border.split(' ')[1]} border-current/30`}>
-                                    {bu}
-                                </span>
-                            )}
-                            {canal && (
-                                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                                    {CANAL_EMOJI[canal] ?? ''} {canal}
-                                </span>
-                            )}
-                            {dataDisparo && (
-                                <span className="text-xs text-slate-400 ml-auto shrink-0">{dataDisparo}</span>
-                            )}
+                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            {bu && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${buCfg.bg} ${buCfg.text}`}>{bu}</span>}
+                            {canal && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">{CANAL_EMOJI[canal] ?? ''} {canal}</span>}
+                            {dataDisparo && <span className="text-[10px] text-slate-400 ml-auto">{dataDisparo}</span>}
                         </div>
-                        <h2 className="text-sm font-bold text-slate-800 leading-snug font-mono">{taxonomia}</h2>
+                        <p className="text-[11px] font-bold text-slate-800 leading-snug font-mono break-all">{taxonomia}</p>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors shrink-0 -mt-0.5"
-                    >
-                        <X size={16} />
+                    <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors shrink-0">
+                        <X size={13} />
                     </button>
                 </div>
+                <p className="text-[10px] text-slate-400 mt-1">Linha #{((row as any)._origIdx ?? 0) + 1}</p>
+            </div>
 
-                {/* Modal Content */}
-                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-                    {METRIC_SECTIONS.map(section => {
-                        const entries = section.keys.map(k => ({
-                            key: k,
-                            val: (row as any)[k],
-                        }));
-                        const hasValues = entries.some(e => {
-                            const s = String(e.val ?? '');
-                            return s && s !== 'N/A' && s !== 'undefined' && s !== '';
-                        });
-                        if (!hasValues) return null;
-
-                        return (
-                            <div key={section.id}>
-                                <div className="flex items-center gap-2 mb-3">
-                                    <span className="text-base leading-none">{section.emoji}</span>
-                                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{section.label}</h3>
-                                    <div className="flex-1 h-px bg-slate-100 ml-1" />
-                                </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    {entries.map(({ key, val }) => (
-                                        <div key={key} className="bg-slate-50 border border-slate-100 rounded-lg p-3 hover:border-slate-200 transition-colors">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 truncate" title={key}>{key}</p>
-                                            <div className="text-sm">{renderValue(val)}</div>
-                                        </div>
-                                    ))}
-                                </div>
+            {/* Panel Content */}
+            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+                {METRIC_SECTIONS.map(section => {
+                    const entries = section.keys.map(k => ({ key: k, val: (row as any)[k] }));
+                    const hasValues = entries.some(e => {
+                        const s = String(e.val ?? '');
+                        return s && s !== 'N/A' && s !== 'undefined' && s !== '';
+                    });
+                    if (!hasValues) return null;
+                    return (
+                        <div key={section.id}>
+                            <div className="flex items-center gap-1.5 mb-2">
+                                <span className="text-sm leading-none">{section.emoji}</span>
+                                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{section.label}</h3>
+                                <div className="flex-1 h-px bg-slate-100" />
                             </div>
-                        );
-                    })}
-
-                    {/* Extra / "Outros" fields */}
-                    {extraKeys.length > 0 && (
-                        <div>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="text-base leading-none">🔧</span>
-                                <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Outros Campos</h3>
-                                <div className="flex-1 h-px bg-slate-100 ml-1" />
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {extraKeys.map(col => (
-                                    <div key={col} className="bg-slate-50 border border-slate-100 rounded-lg p-3 hover:border-slate-200 transition-colors">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 truncate" title={col}>{col}</p>
-                                        <div className="text-sm">{renderValue((row as any)[col])}</div>
+                            <div className="grid grid-cols-2 gap-1.5">
+                                {entries.map(({ key, val }) => (
+                                    <div key={key} className="bg-slate-50 border border-slate-100 rounded-md p-2 hover:border-slate-200 transition-colors">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 truncate" title={key}>{key}</p>
+                                        <div>{renderValue(val)}</div>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                    )}
-                </div>
-
-                {/* Modal Footer */}
-                <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 shrink-0 flex items-center justify-between">
-                    <span className="text-xs text-slate-400">Linha #{((row as any)._origIdx ?? 0) + 1}</span>
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-100 transition-colors"
-                    >
-                        Fechar
-                    </button>
-                </div>
+                    );
+                })}
+                {extraKeys.length > 0 && (
+                    <div>
+                        <div className="flex items-center gap-1.5 mb-2">
+                            <span className="text-sm">🔧</span>
+                            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Outros</h3>
+                            <div className="flex-1 h-px bg-slate-100" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                            {extraKeys.map(col => (
+                                <div key={col} className="bg-slate-50 border border-slate-100 rounded-md p-2">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 truncate" title={col}>{col}</p>
+                                    <div>{renderValue((row as any)[col])}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
-        </>
+        </div>
     );
 };
 
@@ -519,13 +480,6 @@ export const FrameworkView: React.FC = () => {
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
         <>
-            {/* Detail Modal */}
-            <ActivityDetailModal
-                row={detailRow}
-                allColumns={allColumns}
-                onClose={() => setDetailRow(null)}
-            />
-
             <SaveVersionModal
                 isOpen={isSaveModalOpen}
                 onClose={() => setIsSaveModalOpen(false)}
@@ -624,7 +578,7 @@ export const FrameworkView: React.FC = () => {
                     </div>
                 </div>
 
-                {/* ── Main area ─────────────────────────────────────────────── */}
+                {/* ── Main area: 3 columns ──────────────────────────────── */}
                 <div className="flex flex-1 overflow-hidden">
 
                     {/* ── Left: Explorer Tree ───────────────────────────── */}
@@ -738,8 +692,8 @@ export const FrameworkView: React.FC = () => {
                         </nav>
                     </aside>
 
-                    {/* ── Right: Content ────────────────────────────────────── */}
-                    <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* ── Center: Content ───────────────────────────────── */}
+                    <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
                         {/* Breadcrumb */}
                         <div className="px-4 py-2 border-b border-slate-100 bg-slate-50 flex items-center gap-1 text-xs text-slate-500 shrink-0">
@@ -884,37 +838,41 @@ export const FrameworkView: React.FC = () => {
                                     <tbody className="divide-y divide-slate-100">
                                         {flatRows.map((row, i) => {
                                             const buCfg = BU_CONFIG[row.BU] || BU_CONFIG['B2C'];
+                                            const isSelected = detailRow?._origIdx === row._origIdx;
                                             return (
                                                 <tr
                                                     key={row._origIdx}
-                                                    className={`group transition-colors cursor-pointer hover:bg-cyan-50/40 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}
-                                                    onClick={() => setDetailRow(row)}
+                                                    className={`group transition-colors cursor-pointer ${isSelected
+                                                            ? 'bg-cyan-50 ring-1 ring-inset ring-[#00c6cc]/30'
+                                                            : `hover:bg-cyan-50/40 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`
+                                                        }`}
+                                                    onClick={() => setDetailRow(isSelected ? null : row)}
                                                 >
-                                                    <td className={`px-2 py-2 text-slate-400 text-center border-r border-slate-100 sticky left-0 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} group-hover:bg-cyan-50/40 transition-colors text-[11px]`}>
+                                                    <td className={`px-2 py-1 text-slate-400 text-center border-r border-slate-100 sticky left-0 transition-colors text-[10px] ${isSelected ? 'bg-cyan-50' : (i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50')
+                                                        } group-hover:bg-cyan-50/40`}>
                                                         {i + 1}
                                                     </td>
                                                     {DISPLAY_COLS.map(col => {
                                                         const val = (edits[row._origIdx] as any)?.[col.key] ?? (row as any)[col.key] ?? '';
                                                         const edited = (edits[row._origIdx] as any)?.[col.key] !== undefined;
-
                                                         if (col.key === 'Activity name / Taxonomia') {
                                                             return (
-                                                                <td key={col.key} className="px-3 py-2">
-                                                                    <div className="flex items-center gap-2">
+                                                                <td key={col.key} className="px-2 py-1">
+                                                                    <div className="flex items-center gap-1.5">
                                                                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${buCfg.dot}`} />
-                                                                        <span className={`font-mono text-slate-800 truncate max-w-xs text-[11px] ${edited ? 'text-amber-600' : ''}`}>{val}</span>
+                                                                        <span className={`font-mono text-slate-800 truncate max-w-[180px] text-[10px] ${edited ? 'text-amber-600' : ''}`}>{val}</span>
                                                                     </div>
                                                                 </td>
                                                             );
                                                         }
                                                         return (
-                                                            <td key={col.key} className={`px-3 py-2 text-slate-500 text-[11px] ${edited ? 'text-amber-600 bg-amber-500/5' : ''}`}>
+                                                            <td key={col.key} className={`px-2 py-1 text-slate-500 text-[10px] ${edited ? 'text-amber-600 bg-amber-500/5' : ''}`}>
                                                                 {String(val || '—')}
                                                             </td>
                                                         );
                                                     })}
-                                                    <td className="px-2 py-2">
-                                                        <ExternalLink size={12} className="text-slate-300 group-hover:text-[#00c6cc] transition-colors" />
+                                                    <td className="px-1 py-1">
+                                                        <ExternalLink size={11} className="text-slate-300 group-hover:text-[#00c6cc] transition-colors" />
                                                     </td>
                                                 </tr>
                                             );
@@ -931,11 +889,29 @@ export const FrameworkView: React.FC = () => {
                         )}
 
                         {/* ── Footer ──────────────────────────────────────────── */}
-                        <div className="bg-slate-50 border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400 flex justify-between items-center shrink-0">
-                            <span>Total: <strong className="text-slate-600">{frameworkData.length}</strong> linhas</span>
-                            <span>Visualizando: <strong className="text-slate-600">{totalCount}</strong> linhas</span>
+                        <div className="bg-slate-50 border-t border-slate-100 px-4 py-1.5 text-[10px] text-slate-400 flex justify-between items-center shrink-0">
+                            <span>Total: <strong className="text-slate-600">{frameworkData.length}</strong></span>
+                            <span>Exibindo: <strong className="text-slate-600">{totalCount}</strong></span>
                         </div>
                     </div>
+
+                    {/* ── Right: Detail Panel ───────────────────────────── */}
+                    <aside className="w-72 shrink-0 border-l border-slate-100 bg-white flex flex-col overflow-hidden">
+                        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50 flex items-center gap-2 shrink-0">
+                            <FileText size={11} className="text-slate-400" />
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Detalhes</span>
+                            {detailRow && (
+                                <span className="ml-auto text-[10px] text-slate-400">
+                                    #{((detailRow as any)._origIdx ?? 0) + 1}
+                                </span>
+                            )}
+                        </div>
+                        <DetailPanel
+                            row={detailRow}
+                            allColumns={allColumns}
+                            onClose={() => setDetailRow(null)}
+                        />
+                    </aside>
                 </div>
             </div>
         </>
