@@ -232,7 +232,7 @@ function App() {
             <button
               type="button"
               aria-label="Area de ativacao dos filtros"
-              className="absolute top-0 left-0 right-0 h-12 bg-transparent cursor-default z-10"
+              className={`absolute top-0 left-0 right-0 h-12 bg-transparent cursor-default z-10 ${isFilterDropOpen ? 'pointer-events-none' : 'pointer-events-auto'}`}
               onMouseEnter={openFilterDrop}
               onFocus={openFilterDrop}
             />

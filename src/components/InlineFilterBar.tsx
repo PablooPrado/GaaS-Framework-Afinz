@@ -151,11 +151,12 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                 } ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'}`}>
 
                 <div className="bg-white border border-slate-200 rounded-xl shadow-[0_12px_45px_-8px_rgba(0,0,0,0.2)] p-2 relative overflow-hidden ring-1 ring-slate-900/5">
-                    <div className="flex items-center justify-between px-3 py-2.5 mb-1.5 border-b border-slate-100 bg-slate-50/80 -mx-2 -mt-2">
+                    <div className="relative z-10 flex items-center justify-between px-3 py-2.5 mb-1.5 border-b border-slate-100 bg-slate-50/80 -mx-2 -mt-2">
                         <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{title}</span>
                         {items.length > 0 && (
                             <div className="flex items-center gap-2">
                                 <button
+                                    type="button"
                                     onClick={selectAllVisible}
                                     className="text-[10px] uppercase font-bold text-[#00c6cc] hover:text-[#00a1a6] transition-colors"
                                 >
@@ -163,6 +164,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                                 </button>
                                 <span className="text-[10px] text-slate-300">|</span>
                                 <button
+                                    type="button"
                                     onClick={clearAllVisible}
                                     className="text-[10px] uppercase font-bold text-slate-400 hover:text-slate-600 transition-colors"
                                 >
