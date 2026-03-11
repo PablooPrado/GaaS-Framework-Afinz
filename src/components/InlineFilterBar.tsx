@@ -43,9 +43,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     const { viewSettings, setGlobalFilters } = useAppStore();
     const filters = viewSettings.filtrosGlobais;
     const [isOpen, setIsOpen] = React.useState(false);
-    const [isPinnedOpen, setIsPinnedOpen] = React.useState(false);
     const [searchTerm, setSearchTerm] = React.useState('');
-    const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
     const containerRef = React.useRef<HTMLDivElement | null>(null);
 
     if (items.length === 0) return null;
@@ -91,26 +89,12 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     const selectedCount = selectedSet.size;
     const isActive = selectedCount > 0;
 
-    const handleMouseEnter = () => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        setIsOpen(true);
-    };
-
-    const handleMouseLeave = () => {
-        if (isPinnedOpen) return;
-        timeoutRef.current = setTimeout(() => {
-            setIsOpen(false);
-            setSearchTerm('');
-        }, 300); // 300ms hover delay bridge
-    };
-
     React.useEffect(() => {
-        if (!isPinnedOpen) return;
+        if (!isOpen) return;
 
         const handleOutsideClick = (event: MouseEvent) => {
             if (!containerRef.current) return;
             if (!containerRef.current.contains(event.target as Node)) {
-                setIsPinnedOpen(false);
                 setIsOpen(false);
                 setSearchTerm('');
             }
@@ -118,7 +102,6 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
 
         const handleEscape = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
-                setIsPinnedOpen(false);
                 setIsOpen(false);
                 setSearchTerm('');
             }
@@ -130,30 +113,21 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
             document.removeEventListener('mousedown', handleOutsideClick);
             document.removeEventListener('keydown', handleEscape);
         };
-    }, [isPinnedOpen]);
+    }, [isOpen]);
 
     React.useEffect(() => {
-        onOpenChange?.(isOpen || isPinnedOpen);
-    }, [isOpen, isPinnedOpen, onOpenChange]);
+        onOpenChange?.(isOpen);
+    }, [isOpen, onOpenChange]);
 
     return (
         <div
             ref={containerRef}
             className="relative"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
         >
             <button
                 onClick={() => {
-                    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-                    if (isPinnedOpen) {
-                        setIsPinnedOpen(false);
-                        setIsOpen(false);
-                        setSearchTerm('');
-                    } else {
-                        setIsPinnedOpen(true);
-                        setIsOpen(true);
-                    }
+                    setIsOpen(!isOpen);
+                    if (isOpen) setSearchTerm('');
                 }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition border shadow-sm ${isActive || isOpen
                     ? 'bg-white border-slate-400 text-slate-800'
@@ -170,14 +144,8 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                 <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-180 opacity-100' : 'opacity-50'}`} />
             </button>
 
-            {/* A wrapper with dropdown items. We add an invisible safe zone to trap the mouse */}
             <div className={`absolute top-full pt-1.5 min-w-64 max-w-sm z-50 transition-all duration-200 transform origin-top-left ${isOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-1 pointer-events-none'
                 } ${align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'}`}>
-                {/* INVISIBLE BRIDGE to prevent mouse slip */}
-                <div
-                    className="absolute -inset-x-12 -top-5 -bottom-12 bg-transparent -z-10"
-                    aria-hidden="true"
-                />
 
                 <div className="bg-white border border-slate-200 rounded-xl shadow-[0_12px_45px_-8px_rgba(0,0,0,0.2)] p-2 relative overflow-hidden ring-1 ring-slate-900/5">
                     <div className="flex items-center justify-between px-3 py-2.5 mb-1 border-b border-slate-100 bg-slate-50/80 -mx-2 -mt-2">
