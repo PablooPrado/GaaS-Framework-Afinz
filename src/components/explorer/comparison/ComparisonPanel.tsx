@@ -30,6 +30,7 @@ interface ComparisonPanelProps {
   onMetricChange: (metric: ExplorerMetric) => void;
   onTemporalMetricChange: (metric: ExplorerMetric) => void;
   onBarClick: (focusId: string | null) => void;
+  onDayClick?: (date: string) => void;
 }
 
 export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
@@ -44,6 +45,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
   onMetricChange,
   onTemporalMetricChange,
   onBarClick,
+  onDayClick,
 }) => {
   const [temporalMode, setTemporalMode] = React.useState<TemporalViewMode>('simple');
 
@@ -127,6 +129,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({
           simpleData={dailySimpleData}
           stackedData={dailyStackedData}
           stackedKeys={stackedKeys}
+          onBarClick={onDayClick}
         />
       </div>
     </div>

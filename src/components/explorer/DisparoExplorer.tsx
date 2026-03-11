@@ -203,6 +203,33 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
     setDetailsPaneNode(null);
   }, [allBusSelected, allBuNodeIds, setSelectedNodeIds, resetComparisonFocus, setDetailsPaneNode]);
 
+  // Clique em um dia do gráfico temporal → abre o primeiro disparo daquele dia no escopo atual
+  const handleDayClick = React.useCallback((date: string) => {
+    // Respeita o escopo atual (foco/filtros) ao buscar atividades do dia
+    const focusId = comparisonFocusNodeId;
+    const act = activities.find((a) => {
+      const actDate = (a['Data de Disparo'] as string | undefined)?.slice(0, 10);
+      if (actDate !== date) return false;
+      // Aplica escopo se houver foco definido
+      if (focusId) {
+        const parts = focusId.split(':');
+        const type = parts[0];
+        const payload = parts.slice(1).join(':');
+        if (type === 'bu' && a.BU !== payload) return false;
+        if (type === 'segmento') {
+          const [bu, seg] = payload.split('|');
+          if (a.BU !== bu || a.Segmento !== seg) return false;
+        }
+        if (type === 'canal') {
+          const [bu, seg, canal] = payload.split('|');
+          if (a.BU !== bu || a.Segmento !== seg || a.Canal !== canal) return false;
+        }
+      }
+      return true;
+    });
+    if (act) setDisparoModalActivity(act);
+  }, [activities, comparisonFocusNodeId]);
+
   const handleViewAll = () => {
     if (!detailsData || !onNavigateToFramework) return;
     const { node } = detailsData;
@@ -270,7 +297,9 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
               const clickedNode = nodeMap.get(nodeId);
               if (clickedNode?.type === 'disparo') {
                 const actId = clickedNode.activityIds[0];
-                const act = activities.find((a) => a.id === actId);
+                // Tenta por ID primeiro, depois por nome da atividade (fallback)
+                let act = activities.find((a) => a.id === actId);
+                if (!act) act = activities.find((a) => (a['Activity name / Taxonomia'] as string) === actId);
                 if (act) setDisparoModalActivity(act);
                 return;
               }
@@ -308,14 +337,20 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
             if (!focusId) return;
             // Clique em barra de disparo individual → abre DisparoDetailModal
             if (focusId.startsWith('disparo:')) {
-              const activityId = focusId.replace('disparo:', '');
-              const act = activities.find((a) => a.id === activityId);
+              const activityKey = focusId.replace('disparo:', '');
+              // Busca por nome (Activity name / Taxonomia) — label no nível disparo
+              let act = activities.find((a) =>
+                ((a['Activity name / Taxonomia'] as string) || a.id) === activityKey
+              );
+              // Fallback: busca por ID (compatibilidade com outros formatos)
+              if (!act) act = activities.find((a) => a.id === activityKey);
               if (act) setDisparoModalActivity(act);
               return; // não avança drill-down
             }
             setComparisonFocusNode(focusId);
             setDetailsPaneNode(null);
           }}
+          onDayClick={handleDayClick}
         />
       </div>
 

@@ -17,6 +17,7 @@ interface DailyTowerChartProps {
   simpleData: DailyTowerPoint[];
   stackedData: DailyTowerPoint[];
   stackedKeys: string[];
+  onBarClick?: (date: string) => void;
 }
 
 const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899', '#06B6D4', '#84CC16', '#F97316'];
@@ -27,6 +28,7 @@ export const DailyTowerChart: React.FC<DailyTowerChartProps> = ({
   simpleData,
   stackedData,
   stackedKeys,
+  onBarClick,
 }) => {
   const data = mode === 'simple' ? simpleData : stackedData;
 
@@ -44,7 +46,16 @@ export const DailyTowerChart: React.FC<DailyTowerChartProps> = ({
     <div className="w-full overflow-x-auto">
       <div style={{ width: chartWidth, height: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 6 }}>
+          <BarChart
+            data={data}
+            margin={{ top: 8, right: 16, left: 0, bottom: 6 }}
+            style={onBarClick ? { cursor: 'pointer' } : undefined}
+            onClick={(e: { activePayload?: { payload: DailyTowerPoint }[] } | null) => {
+              if (onBarClick && e?.activePayload?.[0]) {
+                onBarClick(e.activePayload[0].payload.date);
+              }
+            }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
             <XAxis dataKey="label" tick={{ fill: '#64748B', fontSize: 11 }} tickLine={false} axisLine={false} />
             <YAxis

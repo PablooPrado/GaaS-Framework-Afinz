@@ -78,11 +78,6 @@ export const SegmentBarChart: React.FC<SegmentBarChartProps> = ({ data, metric, 
         data={data}
         layout="vertical"
         margin={{ top: 4, right: 60, left: 8, bottom: 4 }}
-        onClick={(e: any) => {
-          if (e?.activePayload?.[0]) {
-            onBarClick((e.activePayload[0].payload as BarChartDataPoint).nextFocusId ?? null);
-          }
-        }}
         barGap={2}
       >
         <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
@@ -101,13 +96,29 @@ export const SegmentBarChart: React.FC<SegmentBarChartProps> = ({ data, metric, 
           axisLine={false}
           width={90}
         />
-        <Tooltip content={<CustomTooltip metric={metric} />} cursor={{ fill: 'rgba(226,232,240,0.5)' }} />
+        <Tooltip content={<CustomTooltip metric={metric} />} cursor={{ fill: 'rgba(226,232,240,0.35)' }} />
 
         {hasPrev && (
-          <Bar dataKey="prevValue" radius={[0, 4, 4, 0]} maxBarSize={hasPrev ? 16 : 24} fill="#CBD5E1" />
+          <Bar
+            dataKey="prevValue"
+            radius={[0, 4, 4, 0]}
+            maxBarSize={hasPrev ? 16 : 24}
+            fill="#CBD5E1"
+            activeBar={false}
+          />
         )}
 
-        <Bar dataKey="value" radius={[0, 4, 4, 0]} cursor="pointer" maxBarSize={hasPrev ? 16 : 24}>
+        <Bar
+          dataKey="value"
+          radius={[0, 4, 4, 0]}
+          cursor="pointer"
+          maxBarSize={hasPrev ? 16 : 24}
+          activeBar={false}
+          onClick={(barData: unknown) => {
+            const d = barData as BarChartDataPoint;
+            onBarClick(d?.nextFocusId ?? null);
+          }}
+        >
           {data.map((entry) => (
             <Cell key={entry.id} fill={entry.color} fillOpacity={0.85} />
           ))}

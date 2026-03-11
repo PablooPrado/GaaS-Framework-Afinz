@@ -255,8 +255,10 @@ export function useComparisonData({
         nextFocusId = buildFocusId({ bu: focus.bu, segmento: focus.segmento, canal: label });
         color = CANAL_COLORS[label] ?? PALETTE[idx % PALETTE.length];
       } else {
-        const first = rows[0];
-        nextFocusId = first ? buildFocusId({ disparoId: first.id }) : null;
+        // Nível disparo: usa o label (Activity name / Taxonomia) como chave de lookup,
+        // pois Activity.id pode ser o taxonomy name enquanto ActivityRow.id após ...a.raw
+        // passa a ser o UUID do Supabase — causando mismatch. O label é sempre confiável.
+        nextFocusId = label ? `disparo:${label}` : null;
         color = '#64748B';
       }
 

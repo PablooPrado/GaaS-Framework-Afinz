@@ -65,8 +65,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
 
     return (
         <div className="flex h-[calc(100vh-80px)] gap-3 p-3 bg-slate-50 overflow-hidden">
-            <div className="w-1/3 min-w-[320px] flex flex-col gap-2">
-                <div className="flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div className="w-1/3 min-w-[320px] flex flex-col gap-2 self-start">
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
                     <CalendarSummary
                         data={data}
                         onDayClick={onDayClick}

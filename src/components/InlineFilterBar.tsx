@@ -45,6 +45,31 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     const [isOpen, setIsOpen] = React.useState(false);
     const [searchTerm, setSearchTerm] = React.useState('');
     const containerRef = React.useRef<HTMLDivElement | null>(null);
+    const closeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const cancelCloseTimer = () => {
+        if (closeTimerRef.current) {
+            clearTimeout(closeTimerRef.current);
+            closeTimerRef.current = null;
+        }
+    };
+
+    const handleMouseLeave = () => {
+        if (!isOpen) return;
+        closeTimerRef.current = setTimeout(() => {
+            setIsOpen(false);
+            setSearchTerm('');
+        }, 600);
+    };
+
+    const handleMouseEnter = () => {
+        cancelCloseTimer();
+    };
+
+    // Cleanup timer on unmount
+    React.useEffect(() => {
+        return () => { cancelCloseTimer(); };
+    }, []);
 
     if (items.length === 0) return null;
 
@@ -126,6 +151,8 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
         <div
             ref={containerRef}
             className="relative"
+            onMouseLeave={handleMouseLeave}
+            onMouseEnter={handleMouseEnter}
         >
             <button
                 onClick={() => {

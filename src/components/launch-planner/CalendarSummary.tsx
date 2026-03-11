@@ -78,7 +78,7 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
     };
 
     return (
-        <div className="bg-white border border-slate-200 rounded-xl p-4 h-full flex flex-col">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                     <button
@@ -113,7 +113,7 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
                 ))}
             </div>
 
-            <div className="flex-1 overflow-y-auto flex justify-center">
+            <div className="flex justify-center pt-1">
                 <div className="grid grid-cols-7 gap-1 w-full max-w-[560px]">
                     {calendarDays.map((day) => {
                         const { count, byBU, byBUCartoes, hasDraft } = getDayMetrics(day);
