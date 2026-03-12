@@ -32,6 +32,8 @@ interface DetailRow {
   activityName: string;
   segmento: string;
   canal: string;
+  bu: string;
+  parceiro: string;
   propostas: number;
   aprovados: number;
   emissoes: number;
@@ -226,6 +228,12 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
           activityName: a.id,
           segmento: a.segmento || '',
           canal: a.canal || '',
+          bu: a.bu || '',
+          parceiro: (() => {
+            if (a.bu?.toLowerCase() === 'plurix') return 'Plurix';
+            const p = a.parceiro ?? '';
+            return (!p || p.toLowerCase() === 'n/a') ? 'Afinz' : p;
+          })(),
           propostas,
           aprovados,
           emissoes,
@@ -821,6 +829,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                   <th className="text-left px-4 py-3 font-semibold whitespace-nowrap w-16">Data</th>
                   <th className="text-left px-4 py-3 font-semibold whitespace-nowrap" style={{ minWidth: 180, maxWidth: 220 }}>Campanha</th>
                   <th className="text-left px-4 py-3 font-semibold whitespace-nowrap min-w-[110px]">Segmento</th>
+                  <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Parceiro</th>
                   <th className="text-left px-4 py-3 font-semibold whitespace-nowrap w-20">Canal</th>
                   <th className="text-left px-3 py-3 font-semibold whitespace-nowrap min-w-[200px]">Descrição</th>
                   <th className="text-right px-4 py-3 font-semibold whitespace-nowrap">Entregas</th>
@@ -887,6 +896,10 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                         ) : (
                           <span className="text-slate-400 text-xs">—</span>
                         )}
+                      </td>
+                      {/* Parceiro */}
+                      <td className="px-4 py-2.5 whitespace-nowrap">
+                        <span className="text-[11px] font-medium text-slate-600">{row.parceiro}</span>
                       </td>
                       {/* Canal */}
                       <td className="px-4 py-2.5 whitespace-nowrap">
