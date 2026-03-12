@@ -124,6 +124,17 @@ function downloadBlob(blob: Blob, filename: string): void {
 const HIGHLIGHT_COLS_HEADER = `font-bold whitespace-nowrap text-slate-900`;
 const HIGHLIGHT_CELL = `font-semibold text-slate-800`;
 
+const CANAL_COLORS: Record<string, string> = {
+  'WhatsApp': 'bg-green-100 text-green-700 border-green-200',
+  'SMS': 'bg-sky-100 text-sky-700 border-sky-200',
+  'E-mail': 'bg-indigo-100 text-indigo-700 border-indigo-200',
+  'Push': 'bg-orange-100 text-orange-700 border-orange-200',
+};
+const PARCEIRO_COLORS: Record<string, string> = {
+  'Afinz': 'bg-cyan-100 text-cyan-700 border-cyan-200',
+  'Plurix': 'bg-purple-100 text-purple-700 border-purple-200',
+};
+
 export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }) => {
   const allActivities = useMemo(() => Object.values(data).flat(), [data]);
 
@@ -442,7 +453,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
           </button>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-b-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
@@ -573,7 +584,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
           </button>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-b-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
@@ -730,7 +741,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
           const buColor = BU_COLOR[a.BU] ?? '#64748B';
           const CANAL_EMOJI: Record<string, string> = { 'E-mail': '📧', 'SMS': '💬', 'WhatsApp': '📱', 'Push': '🔔' };
           return (
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-slate-200 rounded-b-xl shadow-sm overflow-hidden">
               {/* Header bar */}
               <div className="px-5 py-4 border-b border-slate-100" style={{ borderLeft: `4px solid ${buColor}` }}>
                 <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -821,42 +832,42 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
           );
         })()}
 
-        {!selectedActivityRow && <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        {!selectedActivityRow && <div className="bg-white border border-slate-200 rounded-b-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr style={{ background: '#1E293B' }} className="text-white">
-                  <th className="text-left px-4 py-3 font-semibold whitespace-nowrap w-16">Data</th>
-                  <th className="text-left px-4 py-3 font-semibold whitespace-nowrap" style={{ minWidth: 180, maxWidth: 220 }}>Campanha</th>
-                  <th className="text-left px-4 py-3 font-semibold whitespace-nowrap min-w-[110px]">Segmento</th>
-                  <th className="text-left px-4 py-3 font-semibold whitespace-nowrap">Parceiro</th>
-                  <th className="text-left px-4 py-3 font-semibold whitespace-nowrap w-20">Canal</th>
-                  <th className="text-left px-3 py-3 font-semibold whitespace-nowrap min-w-[200px]">Descrição</th>
-                  <th className="text-center px-4 py-3 font-semibold whitespace-nowrap">Entregas</th>
+                  <th className="text-left px-2 py-2 font-semibold whitespace-nowrap w-12">Data</th>
+                  <th className="text-left px-2 py-2 font-semibold whitespace-nowrap" style={{ minWidth: 140, maxWidth: 180 }}>Campanha</th>
+                  <th className="text-left px-2 py-2 font-semibold whitespace-nowrap min-w-[90px]">Segmento</th>
+                  <th className="text-left px-2 py-2 font-semibold whitespace-nowrap">Parceiro</th>
+                  <th className="text-left px-2 py-2 font-semibold whitespace-nowrap">Canal</th>
+                  <th className="text-left px-2 py-2 font-semibold whitespace-nowrap min-w-[130px]">Descrição</th>
+                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Entregas</th>
                   <th
-                    className={`text-right px-3 py-3 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-right px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
                     style={{ background: LIME_HEADER, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
                   >Propostas</th>
                   <th
-                    className={`text-right px-3 py-3 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-right px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
                     style={{ background: LIME_HEADER, borderRight: `2px solid ${LIME_BORDER}` }}
                   >% Proposta</th>
                   <th
-                    className={`text-right px-3 py-3 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-right px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
                     style={{ background: LIME_HEADER, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
                   >Aprovados</th>
                   <th
-                    className={`text-right px-3 py-3 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-right px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
                     style={{ background: LIME_HEADER, borderRight: `2px solid ${LIME_BORDER}` }}
                   >% Aprovação</th>
                   <th
-                    className={`text-right px-3 py-3 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-right px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
                     style={{ background: LIME_HEADER, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `2px solid ${LIME_BORDER}` }}
                   >Emissões</th>
-                  <th className="text-right px-4 py-3 font-semibold whitespace-nowrap">% Finalização</th>
-                  <th className="text-right px-4 py-3 font-semibold whitespace-nowrap">Custo / Cartão</th>
-                  <th className="text-right px-4 py-3 font-semibold whitespace-nowrap">Custo Total</th>
-                  <th className="text-right px-4 py-3 font-semibold whitespace-nowrap">% Conv da Base</th>
+                  <th className="text-right px-2 py-2 font-semibold whitespace-nowrap">% Final.</th>
+                  <th className="text-right px-2 py-2 font-semibold whitespace-nowrap">C./Cartão</th>
+                  <th className="text-right px-2 py-2 font-semibold whitespace-nowrap">Custo Total</th>
+                  <th className="text-right px-2 py-2 font-semibold whitespace-nowrap">% Conv</th>
                 </tr>
               </thead>
               <tbody>
@@ -873,13 +884,13 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                       }}
                       title="Clique para ver detalhes do disparo"
                     >
-                      <td className={`px-4 py-2.5 font-medium whitespace-nowrap tabular-nums text-xs text-slate-500 ${color?.border ?? ''}`}>
+                      <td className={`px-2 py-1.5 font-medium whitespace-nowrap tabular-nums text-xs text-slate-500 ${color?.border ?? ''}`}>
                         {format(row.date, 'dd/MM')}
                       </td>
-                      <td className="px-4 py-2.5" style={{ minWidth: 180, maxWidth: 220 }}>
+                      <td className="px-2 py-1.5" style={{ minWidth: 140, maxWidth: 180 }}>
                         <div className="flex flex-col gap-0.5">
                           {row.jornada && (
-                            <span className={`text-[11px] font-semibold truncate ${color?.text ?? 'text-slate-600'}`} style={{ maxWidth: 180 }} title={row.jornada}>
+                            <span className={`text-[11px] font-semibold truncate ${color?.text ?? 'text-slate-600'}`} style={{ maxWidth: 160 }} title={row.jornada}>
                               {row.jornada}
                             </span>
                           )}
@@ -888,7 +899,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-2 py-1.5">
                         {row.segmento ? (
                           <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${color?.bg ?? 'bg-slate-100'} ${color?.text ?? 'text-slate-600'} border ${color?.border ? 'border-current' : 'border-slate-200'}`}>
                             {row.segmento}
@@ -898,24 +909,24 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                         )}
                       </td>
                       {/* Parceiro */}
-                      <td className="px-4 py-2.5 whitespace-nowrap">
-                        <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap bg-slate-100 text-slate-600 border border-slate-200">
+                      <td className="px-2 py-1.5 whitespace-nowrap">
+                        <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap border ${PARCEIRO_COLORS[row.parceiro] ?? 'bg-amber-100 text-amber-700 border-amber-200'}`}>
                           {row.parceiro}
                         </span>
                       </td>
                       {/* Canal */}
-                      <td className="px-4 py-2.5 whitespace-nowrap">
-                        <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap bg-slate-100 text-slate-600 border border-slate-200">
+                      <td className="px-2 py-1.5 whitespace-nowrap">
+                        <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap border ${CANAL_COLORS[row.canal ?? ''] ?? 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                           {row.canal || '—'}
                         </span>
                       </td>
                       {/* Descrição */}
-                      <td className="px-3 py-1.5" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-start gap-1.5">
+                      <td className="px-2 py-1" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-start gap-1">
                           <textarea
-                            className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded px-2 py-1 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-400 min-w-[160px]"
-                            rows={2}
-                            placeholder="Adicionar descrição..."
+                            className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded px-1.5 py-0.5 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-400 min-w-[100px]"
+                            rows={1}
+                            placeholder="Descrição..."
                             value={editingDescs[row.activityName] ?? ''}
                             onChange={e => setEditingDescs(prev => ({ ...prev, [row.activityName]: e.target.value }))}
                           />
@@ -932,36 +943,36 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                         </div>
                       </td>
                       {/* Entregas */}
-                      <td className="text-center px-4 py-2.5">
+                      <td className="text-center px-2 py-1.5">
                         {row.aguardando
-                          ? <span className="text-xs font-medium text-amber-500 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Aguardando</span>
-                          : <span className="text-slate-600">{fmtN(row.baseEntregue)}</span>
+                          ? <span className="text-[11px] font-medium text-amber-500 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Aguardando</span>
+                          : <span className="text-slate-600 text-xs tabular-nums">{fmtN(row.baseEntregue)}</span>
                         }
                       </td>
                       <td
-                        className={`text-right px-3 py-2.5 ${HIGHLIGHT_CELL}`}
+                        className={`text-right px-2 py-1.5 ${HIGHLIGHT_CELL}`}
                         style={{ background: LIME_BG, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
                       >{fmtN(row.propostas)}</td>
                       <td
-                        className="text-right px-3 py-2.5 text-slate-700"
+                        className="text-right px-2 py-1.5 text-slate-700"
                         style={{ background: LIME_BG, borderRight: `2px solid ${LIME_BORDER}` }}
                       >{fmtPct(row.taxaProposta)}</td>
                       <td
-                        className={`text-right px-3 py-2.5 ${HIGHLIGHT_CELL}`}
+                        className={`text-right px-2 py-1.5 ${HIGHLIGHT_CELL}`}
                         style={{ background: LIME_BG, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
                       >{fmtN(row.aprovados)}</td>
                       <td
-                        className="text-right px-3 py-2.5 text-slate-700"
+                        className="text-right px-2 py-1.5 text-slate-700"
                         style={{ background: LIME_BG, borderRight: `2px solid ${LIME_BORDER}` }}
                       >{fmtPct(row.taxaAprovacao)}</td>
                       <td
-                        className={`text-right px-3 py-2.5 ${HIGHLIGHT_CELL}`}
+                        className={`text-right px-2 py-1.5 ${HIGHLIGHT_CELL}`}
                         style={{ background: LIME_BG, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `2px solid ${LIME_BORDER}` }}
                       >{fmtN(row.emissoes)}</td>
-                      <td className="text-right px-4 py-2.5 text-slate-600">{fmtPct(row.taxaFinalizacao)}</td>
-                      <td className="text-right px-4 py-2.5 text-slate-600">{fmtBRL(row.custoPorCartao)}</td>
-                      <td className="text-right px-4 py-2.5 text-slate-600">{fmtBRL(row.custoTotal)}</td>
-                      <td className="text-right px-4 py-2.5 text-slate-600">{fmtPct4(row.taxaConversaoBase)}</td>
+                      <td className="text-right px-2 py-1.5 text-slate-600 text-xs tabular-nums">{fmtPct(row.taxaFinalizacao)}</td>
+                      <td className="text-right px-2 py-1.5 text-slate-600 text-xs tabular-nums">{fmtBRL(row.custoPorCartao)}</td>
+                      <td className="text-right px-2 py-1.5 text-slate-600 text-xs tabular-nums">{fmtBRL(row.custoTotal)}</td>
+                      <td className="text-right px-2 py-1.5 text-slate-600 text-xs tabular-nums">{fmtPct4(row.taxaConversaoBase)}</td>
                     </tr>
                   );
                 })}
