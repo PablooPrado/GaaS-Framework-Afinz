@@ -125,14 +125,14 @@ const HIGHLIGHT_COLS_HEADER = `font-bold whitespace-nowrap text-slate-900`;
 const HIGHLIGHT_CELL = `font-semibold text-slate-800`;
 
 const CANAL_COLORS: Record<string, string> = {
-  'WhatsApp': 'bg-green-100 text-green-700 border-green-200',
-  'SMS': 'bg-sky-100 text-sky-700 border-sky-200',
-  'E-mail': 'bg-indigo-100 text-indigo-700 border-indigo-200',
-  'Push': 'bg-orange-100 text-orange-700 border-orange-200',
+  'WhatsApp': 'bg-emerald-50 text-emerald-600 border-emerald-100',
+  'SMS': 'bg-sky-50 text-sky-600 border-sky-100',
+  'E-mail': 'bg-violet-50 text-violet-500 border-violet-100',
+  'Push': 'bg-orange-50 text-orange-500 border-orange-100',
 };
 const PARCEIRO_COLORS: Record<string, string> = {
-  'Afinz': 'bg-cyan-100 text-cyan-700 border-cyan-200',
-  'Plurix': 'bg-purple-100 text-purple-700 border-purple-200',
+  'Afinz': 'bg-teal-50 text-teal-600 border-teal-100',
+  'Plurix': 'bg-purple-50 text-purple-500 border-purple-100',
 };
 
 export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }) => {
@@ -839,35 +839,35 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                 <tr style={{ background: '#1E293B' }} className="text-white">
                   <th className="text-left px-2 py-2 font-semibold whitespace-nowrap w-12">Data</th>
                   <th className="text-left px-2 py-2 font-semibold whitespace-nowrap" style={{ minWidth: 140, maxWidth: 180 }}>Campanha</th>
-                  <th className="text-left px-2 py-2 font-semibold whitespace-nowrap min-w-[90px]">Segmento</th>
-                  <th className="text-left px-2 py-2 font-semibold whitespace-nowrap">Parceiro</th>
-                  <th className="text-left px-2 py-2 font-semibold whitespace-nowrap">Canal</th>
+                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap min-w-[90px]">Segmento</th>
+                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Parceiro</th>
+                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Canal</th>
                   <th className="text-left px-2 py-2 font-semibold whitespace-nowrap min-w-[130px]">Descrição</th>
                   <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Entregas</th>
                   <th
-                    className={`text-right px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
                     style={{ background: LIME_HEADER, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
                   >Propostas</th>
                   <th
-                    className={`text-right px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
                     style={{ background: LIME_HEADER, borderRight: `2px solid ${LIME_BORDER}` }}
                   >% Proposta</th>
                   <th
-                    className={`text-right px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
                     style={{ background: LIME_HEADER, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
                   >Aprovados</th>
                   <th
-                    className={`text-right px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
                     style={{ background: LIME_HEADER, borderRight: `2px solid ${LIME_BORDER}` }}
                   >% Aprovação</th>
                   <th
-                    className={`text-right px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
                     style={{ background: LIME_HEADER, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `2px solid ${LIME_BORDER}` }}
                   >Emissões</th>
-                  <th className="text-right px-2 py-2 font-semibold whitespace-nowrap">% Final.</th>
-                  <th className="text-right px-2 py-2 font-semibold whitespace-nowrap">C./Cartão</th>
-                  <th className="text-right px-2 py-2 font-semibold whitespace-nowrap">Custo Total</th>
-                  <th className="text-right px-2 py-2 font-semibold whitespace-nowrap">% Conv</th>
+                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">% Final.</th>
+                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">C./Cartão</th>
+                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Custo Total</th>
+                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">% Conv</th>
                 </tr>
               </thead>
               <tbody>
@@ -899,7 +899,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                           </span>
                         </div>
                       </td>
-                      <td className="px-2 py-1.5">
+                      <td className="px-2 py-1.5 text-center">
                         {row.segmento ? (
                           <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${color?.bg ?? 'bg-slate-100'} ${color?.text ?? 'text-slate-600'} border ${color?.border ? 'border-current' : 'border-slate-200'}`}>
                             {row.segmento}
@@ -909,24 +909,24 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                         )}
                       </td>
                       {/* Parceiro */}
-                      <td className="px-2 py-1.5 whitespace-nowrap">
-                        <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap border ${PARCEIRO_COLORS[row.parceiro] ?? 'bg-amber-100 text-amber-700 border-amber-200'}`}>
+                      <td className="px-2 py-1.5 whitespace-nowrap text-center">
+                        <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap border ${PARCEIRO_COLORS[row.parceiro] ?? 'bg-slate-50 text-slate-500 border-slate-200'}`}>
                           {row.parceiro}
                         </span>
                       </td>
                       {/* Canal */}
-                      <td className="px-2 py-1.5 whitespace-nowrap">
-                        <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap border ${CANAL_COLORS[row.canal ?? ''] ?? 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                      <td className="px-2 py-1.5 whitespace-nowrap text-center">
+                        <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap border ${CANAL_COLORS[row.canal ?? ''] ?? 'bg-slate-50 text-slate-500 border-slate-200'}`}>
                           {row.canal || '—'}
                         </span>
                       </td>
                       {/* Descrição */}
-                      <td className="px-2 py-1" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-start gap-1">
+                      <td className="px-2 py-1.5" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-start gap-1.5">
                           <textarea
-                            className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded px-1.5 py-0.5 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-400 min-w-[100px]"
-                            rows={1}
-                            placeholder="Descrição..."
+                            className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded px-2 py-1 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-400 min-w-[120px]"
+                            rows={2}
+                            placeholder="Adicionar descrição..."
                             value={editingDescs[row.activityName] ?? ''}
                             onChange={e => setEditingDescs(prev => ({ ...prev, [row.activityName]: e.target.value }))}
                           />
@@ -950,29 +950,29 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                         }
                       </td>
                       <td
-                        className={`text-right px-2 py-1.5 ${HIGHLIGHT_CELL}`}
+                        className={`text-center px-2 py-1.5 ${HIGHLIGHT_CELL}`}
                         style={{ background: LIME_BG, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
                       >{fmtN(row.propostas)}</td>
                       <td
-                        className="text-right px-2 py-1.5 text-slate-700"
+                        className="text-center px-2 py-1.5 text-slate-700"
                         style={{ background: LIME_BG, borderRight: `2px solid ${LIME_BORDER}` }}
                       >{fmtPct(row.taxaProposta)}</td>
                       <td
-                        className={`text-right px-2 py-1.5 ${HIGHLIGHT_CELL}`}
+                        className={`text-center px-2 py-1.5 ${HIGHLIGHT_CELL}`}
                         style={{ background: LIME_BG, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
                       >{fmtN(row.aprovados)}</td>
                       <td
-                        className="text-right px-2 py-1.5 text-slate-700"
+                        className="text-center px-2 py-1.5 text-slate-700"
                         style={{ background: LIME_BG, borderRight: `2px solid ${LIME_BORDER}` }}
                       >{fmtPct(row.taxaAprovacao)}</td>
                       <td
-                        className={`text-right px-2 py-1.5 ${HIGHLIGHT_CELL}`}
+                        className={`text-center px-2 py-1.5 ${HIGHLIGHT_CELL}`}
                         style={{ background: LIME_BG, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `2px solid ${LIME_BORDER}` }}
                       >{fmtN(row.emissoes)}</td>
-                      <td className="text-right px-2 py-1.5 text-slate-600 text-xs tabular-nums">{fmtPct(row.taxaFinalizacao)}</td>
-                      <td className="text-right px-2 py-1.5 text-slate-600 text-xs tabular-nums">{fmtBRL(row.custoPorCartao)}</td>
-                      <td className="text-right px-2 py-1.5 text-slate-600 text-xs tabular-nums">{fmtBRL(row.custoTotal)}</td>
-                      <td className="text-right px-2 py-1.5 text-slate-600 text-xs tabular-nums">{fmtPct4(row.taxaConversaoBase)}</td>
+                      <td className="text-center px-2 py-1.5 text-slate-600 text-xs tabular-nums">{fmtPct(row.taxaFinalizacao)}</td>
+                      <td className="text-center px-2 py-1.5 text-slate-600 text-xs tabular-nums">{fmtBRL(row.custoPorCartao)}</td>
+                      <td className="text-center px-2 py-1.5 text-slate-600 text-xs tabular-nums">{fmtBRL(row.custoTotal)}</td>
+                      <td className="text-center px-2 py-1.5 text-slate-600 text-xs tabular-nums">{fmtPct4(row.taxaConversaoBase)}</td>
                     </tr>
                   );
                 })}
