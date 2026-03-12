@@ -1,7 +1,8 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Save } from 'lucide-react';
 import { CalendarData, Activity } from '../types/framework';
+import { supabase } from '../services/supabaseClient';
 
 interface RelatorioViewProps {
   data: CalendarData;
@@ -123,6 +124,11 @@ const HIGHLIGHT_CELL = `font-semibold text-slate-800`;
 export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }) => {
   const allActivities = useMemo(() => Object.values(data).flat(), [data]);
 
+  // ── Descrições por disparo ──
+  const [descriptions, setDescriptions] = useState<Record<string, string>>({});
+  const [editingDescs, setEditingDescs] = useState<Record<string, string>>({});
+  const [savingDesc, setSavingDesc] = useState<Set<string>>(new Set());
+
   const segmentoRows = useMemo(() => {
     const groups = new Map<string, Activity[]>();
     allActivities.forEach(a => {
@@ -196,6 +202,34 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
       })
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [allActivities, d3Cutoff]);
+
+  useEffect(() => {
+    if (detailRows.length === 0) return;
+    const names = detailRows.map(r => r.activityName);
+    supabase
+      .from('dispatch_descriptions')
+      .select('activity_name, description')
+      .in('activity_name', names)
+      .then(({ data: rows }) => {
+        if (!rows) return;
+        const map: Record<string, string> = {};
+        rows.forEach(row => { map[row.activity_name] = row.description; });
+        setDescriptions(map);
+        setEditingDescs(prev => ({ ...map, ...prev }));
+      });
+  }, [detailRows]);
+
+  const saveDescription = async (activityName: string) => {
+    const text = editingDescs[activityName] ?? '';
+    setSavingDesc(prev => new Set(prev).add(activityName));
+    await supabase.from('dispatch_descriptions').upsert({
+      activity_name: activityName,
+      description: text,
+      updated_at: new Date().toISOString(),
+    });
+    setDescriptions(prev => ({ ...prev, [activityName]: text }));
+    setSavingDesc(prev => { const s = new Set(prev); s.delete(activityName); return s; });
+  };
 
   const segmentColorMap = useMemo(() => {
     const map = new Map<string, (typeof SEGMENT_PALETTE)[0]>();
@@ -628,8 +662,9 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
               <thead>
                 <tr style={{ background: '#1E293B' }} className="text-white">
                   <th className="text-left px-4 py-3 font-semibold whitespace-nowrap w-20">Data</th>
-                  <th className="text-left px-4 py-3 font-semibold whitespace-nowrap min-w-[260px]">Campanha (Jornada · Activity Name)</th>
+                  <th className="text-left px-4 py-3 font-semibold whitespace-nowrap min-w-[160px]">Campanha</th>
                   <th className="text-left px-4 py-3 font-semibold whitespace-nowrap min-w-[120px]">Segmento</th>
+                  <th className="text-left px-3 py-3 font-semibold whitespace-nowrap min-w-[200px]">Descrição</th>
                   <th className="text-right px-4 py-3 font-semibold whitespace-nowrap">Envios</th>
                   <th className="text-right px-4 py-3 font-semibold whitespace-nowrap">Entregas</th>
                   <th className="text-right px-4 py-3 font-semibold whitespace-nowrap">% Entrega</th>
@@ -676,7 +711,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                       </td>
                       <td className="px-4 py-2.5 min-w-0">
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-medium text-slate-800 text-xs leading-tight truncate max-w-xs" title={row.activityName}>
+                          <span className="font-medium text-slate-800 text-[11px] leading-tight truncate max-w-[140px]" title={row.activityName}>
                             {row.activityName}
                           </span>
                           {row.jornada && (
@@ -694,6 +729,28 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                         ) : (
                           <span className="text-slate-400 text-xs">—</span>
                         )}
+                      </td>
+                      {/* Descrição */}
+                      <td className="px-3 py-1.5">
+                        <div className="flex items-start gap-1.5">
+                          <textarea
+                            className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded px-2 py-1 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-400 min-w-[160px]"
+                            rows={2}
+                            placeholder="Adicionar descrição..."
+                            value={editingDescs[row.activityName] ?? ''}
+                            onChange={e => setEditingDescs(prev => ({ ...prev, [row.activityName]: e.target.value }))}
+                          />
+                          {(editingDescs[row.activityName] ?? '') !== (descriptions[row.activityName] ?? '') && (
+                            <button
+                              onClick={() => saveDescription(row.activityName)}
+                              disabled={savingDesc.has(row.activityName)}
+                              className="flex-shrink-0 p-1 rounded bg-cyan-500 hover:bg-cyan-600 text-white transition-colors disabled:opacity-50"
+                              title="Salvar descrição"
+                            >
+                              <Save size={13} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                       {/* Envios */}
                       <td className="text-right px-4 py-2.5">
