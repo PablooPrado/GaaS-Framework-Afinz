@@ -1,9 +1,8 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Download, FileSpreadsheet, FileText, Save } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Save, ArrowLeft, TrendingUp, DollarSign, BarChart2 } from 'lucide-react';
 import { CalendarData, Activity } from '../types/framework';
 import { supabase } from '../services/supabaseClient';
-import { DisparoDetailModal } from './explorer/disparo/DisparoDetailModal';
 import { ActivityRow } from '../types/activity';
 
 interface RelatorioViewProps {
@@ -686,20 +685,135 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
       <section>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
+            {selectedActivityRow && (
+              <button
+                onClick={() => setSelectedActivityRow(null)}
+                className="flex items-center gap-1 text-xs font-semibold text-cyan-600 hover:text-cyan-700 transition-colors"
+              >
+                <ArrowLeft size={14} /> Voltar
+              </button>
+            )}
             <div className="w-1 h-6 rounded-full" style={{ background: TEAL }} />
-            <h2 className="text-base font-bold text-slate-800">Detalhamento por disparo</h2>
-            <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{detailRows.length} disparos</span>
+            <h2 className="text-base font-bold text-slate-800">
+              {selectedActivityRow ? 'Detalhe do Disparo' : 'Detalhamento por disparo'}
+            </h2>
+            {!selectedActivityRow && (
+              <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{detailRows.length} disparos</span>
+            )}
           </div>
-          <button
-            onClick={exportDetail}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-600 transition-colors font-medium"
-          >
-            <FileSpreadsheet size={14} />
-            Exportar CSV
-          </button>
+          {!selectedActivityRow && (
+            <button
+              onClick={exportDetail}
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-600 transition-colors font-medium"
+            >
+              <FileSpreadsheet size={14} />
+              Exportar CSV
+            </button>
+          )}
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        {/* ── Inline detail view ── */}
+        {selectedActivityRow && (() => {
+          const a = selectedActivityRow;
+          const fmtR = (v?: number | null) => v != null ? v.toLocaleString('pt-BR', { minimumFractionDigits: 0 }) : '—';
+          const fmtP = (v?: number | null) => v != null ? `${(v * 100).toFixed(2)}%` : '—';
+          const fmtBR = (v?: number | null) => v != null ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—';
+          const BU_COLOR: Record<string, string> = { B2C: '#3B82F6', B2B2C: '#10B981', Plurix: '#A855F7' };
+          const buColor = BU_COLOR[a.BU] ?? '#64748B';
+          const CANAL_EMOJI: Record<string, string> = { 'E-mail': '📧', 'SMS': '💬', 'WhatsApp': '📱', 'Push': '🔔' };
+          return (
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+              {/* Header bar */}
+              <div className="px-5 py-4 border-b border-slate-100" style={{ borderLeft: `4px solid ${buColor}` }}>
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ background: buColor }}>{a.BU}</span>
+                  {a.Canal && <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">{CANAL_EMOJI[a.Canal] ?? ''} {a.Canal}</span>}
+                  {a.status && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{a.status}</span>}
+                  {a['Data de Disparo'] && <span className="text-xs text-slate-400">{a['Data de Disparo']}</span>}
+                </div>
+                <p className="text-sm font-mono text-slate-700 break-all">{a['Activity name / Taxonomia']}</p>
+                {a.jornada && <p className="text-xs text-slate-400 mt-0.5">{a.jornada}</p>}
+              </div>
+
+              {/* KPI summary */}
+              <div className="grid grid-cols-4 divide-x divide-slate-100 border-b border-slate-100">
+                {[
+                  { label: 'Cartões Gerados', value: fmtR(a['Cartões Gerados']), icon: <BarChart2 size={14} /> },
+                  { label: 'CAC', value: fmtBR(a.CAC), icon: <DollarSign size={14} /> },
+                  { label: 'Base Total', value: fmtR(a['Base Total']), icon: <TrendingUp size={14} /> },
+                  { label: 'Custo Total', value: fmtBR(a['Custo Total Campanha']), icon: <DollarSign size={14} /> },
+                ].map(({ label, value, icon }) => (
+                  <div key={label} className="px-5 py-4">
+                    <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{icon}{label}</div>
+                    <div className="text-xl font-bold text-slate-800">{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Detail grid */}
+              <div className="grid grid-cols-3 gap-0 divide-x divide-slate-100">
+                {/* Identificação */}
+                <div className="px-5 py-4 space-y-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Identificação</p>
+                  {[
+                    ['Segmento', a.Segmento],
+                    ['Parceiro', a.Parceiro],
+                    ['Etapa Funil', a['Etapa de aquisição']],
+                    ['Perfil Crédito', a['Perfil de Crédito']],
+                    ['Ordem', a['Ordem de disparo'] != null ? String(a['Ordem de disparo']) : undefined],
+                    ['Oferta', a.Oferta],
+                    ['Promocional', a.Promocional],
+                    ['Produto', a.Produto],
+                  ].map(([k, v]) => v ? (
+                    <div key={String(k)}>
+                      <p className="text-[10px] uppercase tracking-wide text-slate-400">{k}</p>
+                      <p className="text-sm font-medium text-slate-700">{v}</p>
+                    </div>
+                  ) : null)}
+                </div>
+
+                {/* Taxas de funil */}
+                <div className="px-5 py-4 space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Taxas de Funil</p>
+                  {[
+                    ['Taxa de Entrega', fmtP(a['Taxa de Entrega'])],
+                    ['Taxa de Abertura', fmtP(a['Taxa de Abertura'])],
+                    ['Taxa de Proposta', fmtP(a['Taxa de Proposta'])],
+                    ['Taxa de Aprovação', fmtP(a['Taxa de Aprovação'])],
+                    ['Taxa de Finalização', fmtP(a['Taxa de Finalização'])],
+                    ['Taxa de Conversão', fmtP(a['Taxa de Conversão'])],
+                  ].map(([k, v]) => (
+                    <div key={String(k)} className="flex items-center justify-between">
+                      <span className="text-xs text-slate-500">{k}</span>
+                      <span className="text-xs font-semibold text-slate-700 tabular-nums">{v}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Resultados */}
+                <div className="px-5 py-4 space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Resultados</p>
+                  {[
+                    ['Base Total', fmtR(a['Base Total'])],
+                    ['Base Acionável', fmtR(a['Base Acionável'])],
+                    ['Propostas', fmtR(a.Propostas)],
+                    ['Aprovados', fmtR(a.Aprovados)],
+                    ['Cartões Gerados', fmtR(a['Cartões Gerados'])],
+                    ['Custo Total', fmtBR(a['Custo Total Campanha'])],
+                    ['CAC', fmtBR(a.CAC)],
+                  ].map(([k, v]) => (
+                    <div key={String(k)} className="flex items-center justify-between">
+                      <span className="text-xs text-slate-500">{k}</span>
+                      <span className="text-xs font-semibold text-slate-700 tabular-nums">{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {!selectedActivityRow && <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
@@ -709,6 +823,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                   <th className="text-left px-4 py-3 font-semibold whitespace-nowrap min-w-[110px]">Segmento</th>
                   <th className="text-left px-4 py-3 font-semibold whitespace-nowrap w-20">Canal</th>
                   <th className="text-left px-3 py-3 font-semibold whitespace-nowrap min-w-[200px]">Descrição</th>
+                  <th className="text-right px-4 py-3 font-semibold whitespace-nowrap">Entregas</th>
                   <th
                     className={`text-right px-3 py-3 ${HIGHLIGHT_COLS_HEADER}`}
                     style={{ background: LIME_HEADER, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
@@ -799,6 +914,13 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                           )}
                         </div>
                       </td>
+                      {/* Entregas */}
+                      <td className="text-right px-4 py-2.5">
+                        {row.aguardando
+                          ? <span className="text-xs font-medium text-amber-500 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Aguardando</span>
+                          : <span className="text-slate-600">{fmtN(row.baseEntregue)}</span>
+                        }
+                      </td>
                       <td
                         className={`text-right px-3 py-2.5 ${HIGHLIGHT_CELL}`}
                         style={{ background: LIME_BG, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
@@ -829,18 +951,10 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
               </tbody>
             </table>
           </div>
-        </div>
+        </div>}
       </section>
 
     </div>
-
-    {/* DisparoDetailModal — abre ao clicar na linha */}
-    {selectedActivityRow && (
-      <DisparoDetailModal
-        activity={selectedActivityRow}
-        onClose={() => setSelectedActivityRow(null)}
-      />
-    )}
     </>
   );
 };
