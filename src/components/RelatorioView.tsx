@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Download, FileSpreadsheet, FileText, Save, ArrowLeft, TrendingUp, DollarSign, BarChart2 } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Save, ArrowLeft, TrendingUp, DollarSign, BarChart2, Info, ChevronUp, ChevronDown } from 'lucide-react';
 import { CalendarData, Activity } from '../types/framework';
 import { supabase } from '../services/supabaseClient';
 import { ActivityRow } from '../types/activity';
@@ -144,6 +144,14 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
   const [savingDesc, setSavingDesc] = useState<Set<string>>(new Set());
   const [selectedActivityRow, setSelectedActivityRow] = useState<ActivityRow | null>(null);
 
+  // ── Filtros Destaque ──
+  const [destaqueFilter, setDestaqueFilter] = useState<'top-conversores' | 'aguardando' | null>(null);
+  const [showDestaqueMenu, setShowDestaqueMenu] = useState(false);
+
+  // ── Ordenação ──
+  const [sortKey, setSortKey] = useState<keyof DetailRow | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
   // Mapeia Activity → ActivityRow para o DisparoDetailModal
   const toActivityRow = (a: Activity): ActivityRow => ({
     id: a.id,
@@ -262,6 +270,66 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
       })
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [allActivities, d3Cutoff]);
+
+  // ── Filtro destaque sobre detailRows ──
+  const filteredRows = useMemo((): DetailRow[] => {
+    if (destaqueFilter === 'top-conversores') {
+      const withEmissoes = detailRows.filter(r => r.emissoes > 0);
+      const base = withEmissoes.length > 0 ? withEmissoes : detailRows;
+      const sorted = [...base].sort((a, b) => b.taxaConversaoBase - a.taxaConversaoBase);
+      const top20 = Math.max(1, Math.ceil(sorted.length * 0.2));
+      return sorted.slice(0, top20);
+    }
+    if (destaqueFilter === 'aguardando') {
+      return detailRows.filter(r => r.aguardando);
+    }
+    return detailRows;
+  }, [detailRows, destaqueFilter]);
+
+  // ── Ordenação sobre filteredRows ──
+  const displayRows = useMemo((): DetailRow[] => {
+    if (!sortKey) return filteredRows;
+    return [...filteredRows].sort((a, b) => {
+      const av = a[sortKey] as number;
+      const bv = b[sortKey] as number;
+      return sortDir === 'desc' ? bv - av : av - bv;
+    });
+  }, [filteredRows, sortKey, sortDir]);
+
+  // ── Linha de totais ──
+  const summaryRow = useMemo(() => {
+    const totalEnviadas = displayRows.reduce((s, r) => s + r.baseEnviada, 0);
+    const totalEntregas = displayRows.reduce((s, r) => s + r.baseEntregue, 0);
+    const totalPropostas = displayRows.reduce((s, r) => s + r.propostas, 0);
+    const totalAprovados = displayRows.reduce((s, r) => s + r.aprovados, 0);
+    const totalEmissoes = displayRows.reduce((s, r) => s + r.emissoes, 0);
+    const totalCusto = displayRows.reduce((s, r) => s + r.custoTotal, 0);
+    const rowsComEmissao = displayRows.filter(r => r.emissoes > 0);
+    const avgCustoCartao = rowsComEmissao.length > 0
+      ? rowsComEmissao.reduce((s, r) => s + r.custoPorCartao, 0) / rowsComEmissao.length
+      : 0;
+    return {
+      totalEntregas,
+      totalPropostas,
+      totalAprovados,
+      totalEmissoes,
+      totalCusto,
+      avgCustoCartao,
+      taxaProposta: totalEntregas > 0 ? totalPropostas / totalEntregas : 0,
+      taxaAprovacao: totalPropostas > 0 ? totalAprovados / totalPropostas : 0,
+      taxaFinalizacao: totalEntregas > 0 ? totalEmissoes / totalEntregas : 0,
+      taxaConversaoBase: totalEnviadas > 0 ? totalEmissoes / totalEnviadas : 0,
+    };
+  }, [displayRows]);
+
+  const handleSort = useCallback((key: keyof DetailRow) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  }, [sortKey]);
 
   useEffect(() => {
     if (detailRows.length === 0) return;
@@ -717,17 +785,72 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
               {selectedActivityRow ? 'Detalhe do Disparo' : 'Detalhamento por disparo'}
             </h2>
             {!selectedActivityRow && (
-              <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{detailRows.length} disparos</span>
+              <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                {destaqueFilter
+                  ? `${displayRows.length} de ${detailRows.length} disparos`
+                  : `${detailRows.length} disparos`}
+              </span>
             )}
           </div>
           {!selectedActivityRow && (
-            <button
-              onClick={exportDetail}
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-600 transition-colors font-medium"
-            >
-              <FileSpreadsheet size={14} />
-              Exportar CSV
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Filtros Destaque */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowDestaqueMenu(v => !v)}
+                  className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-colors font-medium ${
+                    destaqueFilter
+                      ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'
+                      : 'text-slate-400 border-slate-200 hover:text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  <Info size={13} />
+                  {destaqueFilter === 'top-conversores'
+                    ? 'Top Conversores'
+                    : destaqueFilter === 'aguardando'
+                    ? 'Aguardando'
+                    : 'Filtros Destaque'}
+                  {destaqueFilter && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />}
+                </button>
+                {showDestaqueMenu && (
+                  <div className="absolute right-0 top-8 z-20 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 min-w-[200px]">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-3 pt-1 pb-1.5">Filtros Destaque</p>
+                    {([
+                      { key: 'top-conversores' as const, label: '🏆 Top Conversores', desc: 'Top 20% por taxa de conversão' },
+                      { key: 'aguardando' as const, label: '⏳ Aguardando Resultado', desc: 'Disparos em janela D-3' },
+                    ] as const).map(opt => (
+                      <button
+                        key={opt.key}
+                        onClick={() => { setDestaqueFilter(destaqueFilter === opt.key ? null : opt.key); setShowDestaqueMenu(false); }}
+                        className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition-colors ${destaqueFilter === opt.key ? 'bg-amber-50' : ''}`}
+                      >
+                        <p className={`text-xs font-semibold ${destaqueFilter === opt.key ? 'text-amber-600' : 'text-slate-700'}`}>{opt.label}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{opt.desc}</p>
+                      </button>
+                    ))}
+                    {destaqueFilter && (
+                      <>
+                        <div className="border-t border-slate-100 mt-1 mb-1" />
+                        <button
+                          onClick={() => { setDestaqueFilter(null); setShowDestaqueMenu(false); }}
+                          className="w-full text-left px-3 py-1.5 text-xs text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+                        >
+                          Limpar filtro
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+              {/* Exportar CSV */}
+              <button
+                onClick={exportDetail}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-600 transition-colors font-medium"
+              >
+                <FileSpreadsheet size={14} />
+                Exportar CSV
+              </button>
+            </div>
           )}
         </div>
 
@@ -843,35 +966,105 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                   <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Parceiro</th>
                   <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Canal</th>
                   <th className="text-left px-2 py-2 font-semibold whitespace-nowrap min-w-[130px]">Descrição</th>
-                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Entregas</th>
                   <th
-                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
+                    className="text-center px-2 py-2 font-semibold whitespace-nowrap cursor-pointer select-none group hover:bg-slate-700 transition-colors"
+                    onClick={() => handleSort('baseEntregue')}
+                  >
+                    <span className="flex items-center justify-center gap-1">
+                      Entregas
+                      {sortKey === 'baseEntregue' ? (sortDir === 'desc' ? <ChevronDown size={11} /> : <ChevronUp size={11} />) : <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />}
+                    </span>
+                  </th>
+                  <th
+                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER} cursor-pointer select-none group hover:brightness-90 transition-all`}
                     style={{ background: LIME_HEADER, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
-                  >Propostas</th>
+                    onClick={() => handleSort('propostas')}
+                  >
+                    <span className="flex items-center justify-center gap-1">
+                      Propostas
+                      {sortKey === 'propostas' ? (sortDir === 'desc' ? <ChevronDown size={11} /> : <ChevronUp size={11} />) : <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />}
+                    </span>
+                  </th>
                   <th
-                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER} cursor-pointer select-none group hover:brightness-90 transition-all`}
                     style={{ background: LIME_HEADER, borderRight: `2px solid ${LIME_BORDER}` }}
-                  >% Proposta</th>
+                    onClick={() => handleSort('taxaProposta')}
+                  >
+                    <span className="flex items-center justify-center gap-1">
+                      % Proposta
+                      {sortKey === 'taxaProposta' ? (sortDir === 'desc' ? <ChevronDown size={11} /> : <ChevronUp size={11} />) : <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />}
+                    </span>
+                  </th>
                   <th
-                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER} cursor-pointer select-none group hover:brightness-90 transition-all`}
                     style={{ background: LIME_HEADER, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
-                  >Aprovados</th>
+                    onClick={() => handleSort('aprovados')}
+                  >
+                    <span className="flex items-center justify-center gap-1">
+                      Aprovados
+                      {sortKey === 'aprovados' ? (sortDir === 'desc' ? <ChevronDown size={11} /> : <ChevronUp size={11} />) : <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />}
+                    </span>
+                  </th>
                   <th
-                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER} cursor-pointer select-none group hover:brightness-90 transition-all`}
                     style={{ background: LIME_HEADER, borderRight: `2px solid ${LIME_BORDER}` }}
-                  >% Aprovação</th>
+                    onClick={() => handleSort('taxaAprovacao')}
+                  >
+                    <span className="flex items-center justify-center gap-1">
+                      % Aprovação
+                      {sortKey === 'taxaAprovacao' ? (sortDir === 'desc' ? <ChevronDown size={11} /> : <ChevronUp size={11} />) : <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />}
+                    </span>
+                  </th>
                   <th
-                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER}`}
+                    className={`text-center px-2 py-2 ${HIGHLIGHT_COLS_HEADER} cursor-pointer select-none group hover:brightness-90 transition-all`}
                     style={{ background: LIME_HEADER, borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `2px solid ${LIME_BORDER}` }}
-                  >Emissões</th>
-                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">% Final.</th>
-                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">C./Cartão</th>
-                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Custo Total</th>
-                  <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">% Conv</th>
+                    onClick={() => handleSort('emissoes')}
+                  >
+                    <span className="flex items-center justify-center gap-1">
+                      Emissões
+                      {sortKey === 'emissoes' ? (sortDir === 'desc' ? <ChevronDown size={11} /> : <ChevronUp size={11} />) : <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />}
+                    </span>
+                  </th>
+                  <th
+                    className="text-center px-2 py-2 font-semibold whitespace-nowrap cursor-pointer select-none group hover:bg-slate-700 transition-colors"
+                    onClick={() => handleSort('taxaFinalizacao')}
+                  >
+                    <span className="flex items-center justify-center gap-1">
+                      % Final.
+                      {sortKey === 'taxaFinalizacao' ? (sortDir === 'desc' ? <ChevronDown size={11} /> : <ChevronUp size={11} />) : <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />}
+                    </span>
+                  </th>
+                  <th
+                    className="text-center px-2 py-2 font-semibold whitespace-nowrap cursor-pointer select-none group hover:bg-slate-700 transition-colors"
+                    onClick={() => handleSort('custoPorCartao')}
+                  >
+                    <span className="flex items-center justify-center gap-1">
+                      C./Cartão
+                      {sortKey === 'custoPorCartao' ? (sortDir === 'desc' ? <ChevronDown size={11} /> : <ChevronUp size={11} />) : <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />}
+                    </span>
+                  </th>
+                  <th
+                    className="text-center px-2 py-2 font-semibold whitespace-nowrap cursor-pointer select-none group hover:bg-slate-700 transition-colors"
+                    onClick={() => handleSort('custoTotal')}
+                  >
+                    <span className="flex items-center justify-center gap-1">
+                      Custo Total
+                      {sortKey === 'custoTotal' ? (sortDir === 'desc' ? <ChevronDown size={11} /> : <ChevronUp size={11} />) : <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />}
+                    </span>
+                  </th>
+                  <th
+                    className="text-center px-2 py-2 font-semibold whitespace-nowrap cursor-pointer select-none group hover:bg-slate-700 transition-colors"
+                    onClick={() => handleSort('taxaConversaoBase')}
+                  >
+                    <span className="flex items-center justify-center gap-1">
+                      % Conv
+                      {sortKey === 'taxaConversaoBase' ? (sortDir === 'desc' ? <ChevronDown size={11} /> : <ChevronUp size={11} />) : <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />}
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {detailRows.map((row, idx) => {
+                {displayRows.map((row, idx) => {
                   const color = segmentColorMap.get(row.segmento);
                   const isBanded = idx % 2 !== 0;
                   return (
@@ -977,6 +1170,41 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                   );
                 })}
               </tbody>
+              {displayRows.length > 0 && (
+                <tfoot>
+                  <tr style={{ background: '#1E293B' }} className="text-white text-xs font-bold">
+                    <td colSpan={6} className="px-2 py-2 font-bold whitespace-nowrap">
+                      Totais · {displayRows.length} disparo{displayRows.length !== 1 ? 's' : ''}
+                      {destaqueFilter && <span className="ml-1.5 text-amber-300 font-normal">(filtrado)</span>}
+                    </td>
+                    <td className="text-center px-2 py-2 tabular-nums">{fmtN(summaryRow.totalEntregas)}</td>
+                    <td
+                      className="text-center px-2 py-2 tabular-nums font-bold"
+                      style={{ background: '#8FD400', color: '#1a1a1a', borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
+                    >{fmtN(summaryRow.totalPropostas)}</td>
+                    <td
+                      className="text-center px-2 py-2 tabular-nums"
+                      style={{ background: '#8FD400', color: '#1a1a1a', borderRight: `2px solid ${LIME_BORDER}` }}
+                    >{fmtPct(summaryRow.taxaProposta)}</td>
+                    <td
+                      className="text-center px-2 py-2 tabular-nums font-bold"
+                      style={{ background: '#8FD400', color: '#1a1a1a', borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `1px solid ${LIME_BORDER}` }}
+                    >{fmtN(summaryRow.totalAprovados)}</td>
+                    <td
+                      className="text-center px-2 py-2 tabular-nums"
+                      style={{ background: '#8FD400', color: '#1a1a1a', borderRight: `2px solid ${LIME_BORDER}` }}
+                    >{fmtPct(summaryRow.taxaAprovacao)}</td>
+                    <td
+                      className="text-center px-2 py-2 tabular-nums font-bold"
+                      style={{ background: '#8FD400', color: '#1a1a1a', borderLeft: `2px solid ${LIME_BORDER}`, borderRight: `2px solid ${LIME_BORDER}` }}
+                    >{fmtN(summaryRow.totalEmissoes)}</td>
+                    <td className="text-center px-2 py-2 tabular-nums">{fmtPct(summaryRow.taxaFinalizacao)}</td>
+                    <td className="text-center px-2 py-2 tabular-nums">{fmtBRL(summaryRow.avgCustoCartao)}</td>
+                    <td className="text-center px-2 py-2 tabular-nums">{fmtBRL(summaryRow.totalCusto)}</td>
+                    <td className="text-center px-2 py-2 tabular-nums">{fmtPct4(summaryRow.taxaConversaoBase)}</td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </div>}
