@@ -290,8 +290,8 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
   const displayRows = useMemo((): DetailRow[] => {
     if (!sortKey) return filteredRows;
     return [...filteredRows].sort((a, b) => {
-      const av = a[sortKey] as number;
-      const bv = b[sortKey] as number;
+      const av = sortKey === 'date' ? (a.date as Date).getTime() : a[sortKey] as number;
+      const bv = sortKey === 'date' ? (b.date as Date).getTime() : b[sortKey] as number;
       return sortDir === 'desc' ? bv - av : av - bv;
     });
   }, [filteredRows, sortKey, sortDir]);
@@ -960,7 +960,15 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr style={{ background: '#1E293B' }} className="text-white">
-                  <th className="text-left px-2 py-2 font-semibold whitespace-nowrap w-12">Data</th>
+                  <th
+                    className="text-left px-2 py-2 font-semibold whitespace-nowrap w-12 cursor-pointer select-none group hover:bg-slate-700 transition-colors"
+                    onClick={() => handleSort('date')}
+                  >
+                    <span className="flex items-center gap-1">
+                      Data
+                      {sortKey === 'date' ? (sortDir === 'desc' ? <ChevronDown size={11} /> : <ChevronUp size={11} />) : <ChevronDown size={11} className="opacity-0 group-hover:opacity-40" />}
+                    </span>
+                  </th>
                   <th className="text-left px-2 py-2 font-semibold whitespace-nowrap" style={{ minWidth: 140, maxWidth: 180 }}>Campanha</th>
                   <th className="text-center px-2 py-2 font-semibold whitespace-nowrap min-w-[90px]">Segmento</th>
                   <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Parceiro</th>
