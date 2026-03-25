@@ -379,6 +379,49 @@ export const dataService = {
         });
     },
 
+    async fetchDrilldownData(campaign: string, fromDateStr: string, toDateStr: string): Promise<any[]> {
+        // As datas devem chegar no formato YYYY-MM-DD
+        const [{ data, error }, mappings] = await Promise.all([
+            supabase
+                .from('paid_media_metrics')
+                .select('*')
+                .eq('campaign', campaign)
+                .gte('date', fromDateStr)
+                .lte('date', toDateStr)
+                .order('date', { ascending: false }),
+            dataService.fetchCampaignMappings()
+        ]);
+
+        if (error) throw error;
+
+        const mappingDict = mappings.reduce((acc, m) => {
+            acc[m.campaign_name] = m.objective;
+            return acc;
+        }, {} as Record<string, string>);
+
+        return (data || []).map((row: any) => {
+            let mappedObjective = mappingDict[row.campaign] || row.objective;
+            if (mappedObjective === 'conversion') mappedObjective = 'b2c';
+            if (mappedObjective === 'brand') mappedObjective = 'marca';
+            
+            return {
+                date: new Date(row.date + 'T12:00:00Z'),
+                channel: row.channel,
+                campaign: row.campaign,
+                objective: mappedObjective,
+                adset_id: row.adset_id,
+                adset_name: row.adset_name,
+                ad_id: row.ad_id,
+                ad_name: row.ad_name,
+                spend: Number(row.spend) || 0,
+                impressions: Number(row.impressions) || 0,
+                clicks: Number(row.clicks) || 0,
+                conversions: Number(row.conversions) || 0,
+                reach: Number(row.reach) || 0,
+            };
+        });
+    },
+
     async fetchInsights(filters?: {
         channel?: string;
         status?: string;

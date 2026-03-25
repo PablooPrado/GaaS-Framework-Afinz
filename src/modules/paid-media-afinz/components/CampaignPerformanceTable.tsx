@@ -1,7 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import type { DailyMetrics } from '../types';
-import { ArrowUpDown, Search, Filter, TrendingUp, TrendingDown, Minus, Pause, AlertTriangle, CheckCircle } from 'lucide-react';
+import { ArrowUpDown, Search, Filter, TrendingUp, TrendingDown, Minus, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 import { CampaignSidePanel } from './CampaignSidePanel';
+import { DrilldownView } from './Table/DrilldownView';
+import { dataService } from '../../../services/dataService';
+import { useFilters } from '../context/FilterContext';
+import { format } from 'date-fns';
 
 interface CampaignPerformanceTableProps {
     data: any[]; // use any to bypass type errors for now since reach might not be in DailyMetrics
@@ -11,10 +15,44 @@ type SortField = 'campaign' | 'spend' | 'impressions' | 'clicks' | 'conversions'
 type SortOrder = 'asc' | 'desc';
 
 export const CampaignPerformanceTable: React.FC<CampaignPerformanceTableProps> = ({ data }) => {
+    const { filters } = useFilters();
+    
     const [sortField, setSortField] = useState<SortField>('spend');
     const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
     const [search, setSearch] = useState('');
     const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
+
+    // Drilldown State
+    const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
+    const [drilldownCache, setDrilldownCache] = useState<Record<string, any[]>>({});
+    const [isLoadingDrilldown, setIsLoadingDrilldown] = useState<Record<string, boolean>>({});
+
+    const toggleCampaignParams = async (campaign: string, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevents row click (Side Panel)
+        
+        const newExpanded = new Set(expandedCampaigns);
+        if (newExpanded.has(campaign)) {
+             newExpanded.delete(campaign);
+             setExpandedCampaigns(newExpanded);
+        } else {
+             newExpanded.add(campaign);
+             setExpandedCampaigns(newExpanded);
+             // Lazy Fetch if not cached
+             if (!drilldownCache[campaign]) {
+                  try {
+                      setIsLoadingDrilldown(prev => ({...prev, [campaign]: true}));
+                      const fromStr = format(filters.dateRange.from, 'yyyy-MM-dd');
+                      const toStr = format(filters.dateRange.to, 'yyyy-MM-dd');
+                      const rawData = await dataService.fetchDrilldownData(campaign, fromStr, toStr);
+                      setDrilldownCache(prev => ({...prev, [campaign]: rawData}));
+                  } catch (err) {
+                      console.error('Falha ao puxar detalhamento:', err);
+                  } finally {
+                      setIsLoadingDrilldown(prev => ({...prev, [campaign]: false}));
+                  }
+             }
+        }
+    };
 
     // Aggregate by Campaign
     const campaignStats = useMemo(() => {
@@ -287,13 +325,20 @@ export const CampaignPerformanceTable: React.FC<CampaignPerformanceTableProps> =
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {processedData.map((row) => (
+                                <React.Fragment key={row.campaign}>
                                 <tr
-                                    key={row.campaign}
                                     className="hover:bg-slate-50 transition-colors cursor-pointer group"
                                     onClick={() => setSelectedCampaign(row.campaign)}
                                 >
                                     <td className="px-6 py-3 font-medium text-slate-700">
                                         <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={(e) => toggleCampaignParams(row.campaign, e)} 
+                                                className="p-1 hover:bg-slate-200 rounded text-slate-400 hover:text-primary transition-colors cursor-pointer"
+                                                title="Mostrar Conjuntos de Anúncios"
+                                            >
+                                                {expandedCampaigns.has(row.campaign) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                            </button>
                                             <span className={`w-2 h-2 rounded-full ${row.channel === 'meta' ? 'bg-[#1877F2]' : 'bg-[#4285F4]'}`}></span>
                                             {row.campaign}
                                         </div>
@@ -354,6 +399,27 @@ export const CampaignPerformanceTable: React.FC<CampaignPerformanceTableProps> =
                                     {visibleColumns.cpc && <td className="px-6 py-3 text-right text-slate-600">{fmtBRL(row.cpc)}</td>}
                                     {visibleColumns.cpa && <td className="px-6 py-3 text-right font-medium text-slate-700">{fmtBRL(row.cpa)}</td>}
                                 </tr>
+                                
+                                {expandedCampaigns.has(row.campaign) && (
+                                    <tr className="bg-slate-50/30">
+                                        <td colSpan={15} className="p-0">
+                                            {isLoadingDrilldown[row.campaign] ? (
+                                                <div className="p-8 text-center text-slate-500 flex flex-col items-center justify-center gap-3 bg-slate-50 border-y border-slate-100">
+                                                    <Loader2 className="animate-spin text-primary" size={24} />
+                                                    <span className="text-sm font-medium">Buscando criativos no Supabase...</span>
+                                                </div>
+                                            ) : (
+                                                <DrilldownView 
+                                                    data={drilldownCache[row.campaign] || []} 
+                                                    visibleColumns={visibleColumns} 
+                                                    fmtBRL={fmtBRL} 
+                                                    fmtNum={fmtNum} 
+                                                />
+                                            )}
+                                        </td>
+                                    </tr>
+                                )}
+                                </React.Fragment>
                             ))}
                         </tbody>
                     </table>
