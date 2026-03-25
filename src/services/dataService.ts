@@ -204,7 +204,7 @@ export const dataService = {
             
             if (!acc[key]) {
                 acc[key] = {
-                    date: new Date(row.date),
+                    date: new Date(row.date + 'T12:00:00Z'),
                     channel: row.channel,
                     campaign: row.campaign,
                     objective: row.objective,
@@ -278,7 +278,7 @@ export const dataService = {
             if (mappedObjective === 'brand') mappedObjective = 'marca';
             
             return {
-                date: new Date(row.date),
+                date: new Date(row.date + 'T12:00:00Z'),
                 channel: row.channel,
                 campaign: row.campaign,
                 objective: mappedObjective,
@@ -323,7 +323,7 @@ export const dataService = {
             
             if (!acc[key]) {
                 acc[key] = {
-                    date: new Date(row.date),
+                    date: new Date(row.date + 'T12:00:00Z'),
                     channel: row.channel,
                     campaign: row.campaign,
                     objective: row.objective,
