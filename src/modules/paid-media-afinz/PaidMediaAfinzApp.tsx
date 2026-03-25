@@ -32,7 +32,8 @@ const DashboardContent: React.FC<PaidMediaAfinzAppProps> = ({ onBack }) => {
     const syncWithCloud = async () => {
       try {
         console.log('📡 Buscando métricas de Mídia Paga do banco...');
-        const data = await dataService.fetchPaidMedia();
+        // Load at ad level so adset_name + ad_name are present for filters
+        const data = await dataService.fetchPaidMediaByAd();
         if (data && data.length > 0) {
           setRawData(data as any);
           console.log(`✅ ${data.length} linhas carregadas do banco.`);
