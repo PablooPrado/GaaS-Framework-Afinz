@@ -1,7 +1,6 @@
-﻿
 import { supabase } from './supabaseClient';
 import { Activity, FrameworkRow } from '../types/framework';
-import { DailyAdMetrics } from '../schemas/paid-media';
+import { DailyAdMetrics, MediaInsight } from '../schemas/paid-media';
 import { B2CDataRow } from '../types/b2c';
 import { parseDate } from '../utils/formatters';
 import { format } from 'date-fns';
@@ -89,7 +88,6 @@ export const mapSqlToActivity = (row: any): Activity => {
         'Custo unitário do canal': row['Custo unitário do canal'],
         'Custo total canal': row['Custo total canal'],
         'Custo Total Campanha': row['Custo Total Campanha'],
-        // Rates
         // Rates
         'Taxa de Entrega': row['Taxa de Entrega'],
         'Taxa de Abertura': row['Taxa de Abertura'],
@@ -191,20 +189,194 @@ export const dataService = {
 
         if (error) throw error;
 
+        // Group by date + channel + campaign + objective
+        const grouped = (data || []).reduce((acc: any, row: any) => {
+            const dateStr = row.date.substring(0, 10);
+            const key = `${dateStr}_${row.channel}_${row.campaign}_${row.objective || ''}`;
+            
+            if (!acc[key]) {
+                acc[key] = {
+                    date: new Date(row.date),
+                    channel: row.channel,
+                    campaign: row.campaign,
+                    objective: row.objective,
+                    spend: 0,
+                    impressions: 0,
+                    clicks: 0,
+                    conversions: 0,
+                    reach: 0
+                };
+            }
+            
+            acc[key].spend += Number(row.spend) || 0;
+            acc[key].impressions += Number(row.impressions) || 0;
+            acc[key].clicks += Number(row.clicks) || 0;
+            acc[key].conversions += Number(row.conversions) || 0;
+            acc[key].reach += Number(row.reach) || 0;
+            
+            return acc;
+        }, {} as Record<string, any>);
+
+        // Calculate derived metrics
+        return Object.values(grouped).map((group: any) => {
+            const spend = group.spend;
+            const impressions = group.impressions;
+            const clicks = group.clicks;
+            const conversions = group.conversions;
+            const reach = group.reach;
+
+            return {
+                date: group.date,
+                channel: group.channel,
+                campaign: group.campaign,
+                objective: group.objective,
+                spend,
+                impressions,
+                clicks,
+                conversions,
+                reach: reach > 0 ? reach : undefined,
+                frequency: reach > 0 && impressions > 0 ? impressions / reach : undefined,
+                ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
+                cpc: clicks > 0 ? spend / clicks : 0,
+                cpm: impressions > 0 ? (spend / impressions) * 1000 : 0,
+                cpa: conversions > 0 ? spend / conversions : 0,
+            };
+        });
+    },
+
+    async fetchPaidMediaByAd(): Promise<DailyAdMetrics[]> {
+        const { data, error } = await supabase
+            .from('paid_media_metrics')
+            .select('*')
+            .order('date', { ascending: false });
+
+        if (error) throw error;
+
         return (data || []).map((row: any) => ({
             date: new Date(row.date),
             channel: row.channel,
             campaign: row.campaign,
             objective: row.objective,
-            spend: row.spend,
-            impressions: row.impressions,
-            clicks: row.clicks,
-            conversions: row.conversions,
-            ctr: row.ctr,
-            cpc: row.cpc,
-            cpm: row.cpm,
-            cpa: row.cpa
+            ad_id: row.ad_id,
+            ad_name: row.ad_name,
+            adset_id: row.adset_id,
+            adset_name: row.adset_name,
+            spend: Number(row.spend) || 0,
+            impressions: Number(row.impressions) || 0,
+            clicks: Number(row.clicks) || 0,
+            conversions: Number(row.conversions) || 0,
+            reach: Number(row.reach) || undefined,
+            frequency: Number(row.frequency) || undefined,
+            ctr: Number(row.ctr) || 0,
+            cpc: Number(row.cpc) || 0,
+            cpm: Number(row.cpm) || 0,
+            cpa: Number(row.cpa) || 0
         }));
+    },
+
+    async fetchPaidMediaByAdset(): Promise<DailyAdMetrics[]> {
+        const { data, error } = await supabase
+            .from('paid_media_metrics')
+            .select('*')
+            .order('date', { ascending: false });
+
+        if (error) throw error;
+
+        // Group by date + channel + campaign + adset_name
+        const grouped = (data || []).reduce((acc: any, row: any) => {
+            const dateStr = row.date.substring(0, 10);
+            const key = `${dateStr}_${row.channel}_${row.campaign}_${row.adset_name || ''}`;
+            
+            if (!acc[key]) {
+                acc[key] = {
+                    date: new Date(row.date),
+                    channel: row.channel,
+                    campaign: row.campaign,
+                    objective: row.objective,
+                    adset_name: row.adset_name,
+                    adset_id: row.adset_id,
+                    spend: 0,
+                    impressions: 0,
+                    clicks: 0,
+                    conversions: 0,
+                    reach: 0
+                };
+            }
+            
+            acc[key].spend += Number(row.spend) || 0;
+            acc[key].impressions += Number(row.impressions) || 0;
+            acc[key].clicks += Number(row.clicks) || 0;
+            acc[key].conversions += Number(row.conversions) || 0;
+            acc[key].reach += Number(row.reach) || 0;
+            
+            return acc;
+        }, {} as Record<string, any>);
+
+        // Calculate derived metrics
+        return Object.values(grouped).map((group: any) => {
+            const spend = group.spend;
+            const impressions = group.impressions;
+            const clicks = group.clicks;
+            const conversions = group.conversions;
+            const reach = group.reach;
+
+            return {
+                date: group.date,
+                channel: group.channel,
+                campaign: group.campaign,
+                objective: group.objective,
+                adset_name: group.adset_name,
+                adset_id: group.adset_id,
+                spend,
+                impressions,
+                clicks,
+                conversions,
+                reach: reach > 0 ? reach : undefined,
+                frequency: reach > 0 && impressions > 0 ? impressions / reach : undefined,
+                ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
+                cpc: clicks > 0 ? spend / clicks : 0,
+                cpm: impressions > 0 ? (spend / impressions) * 1000 : 0,
+                cpa: conversions > 0 ? spend / conversions : 0,
+            };
+        });
+    },
+
+    async fetchInsights(filters?: {
+        channel?: string;
+        status?: string;
+        minScore?: number;
+        limit?: number;
+    }): Promise<MediaInsight[]> {
+        let query = supabase
+            .from('paid_media_insights')
+            .select('*')
+            .order('score', { ascending: false })
+            .order('generated_at', { ascending: false });
+
+        if (filters?.channel) query = query.eq('channel', filters.channel);
+        if (filters?.status) query = query.eq('status', filters.status);
+        if (filters?.minScore) query = query.gte('score', filters.minScore);
+        if (filters?.limit) query = query.limit(filters.limit);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data ?? [];
+    },
+
+    async dismissInsight(id: string): Promise<void> {
+        const { error } = await supabase
+            .from('paid_media_insights')
+            .update({ status: 'dismissed' })
+            .eq('id', id);
+        if (error) throw error;
+    },
+
+    async markInsightDone(id: string): Promise<void> {
+        const { error } = await supabase
+            .from('paid_media_insights')
+            .update({ status: 'done' })
+            .eq('id', id);
+        if (error) throw error;
     },
 
     async fetchGoals() {

@@ -8,11 +8,21 @@ export const DailyAdMetricsSchema = z.object({
     campaign: z.string(),
     objective: z.enum(['brand', 'conversion', 'unknown']).optional(),
 
+    // Novos campos de granularidade (Opcionais)
+    ad_id: z.string().optional(),
+    ad_name: z.string().optional(),
+    adset_id: z.string().optional(),
+    adset_name: z.string().optional(),
+
     // Core Metrics
     spend: z.number().min(0).default(0),
     impressions: z.number().int().min(0).default(0),
     clicks: z.number().int().min(0).default(0),
     conversions: z.number().int().min(0).default(0),
+
+    // Novas métricas de audiência
+    reach: z.number().int().min(0).optional(),
+    frequency: z.number().min(0).optional(),
 
     // Calculated (Optional in raw data, computed later)
     ctr: z.number().optional(),
@@ -31,3 +41,23 @@ export const BudgetSchema = z.object({
 });
 
 export type Budget = z.infer<typeof BudgetSchema>;
+
+export interface MediaInsight {
+    id: string;
+    generated_at: string;
+    period_start: string;
+    period_end: string;
+    score: number;           // 1-10
+    channel: string | null;
+    campaign: string | null;
+    adset_name: string | null;
+    ad_name: string | null;
+    tipo: 'alerta' | 'oportunidade' | 'anomalia' | 'tendencia';
+    contexto: string;
+    mudanca: string;
+    causa: string;
+    acoes: string[];
+    evidencias: Record<string, number | string>;
+    status: 'active' | 'dismissed' | 'done';
+    created_at: string;
+}
