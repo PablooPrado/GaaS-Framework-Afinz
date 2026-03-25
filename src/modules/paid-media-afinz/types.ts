@@ -3,6 +3,10 @@ export interface DailyMetrics {
     channel: 'meta' | 'google' | 'tiktok' | 'unknown'; // Expanded
     campaign: string;
     objective?: 'marca' | 'b2c' | 'brand' | 'conversion' | 'unknown' | 'plurix'; // Expanded compatibility
+    adset_name?: string;
+    adset_id?: string;
+    ad_name?: string;
+    ad_id?: string;
     spend: number;
     impressions: number;
     clicks: number;
@@ -33,5 +37,7 @@ export interface FilterState {
     selectedChannels: ('meta' | 'google')[];
     selectedObjectives: ('marca' | 'b2c' | 'plurix')[];
     selectedCampaigns: string[];
+    selectedAdsets: string[];
+    selectedAds: string[];
     isCompareEnabled: boolean;
 }

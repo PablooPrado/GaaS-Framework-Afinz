@@ -15,8 +15,12 @@ interface FilterContextType {
         toggleObjective: (obj: 'marca' | 'b2c' | 'plurix') => void;
         toggleCampaign: (campaign: string) => void;
         setSelectedCampaigns: (campaigns: string[]) => void;
+        setSelectedAdsets: (adsets: string[]) => void;
+        setSelectedAds: (ads: string[]) => void;
     };
     availableCampaigns: string[];
+    availableAdsets: string[];
+    availableAds: string[];
 }
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -34,10 +38,12 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const dateFrom = startOfDay(startDate);
     const dateTo = endOfDay(endDate);
 
-    // Other filter state (channels, objectives, campaigns)
+    // Other filter state (channels, objectives, campaigns, adsets, ads)
     const [selectedChannels, setSelectedChannels] = useState<('meta' | 'google')[]>(['meta', 'google']);
     const [selectedObjectives, setSelectedObjectives] = useState<('marca' | 'b2c' | 'plurix')[]>(['marca', 'b2c', 'plurix']);
     const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
+    const [selectedAdsets, setSelectedAdsets] = useState<string[]>([]);
+    const [selectedAds, setSelectedAds] = useState<string[]>([]);
 
     // Derived Data
     const filteredData = useMemo(() => {
@@ -58,9 +64,15 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             // Campaign Filter
             if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return false;
 
+            // Adset Filter
+            if (selectedAdsets.length > 0 && (!item.adset_name || !selectedAdsets.includes(item.adset_name))) return false;
+
+            // Ad Filter
+            if (selectedAds.length > 0 && (!item.ad_name || !selectedAds.includes(item.ad_name))) return false;
+
             return true;
         });
-    }, [rawData, dateFrom, dateTo, selectedChannels, selectedObjectives, selectedCampaigns]);
+    }, [rawData, dateFrom, dateTo, selectedChannels, selectedObjectives, selectedCampaigns, selectedAdsets, selectedAds]);
 
     const previousPeriodData = useMemo(() => {
         if (!compareEnabled) return [];
@@ -82,24 +94,50 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
             if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return false;
 
+            if (selectedAdsets.length > 0 && (!item.adset_name || !selectedAdsets.includes(item.adset_name))) return false;
+
+            if (selectedAds.length > 0 && (!item.ad_name || !selectedAds.includes(item.ad_name))) return false;
+
             return true;
         });
-    }, [rawData, dateFrom, dateTo, selectedChannels, selectedObjectives, selectedCampaigns, compareEnabled]);
+    }, [rawData, dateFrom, dateTo, selectedChannels, selectedObjectives, selectedCampaigns, selectedAdsets, selectedAds, compareEnabled]);
 
     const availableCampaigns = useMemo(() => {
         const campaigns = new Set<string>();
-
         rawData.forEach(item => {
             const itemDate = new Date(item.date);
             const inDateRange = itemDate >= dateFrom && itemDate <= dateTo;
-
-            if (inDateRange) {
-                campaigns.add(item.campaign);
-            }
+            if (inDateRange) campaigns.add(item.campaign);
         });
-
         return Array.from(campaigns).sort();
     }, [rawData, dateFrom, dateTo]);
+
+    // Adsets available given the current campaign selection + date range
+    const availableAdsets = useMemo(() => {
+        const adsets = new Set<string>();
+        rawData.forEach(item => {
+            const itemDate = new Date(item.date);
+            const inDateRange = itemDate >= dateFrom && itemDate <= dateTo;
+            if (!inDateRange) return;
+            if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return;
+            if (item.adset_name) adsets.add(item.adset_name);
+        });
+        return Array.from(adsets).sort();
+    }, [rawData, dateFrom, dateTo, selectedCampaigns]);
+
+    // Ads available given the current campaign + adset selection + date range
+    const availableAds = useMemo(() => {
+        const ads = new Set<string>();
+        rawData.forEach(item => {
+            const itemDate = new Date(item.date);
+            const inDateRange = itemDate >= dateFrom && itemDate <= dateTo;
+            if (!inDateRange) return;
+            if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return;
+            if (selectedAdsets.length > 0 && (!item.adset_name || !selectedAdsets.includes(item.adset_name))) return;
+            if (item.ad_name) ads.add(item.ad_name);
+        });
+        return Array.from(ads).sort();
+    }, [rawData, dateFrom, dateTo, selectedCampaigns, selectedAdsets]);
 
     // Handlers
     const toggleChannel = (channel: 'meta' | 'google') => {
@@ -132,6 +170,8 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 selectedChannels,
                 selectedObjectives,
                 selectedCampaigns,
+                selectedAdsets,
+                selectedAds,
                 isCompareEnabled: compareEnabled
             },
             setFilters: {
@@ -139,8 +179,12 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 toggleObjective,
                 toggleCampaign,
                 setSelectedCampaigns,
+                setSelectedAdsets,
+                setSelectedAds,
             },
-            availableCampaigns
+            availableCampaigns,
+            availableAdsets,
+            availableAds
         }}>
             {children}
         </FilterContext.Provider>

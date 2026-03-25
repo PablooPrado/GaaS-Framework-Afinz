@@ -8,8 +8,8 @@ export const CampaignDetailsTab: React.FC = () => {
 
     return (
         <div className="animate-fade-in space-y-6">
-            <InsightsPanel />
             <CampaignPerformanceTable data={filteredData} />
+            <InsightsPanel />
         </div>
     );
 };

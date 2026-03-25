@@ -188,14 +188,14 @@ export const CampaignPerformanceTable: React.FC<CampaignPerformanceTableProps> =
 
     const defaultColumns: Record<string, boolean> = {
         spend: true,
-        impressions: false,
+        impressions: true,
         reach: false,
         frequency: true,
-        clicks: false,
+        clicks: true,
         conversions: true,
-        ctr: false,
-        cpm: false,
-        cpc: false,
+        ctr: true,
+        cpm: true,
+        cpc: true,
         cpa: true,
         status: true,
         trend: true
@@ -293,14 +293,14 @@ export const CampaignPerformanceTable: React.FC<CampaignPerformanceTableProps> =
                                         <div className="flex items-center justify-end gap-1">Invest. <ArrowUpDown size={12} /></div>
                                     </th>
                                 )}
-                                {visibleColumns.impressions && (
-                                    <th className="px-6 py-3 text-right cursor-pointer hover:bg-slate-100" onClick={() => handleSort('impressions')}>
-                                        <div className="flex items-center justify-end gap-1">Impr. <ArrowUpDown size={12} /></div>
-                                    </th>
-                                )}
                                 {visibleColumns.reach && (
                                     <th className="px-6 py-3 text-right cursor-pointer hover:bg-slate-100" onClick={() => handleSort('reach')}>
                                         <div className="flex items-center justify-end gap-1">Alcance <ArrowUpDown size={12} /></div>
+                                    </th>
+                                )}
+                                {visibleColumns.impressions && (
+                                    <th className="px-6 py-3 text-right cursor-pointer hover:bg-slate-100" onClick={() => handleSort('impressions')}>
+                                        <div className="flex items-center justify-end gap-1">Impr. <ArrowUpDown size={12} /></div>
                                     </th>
                                 )}
                                 {visibleColumns.frequency && (
@@ -388,7 +388,6 @@ export const CampaignPerformanceTable: React.FC<CampaignPerformanceTableProps> =
                                     )}
 
                                     {visibleColumns.spend && <td className="px-6 py-3 text-right font-semibold text-slate-700">{fmtBRL(row.spend)}</td>}
-                                    {visibleColumns.impressions && <td className="px-6 py-3 text-right text-slate-600">{fmtNum(row.impressions)}</td>}
                                     {visibleColumns.reach && (
                                         <td className="px-6 py-3 text-right text-slate-600 group relative">
                                             <span className="cursor-help">{fmtNum(row.reach)}</span>
@@ -397,6 +396,7 @@ export const CampaignPerformanceTable: React.FC<CampaignPerformanceTableProps> =
                                             </div>
                                         </td>
                                     )}
+                                    {visibleColumns.impressions && <td className="px-6 py-3 text-right text-slate-600">{fmtNum(row.impressions)}</td>}
                                     {visibleColumns.frequency && (
                                         <td 
                                             className={`px-6 py-3 text-right font-medium ${row.frequency > 3.5 ? 'text-red-500' : 'text-slate-600'} group relative`}

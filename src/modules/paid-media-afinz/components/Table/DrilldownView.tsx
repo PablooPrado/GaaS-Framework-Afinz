@@ -126,8 +126,8 @@ export const DrilldownView: React.FC<DrilldownViewProps> = ({ data, visibleColum
                                         )}
                                         {visibleColumns.trend && <td className="px-4 py-3 text-center text-slate-300">—</td>}
                                         {visibleColumns.spend && <td className="px-6 py-3 text-right font-semibold text-slate-700">{fmtBRL(adset.spend)}</td>}
-                                        {visibleColumns.impressions && <td className="px-6 py-3 text-right text-slate-500">{fmtNum(adset.impressions)}</td>}
                                         {visibleColumns.reach && <td className="px-6 py-3 text-right text-slate-500">{fmtNum(adset.reach)}</td>}
+                                        {visibleColumns.impressions && <td className="px-6 py-3 text-right text-slate-500">{fmtNum(adset.impressions)}</td>}
                                         {visibleColumns.frequency && (
                                             <td className={`px-6 py-3 text-right ${adset.frequency > 3.5 ? 'text-red-500 font-medium' : 'text-slate-500'}`}>
                                                 {adset.frequency > 0 ? adset.frequency.toFixed(1) : '-'}
@@ -221,8 +221,8 @@ const AdList: React.FC<{
                             {visibleColumns.status && <td className="px-4 py-2 text-center text-slate-300">—</td>}
                             {visibleColumns.trend && <td className="px-4 py-2 text-center text-slate-300">—</td>}
                             {visibleColumns.spend && <td className="px-6 py-2 text-right text-slate-500 text-[13px]">{fmtBRL(ad.spend)}</td>}
-                            {visibleColumns.impressions && <td className="px-6 py-2 text-right text-slate-400 text-[13px]">{fmtNum(ad.impressions)}</td>}
                             {visibleColumns.reach && <td className="px-6 py-2 text-right text-slate-400 text-[13px]">{fmtNum(ad.reach)}</td>}
+                            {visibleColumns.impressions && <td className="px-6 py-2 text-right text-slate-400 text-[13px]">{fmtNum(ad.impressions)}</td>}
                             {visibleColumns.frequency && (
                                 <td className={`px-6 py-2 text-right text-[13px] ${ad.frequency > 3.5 ? 'text-red-400' : 'text-slate-400'}`}>
                                     {ad.frequency > 0 ? ad.frequency.toFixed(1) : '-'}
