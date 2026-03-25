@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { DailyMetrics, FilterState } from '../types';
-import { endOfDay, startOfDay } from 'date-fns';
+import { endOfDay, format, startOfDay } from 'date-fns';
 import { usePeriod } from '../../../contexts/PeriodContext';
+import { dataService } from '../../../services/dataService';
 
 interface FilterContextType {
     rawData: DailyMetrics[];
@@ -28,37 +29,42 @@ const FilterContext = createContext<FilterContextType | undefined>(undefined);
 import { useAppStore } from '../../../store/useAppStore';
 
 export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // Sync with Global Store
     const { paidMediaData: rawDataFromStore, setPaidMediaData: setRawDataFromStore } = useAppStore();
     const rawData = rawDataFromStore as unknown as DailyMetrics[];
     const setRawData = setRawDataFromStore as unknown as (data: DailyMetrics[]) => void;
 
-    // Use global PeriodContext as source of truth for date range
     const { startDate, endDate, compareEnabled } = usePeriod();
     const dateFrom = startOfDay(startDate);
     const dateTo = endOfDay(endDate);
 
-    // Filter state
     const [selectedChannels, setSelectedChannels] = useState<('meta' | 'google')[]>(['meta', 'google']);
     const [selectedObjectives, setSelectedObjectives] = useState<('marca' | 'b2c' | 'plurix')[]>(['marca', 'b2c', 'plurix']);
     const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
     const [selectedAdsets, setSelectedAdsets] = useState<string[]>([]);
     const [selectedAds, setSelectedAds] = useState<string[]>([]);
 
-    // Base: rows in current period (no campaign/adset/ad filter — used for dropdowns)
+    // Hierarchy fetched directly from DB filtered by current period — reliable source for dropdowns
+    type HierarchyRow = { campaign: string; adset_name: string | null; ad_name: string | null };
+    const [adHierarchy, setAdHierarchy] = useState<HierarchyRow[]>([]);
+
+    useEffect(() => {
+        const from = format(dateFrom, 'yyyy-MM-dd');
+        const to = format(dateTo, 'yyyy-MM-dd');
+        dataService.fetchAdHierarchy(from, to).then(setAdHierarchy).catch(console.error);
+    }, [dateFrom.getTime(), dateTo.getTime()]);
+
+    // Rows in period — used as base for filteredData
     const rowsInPeriod = useMemo(() => {
         return rawData.filter(item => {
-            const itemDate = new Date(item.date);
-            const inDateRange = itemDate >= dateFrom && itemDate <= dateTo;
-            if (!inDateRange) return false;
-            const inChannel = selectedChannels.includes(item.channel as 'meta' | 'google');
-            if (!inChannel) return false;
+            const d = new Date(item.date);
+            if (d < dateFrom || d > dateTo) return false;
+            if (!selectedChannels.includes(item.channel as 'meta' | 'google')) return false;
             if (item.objective && !selectedObjectives.includes(item.objective as 'marca' | 'b2c' | 'plurix')) return false;
             return true;
         });
     }, [rawData, dateFrom, dateTo, selectedChannels, selectedObjectives]);
 
-    // Fully filtered data (used by all tabs)
+    // Fully filtered data used by all tabs
     const filteredData = useMemo(() => {
         return rowsInPeriod.filter(item => {
             if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return false;
@@ -70,14 +76,12 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     const previousPeriodData = useMemo(() => {
         if (!compareEnabled) return [];
-
         const duration = dateTo.getTime() - dateFrom.getTime();
-        const prevTo = new Date(dateFrom.getTime() - 24 * 60 * 60 * 1000);
+        const prevTo = new Date(dateFrom.getTime() - 86400000);
         const prevFrom = new Date(prevTo.getTime() - duration);
-
         return rawData.filter(item => {
-            const itemDate = new Date(item.date);
-            if (itemDate < prevFrom || itemDate > prevTo) return false;
+            const d = new Date(item.date);
+            if (d < prevFrom || d > prevTo) return false;
             if (!selectedChannels.includes(item.channel as 'meta' | 'google')) return false;
             if (item.objective && !selectedObjectives.includes(item.objective as 'marca' | 'b2c' | 'plurix')) return false;
             if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return false;
@@ -87,45 +91,40 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         });
     }, [rawData, dateFrom, dateTo, selectedChannels, selectedObjectives, selectedCampaigns, selectedAdsets, selectedAds, compareEnabled]);
 
-    // --- Dropdown options derived from rowsInPeriod (respects date + channel + objective) ---
-
-    // Campaigns available in the current period
+    // --- Dropdown options ---
+    // Campaigns: from rowsInPeriod (fast, already in memory)
     const availableCampaigns = useMemo(() => {
         const set = new Set<string>();
         rowsInPeriod.forEach(item => set.add(item.campaign));
         return Array.from(set).sort();
     }, [rowsInPeriod]);
 
-    // Adsets available in the current period, filtered by selected campaign
+    // Adsets & Ads: from adHierarchy (DB query scoped to period — handles pagination gaps)
     const availableAdsets = useMemo(() => {
         const set = new Set<string>();
-        rowsInPeriod.forEach(item => {
-            if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return;
-            if (item.adset_name) set.add(item.adset_name);
+        adHierarchy.forEach(row => {
+            if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(row.campaign)) return;
+            if (row.adset_name) set.add(row.adset_name);
         });
         return Array.from(set).sort();
-    }, [rowsInPeriod, selectedCampaigns]);
+    }, [adHierarchy, selectedCampaigns]);
 
-    // Ads available in the current period, filtered by selected campaign + adset
     const availableAds = useMemo(() => {
         const set = new Set<string>();
-        rowsInPeriod.forEach(item => {
-            if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return;
-            if (selectedAdsets.length > 0 && (!item.adset_name || !selectedAdsets.includes(item.adset_name))) return;
-            if (item.ad_name) set.add(item.ad_name);
+        adHierarchy.forEach(row => {
+            if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(row.campaign)) return;
+            if (selectedAdsets.length > 0 && (!row.adset_name || !selectedAdsets.includes(row.adset_name))) return;
+            if (row.ad_name) set.add(row.ad_name);
         });
         return Array.from(set).sort();
-    }, [rowsInPeriod, selectedCampaigns, selectedAdsets]);
+    }, [adHierarchy, selectedCampaigns, selectedAdsets]);
 
-    // Handlers
-    const toggleChannel = (channel: 'meta' | 'google') =>
-        setSelectedChannels(prev => prev.includes(channel) ? prev.filter(c => c !== channel) : [...prev, channel]);
-
+    const toggleChannel = (ch: 'meta' | 'google') =>
+        setSelectedChannels(p => p.includes(ch) ? p.filter(c => c !== ch) : [...p, ch]);
     const toggleObjective = (obj: 'marca' | 'b2c' | 'plurix') =>
-        setSelectedObjectives(prev => prev.includes(obj) ? prev.filter(o => o !== obj) : [...prev, obj]);
-
-    const toggleCampaign = (campaign: string) =>
-        setSelectedCampaigns(prev => prev.includes(campaign) ? prev.filter(c => c !== campaign) : [...prev, campaign]);
+        setSelectedObjectives(p => p.includes(obj) ? p.filter(o => o !== obj) : [...p, obj]);
+    const toggleCampaign = (c: string) =>
+        setSelectedCampaigns(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);
 
     return (
         <FilterContext.Provider value={{
@@ -161,9 +160,7 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 };
 
 export const useFilters = () => {
-    const context = useContext(FilterContext);
-    if (context === undefined) {
-        throw new Error('useFilters must be used within a FilterProvider');
-    }
-    return context;
+    const ctx = useContext(FilterContext);
+    if (!ctx) throw new Error('useFilters must be used within a FilterProvider');
+    return ctx;
 };

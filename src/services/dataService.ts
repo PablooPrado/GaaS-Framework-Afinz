@@ -257,22 +257,30 @@ export const dataService = {
     },
 
     async fetchPaidMediaByAd(): Promise<DailyAdMetrics[]> {
-        const [{ data, error }, mappings] = await Promise.all([
-            supabase
+        // Paginate to bypass Supabase's 1000-row default limit
+        const PAGE_SIZE = 1000;
+        let allRows: any[] = [];
+        let page = 0;
+        while (true) {
+            const { data: pageData, error: pageError } = await supabase
                 .from('paid_media_metrics')
                 .select('*')
-                .order('date', { ascending: false }),
-            dataService.fetchCampaignMappings()
-        ]);
+                .order('date', { ascending: false })
+                .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            if (pageError) throw pageError;
+            if (!pageData || pageData.length === 0) break;
+            allRows = allRows.concat(pageData);
+            if (pageData.length < PAGE_SIZE) break;
+            page++;
+        }
 
-        if (error) throw error;
-
+        const mappings = await dataService.fetchCampaignMappings();
         const mappingDict = mappings.reduce((acc, m) => {
             acc[m.campaign_name] = m.objective;
             return acc;
         }, {} as Record<string, string>);
 
-        return (data || []).map((row: any) => {
+        return allRows.map((row: any) => {
             let mappedObjective = mappingDict[row.campaign] || row.objective;
             if (mappedObjective === 'conversion') mappedObjective = 'b2c';
             if (mappedObjective === 'brand') mappedObjective = 'marca';
@@ -379,11 +387,16 @@ export const dataService = {
         });
     },
 
-    /** Lightweight fetch: only campaign / adset_name / ad_name for filter dropdowns */
-    async fetchAdHierarchy(): Promise<Array<{ campaign: string; adset_name: string | null; ad_name: string | null }>> {
-        const { data, error } = await supabase
+    /** Lightweight fetch: only campaign / adset_name / ad_name for filter dropdowns.
+     *  Accepts optional date range (YYYY-MM-DD) to scope results to the current period. */
+    async fetchAdHierarchy(fromDate?: string, toDate?: string): Promise<Array<{ campaign: string; adset_name: string | null; ad_name: string | null }>> {
+        let query = supabase
             .from('paid_media_metrics')
-            .select('campaign, adset_name, ad_name');
+            .select('campaign, adset_name, ad_name')
+            .not('adset_name', 'is', null);
+        if (fromDate) query = query.gte('date', fromDate);
+        if (toDate) query = query.lte('date', toDate);
+        const { data, error } = await query;
         if (error) {
             console.error('fetchAdHierarchy error:', error);
             return [];
