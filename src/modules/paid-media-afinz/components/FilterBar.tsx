@@ -1,8 +1,7 @@
 import React from 'react';
 import { useFilters } from '../context/FilterContext';
-import { Calendar, Filter, Share2, Target, ChevronDown } from 'lucide-react';
-import type { TimeRangeOption } from '../types';
-import { subDays, format, startOfMonth, endOfDay } from 'date-fns';
+import { Share2, Target, ChevronDown, Filter } from 'lucide-react';
+import { PeriodSelector } from '../../../components/period-selector/PeriodSelector';
 
 const channelChipClass = (channel: 'meta' | 'google', active: boolean): string => {
     if (channel === 'meta') {
@@ -38,71 +37,11 @@ export const FilterBar: React.FC = () => {
         availableCampaigns
     } = useFilters();
 
-    const handleRangeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const val = e.target.value as TimeRangeOption;
-        const now = new Date();
-        let from = now;
-        let to = now;
-
-        switch (val) {
-            case '7d':
-                to = now;
-                from = subDays(to, 7);
-                break;
-            case '14d':
-                to = now;
-                from = subDays(to, 14);
-                break;
-            case '30d':
-                to = now;
-                from = subDays(to, 30);
-                break;
-            case '90d':
-                to = now;
-                from = subDays(to, 90);
-                break;
-            case 'this-month':
-                from = startOfMonth(now);
-                to = endOfDay(now);
-                break;
-            case 'last-month':
-                from = startOfMonth(subDays(startOfMonth(now), 1));
-                to = endOfDay(subDays(startOfMonth(now), 1));
-                break;
-            case 'custom':
-                // Keep current range or open picker (not implemented yet)
-                from = filters.dateRange.from;
-                to = filters.dateRange.to;
-                break;
-            default: break;
-        }
-
-        setFilters.setDateRange({ from, to }, val);
-    };
-
     return (
         <div className="w-full bg-white border-b border-slate-100 py-2.5 px-6 flex flex-wrap items-center gap-4">
 
-            {/* Range Selector */}
-            <div className="flex items-center gap-2 border border-slate-200 rounded-md px-3 py-1.5 bg-slate-50 hover:bg-white transition-colors">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <select
-                    value={filters.timeRangeOption}
-                    onChange={handleRangeChange}
-                    className="bg-transparent border-none text-xs font-semibold text-slate-700 focus:ring-0 cursor-pointer outline-none p-0 pr-2"
-                >
-                    <option value="this-month">Mês Atual</option>
-                    <option value="last-month">Mês Passado</option>
-                    <option value="7d">Últimos 7 dias</option>
-                    <option value="14d">Últimos 14 dias</option>
-                    <option value="30d">Últimos 30 dias</option>
-                    <option value="90d">Últimos 90 dias</option>
-                    <option value="custom">Personalizado</option>
-                </select>
-                <span className="text-xs text-slate-400 border-l border-slate-200 pl-2">
-                    {format(filters.dateRange.from, 'dd/MM')} - {format(filters.dateRange.to, 'dd/MM')}
-                </span>
-            </div>
+            {/* Period Selector — padrão GaaS */}
+            <PeriodSelector />
 
             <div className="h-5 w-px bg-slate-200 mx-1" />
 
@@ -113,16 +52,16 @@ export const FilterBar: React.FC = () => {
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Mídia:</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    {['meta', 'google'].map((channel) => (
+                    {(['meta', 'google'] as const).map((channel) => (
                         <label key={channel} className={`
                             cursor-pointer select-none px-2.5 py-1 rounded-md border text-xs font-medium transition-all
-                            ${channelChipClass(channel as 'meta' | 'google', filters.selectedChannels.includes(channel as any))}
+                            ${channelChipClass(channel, filters.selectedChannels.includes(channel))}
                         `}>
                             <input
                                 type="checkbox"
                                 className="hidden"
-                                checked={filters.selectedChannels.includes(channel as any)}
-                                onChange={() => setFilters.toggleChannel(channel as any)}
+                                checked={filters.selectedChannels.includes(channel)}
+                                onChange={() => setFilters.toggleChannel(channel)}
                             />
                             {channel === 'meta' ? 'Meta Ads' : 'Google Ads'}
                         </label>
@@ -139,16 +78,16 @@ export const FilterBar: React.FC = () => {
                     <span className="text-xs font-semibold uppercase tracking-wider">Objetivo:</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    {['marca', 'b2c', 'plurix'].map((obj) => (
+                    {(['marca', 'b2c', 'plurix'] as const).map((obj) => (
                         <label key={obj} className={`
                             cursor-pointer select-none px-2.5 py-1 rounded-md border text-xs font-medium transition-all
-                            ${objectiveChipClass(obj as 'marca' | 'b2c' | 'plurix', filters.selectedObjectives.includes(obj as any))}
+                            ${objectiveChipClass(obj, filters.selectedObjectives.includes(obj))}
                         `}>
                             <input
                                 type="checkbox"
                                 className="hidden"
-                                checked={filters.selectedObjectives.includes(obj as any)}
-                                onChange={() => setFilters.toggleObjective(obj as any)}
+                                checked={filters.selectedObjectives.includes(obj)}
+                                onChange={() => setFilters.toggleObjective(obj)}
                             />
                             {obj === 'marca' ? 'Branding' : obj === 'b2c' ? 'Performance (B2C)' : 'Plurix'}
                         </label>
@@ -182,25 +121,6 @@ export const FilterBar: React.FC = () => {
                 </div>
             </div>
 
-            {/* Compare Toggle */}
-            <label className={`
-                flex items-center gap-2 cursor-pointer ml-auto border rounded-md px-3 py-1.5 transition-all
-                ${filters.isCompareEnabled
-                    ? 'bg-[#00C6CC]/10 border-[#00C6CC]/40'
-                    : 'bg-white border-slate-200 hover:border-slate-300'}
-            `}>
-                <input
-                    type="checkbox"
-                    checked={filters.isCompareEnabled}
-                    onChange={() => setFilters.setIsCompareEnabled(!filters.isCompareEnabled)}
-                    className="rounded w-3.5 h-3.5 accent-[#00c6cc]"
-                />
-                <span className={`text-xs font-medium ${filters.isCompareEnabled ? 'text-[#00798c]' : 'text-slate-500'}`}>
-                    Comparar período anterior
-                </span>
-            </label>
-
         </div>
     );
 };
-

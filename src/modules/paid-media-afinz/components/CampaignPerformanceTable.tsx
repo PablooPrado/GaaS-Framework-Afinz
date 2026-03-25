@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import type { DailyMetrics } from '../types';
 import { ArrowUpDown, Search, Filter, TrendingUp, TrendingDown, Minus, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 import { CampaignSidePanel } from './CampaignSidePanel';
@@ -26,6 +26,12 @@ export const CampaignPerformanceTable: React.FC<CampaignPerformanceTableProps> =
     const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
     const [drilldownCache, setDrilldownCache] = useState<Record<string, any[]>>({});
     const [isLoadingDrilldown, setIsLoadingDrilldown] = useState<Record<string, boolean>>({});
+
+    // Invalidate cache when date range changes
+    useEffect(() => {
+        setDrilldownCache({});
+        setExpandedCampaigns(new Set());
+    }, [filters.dateRange.from, filters.dateRange.to]);
 
     const toggleCampaignParams = async (campaign: string, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevents row click (Side Panel)
@@ -180,7 +186,7 @@ export const CampaignPerformanceTable: React.FC<CampaignPerformanceTableProps> =
     const fmtBRL = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
     const fmtNum = (v: number) => new Intl.NumberFormat('pt-BR').format(v);
 
-    const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    const defaultColumns: Record<string, boolean> = {
         spend: true,
         impressions: false,
         reach: false,
@@ -193,11 +199,22 @@ export const CampaignPerformanceTable: React.FC<CampaignPerformanceTableProps> =
         cpa: true,
         status: true,
         trend: true
+    };
+    const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
+        try {
+            const saved = localStorage.getItem('media_visible_cols');
+            if (saved) return { ...defaultColumns, ...JSON.parse(saved) };
+        } catch { /* ignore parse errors */ }
+        return defaultColumns;
     });
     const [isColumnsMenuOpen, setIsColumnsMenuOpen] = useState(false);
 
     const toggleColumn = (col: string) => {
-        setVisibleColumns(prev => ({ ...prev, [col]: !prev[col] }));
+        setVisibleColumns(prev => {
+            const next = { ...prev, [col]: !prev[col] };
+            try { localStorage.setItem('media_visible_cols', JSON.stringify(next)); } catch { /* ignore */ }
+            return next;
+        });
     };
 
     return (
