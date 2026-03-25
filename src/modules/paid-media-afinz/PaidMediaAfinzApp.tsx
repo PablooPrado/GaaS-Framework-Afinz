@@ -181,13 +181,15 @@ const DashboardContent: React.FC<PaidMediaAfinzAppProps> = ({ onBack }) => {
         className="flex-1 overflow-y-auto relative"
         onMouseEnter={() => setIsFilterHovered(false)}
       >
-        {/* Animated Filter Bar — only shows when hovering the header or when explicitly needed */}
+        {/* Animated Filter Bar — slides down on header hover, overflow-visible when open so dropdowns escapem */}
         <div
           className={`
-                sticky top-0 z-50 bg-white shadow-lg border-b border-slate-200 overflow-hidden transform-gpu origin-top
-                transition-[max-height,opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
-                ${isFilterHovered ? 'max-h-40 translate-y-0 opacity-100' : 'max-h-0 -translate-y-3 opacity-0 pointer-events-none'}
-            `}
+            sticky top-0 z-50 bg-white shadow-lg border-b border-slate-200 transform-gpu origin-top
+            transition-[max-height,opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+            ${isFilterHovered
+              ? 'max-h-40 translate-y-0 opacity-100 overflow-visible'
+              : 'max-h-0 -translate-y-3 opacity-0 pointer-events-none overflow-hidden'}
+          `}
           onMouseEnter={() => setIsFilterHovered(true)}
           onMouseLeave={() => setIsFilterHovered(false)}
         >
