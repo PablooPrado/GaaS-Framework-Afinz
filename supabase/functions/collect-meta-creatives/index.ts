@@ -273,10 +273,13 @@ Deno.serve(async (req) => {
       const hasImage = !!creative?.image_hash;
       const mediaType: 'image' | 'video' | null = hasVideo ? 'video' : hasImage ? 'image' : null;
 
-      // ── Image URL: prefer url_1080 from /adimages, fallback to creative.image_url ──
+      // ── Image URL: ONLY use url_1080 from /adimages — DO NOT fallback to
+      // creative.image_url which is the same low-res thumbnail (64x64 or similar)
+      // If /adimages doesn't have a url_1080, leave null → shows placeholder in UI
       const imgHash = creative?.image_hash;
       const imgData = imgHash ? imageDataMap.get(imgHash) : null;
-      const imageUrl = imgData?.url_1080 || creative?.image_url || null;
+      const imageUrl = imgData?.url_1080 || null; // strict: only high-res, never thumbnail
+
 
       // ── Aspect ratio: from /adimages dimensions (most reliable) ──
       let aspectRatio: number | null = null;
