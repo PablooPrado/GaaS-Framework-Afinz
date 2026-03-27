@@ -15,12 +15,35 @@ interface BUContextType {
 const BUContext = createContext<BUContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'growth-brain-bu-selection';
+const ALL_BUS: BU[] = ['B2C', 'B2B2C', 'Plurix', 'Seguros'];
+const LEGACY_ALL_BUS = ['B2C', 'B2B2C', 'Plurix'];
+
+const isKnownBU = (value: unknown): value is BU => ALL_BUS.includes(value as BU);
+
+const sanitizeStoredSelection = (value: string | null): BU[] => {
+    if (!value) return ALL_BUS;
+
+    try {
+        const parsed = JSON.parse(value);
+        if (!Array.isArray(parsed)) return ALL_BUS;
+
+        const sanitized = parsed.filter(isKnownBU);
+
+        // Migrate users that had the previous "all selected" state before Seguros existed.
+        if (sanitized.length === LEGACY_ALL_BUS.length && LEGACY_ALL_BUS.every((bu) => sanitized.includes(bu as BU))) {
+            return ALL_BUS;
+        }
+
+        return sanitized;
+    } catch {
+        return ALL_BUS;
+    }
+};
 
 export const BUProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { isBULocked: isRoleLocked, lockedBUs } = useUserRole();
     const [selectedBUs, setSelectedBUs] = useState<BU[]>(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? JSON.parse(saved) : ['B2C', 'B2B2C', 'Plurix', 'Seguros'];
+        return sanitizeStoredSelection(localStorage.getItem(STORAGE_KEY));
     });
 
     useEffect(() => {
@@ -47,7 +70,7 @@ export const BUProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
     const selectAll = () => {
         if (isRoleLocked) return;
-        setSelectedBUs(['B2C', 'B2B2C', 'Plurix', 'Seguros']);
+        setSelectedBUs(ALL_BUS);
     };
 
     const deselectAll = () => {

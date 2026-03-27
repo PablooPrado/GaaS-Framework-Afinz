@@ -49,6 +49,16 @@ const findColumnByNormalized = (headers: string[], pattern: string): string | nu
     return headers.find(h => normalizeColumnName(h) === normalized) || null;
 };
 
+const normalizeBU = (value: unknown): string => {
+    const raw = String(value ?? '').trim();
+    const normalized = raw.toUpperCase().replace(/\s+/g, '');
+    if (normalized === 'B2C') return 'B2C';
+    if (normalized === 'B2B2C') return 'B2B2C';
+    if (normalized === 'PLURIX') return 'Plurix';
+    if (normalized === 'SEGUROS' || normalized === 'SEGURO') return 'Seguros';
+    return raw;
+};
+
 const handleFramework = (csvText: string) => {
     Papa.parse(csvText, {
         header: true,
@@ -150,7 +160,7 @@ const handleFramework = (csvText: string) => {
                         return;
                     }
 
-                    const buValue = String(validRow['BU']).trim().toUpperCase() === 'PLURIX' ? 'Plurix' : validRow['BU'];
+                    const buValue = normalizeBU(validRow['BU']);
                     let jornadaValue = validRow['Jornada'] || 'Desconhecido';
                     const perfilCredito = validRow['Perfil de Crédito'];
                     if (perfilCredito && String(perfilCredito).toLowerCase().includes('serasa api integrado')) {

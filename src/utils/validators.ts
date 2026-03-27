@@ -57,7 +57,7 @@ export const validateRow = (row: FrameworkRow): { valid: boolean; errors: string
   }
 
   const buValue = row['BU']?.toString().trim().toUpperCase();
-  const validBUs = ['B2C', 'B2B2C', 'PLURIX'];
+  const validBUs = ['B2C', 'B2B2C', 'PLURIX', 'SEGUROS'];
   if (!validBUs.includes(buValue)) {
     errors.push(`BU inválida: ${row['BU']}`);
   }
@@ -92,6 +92,7 @@ export const sanitizeRow = (row: FrameworkRow): FrameworkRow => {
     if (buUpper === 'B2C') cleaned['BU'] = 'B2C';
     else if (buUpper === 'B2B2C') cleaned['BU'] = 'B2B2C';
     else if (buUpper === 'PLURIX') cleaned['BU'] = 'Plurix';
+    else if (buUpper === 'SEGUROS') cleaned['BU'] = 'Seguros';
     else cleaned['BU'] = buUpper;
   }
 

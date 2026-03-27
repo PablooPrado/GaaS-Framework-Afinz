@@ -39,6 +39,7 @@ const normalizeBU = (value: unknown): string => {
     if (normalized === 'B2C') return 'B2C';
     if (normalized === 'B2B2C') return 'B2B2C';
     if (normalized === 'PLURIX') return 'Plurix';
+    if (normalized === 'SEGUROS' || normalized === 'SEGURO') return 'Seguros';
     return raw;
 };
 

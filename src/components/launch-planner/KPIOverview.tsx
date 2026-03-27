@@ -4,6 +4,7 @@ import { Info } from 'lucide-react';
 
 import { B2CDataRow } from '../../types/b2c';
 import { useAppStore } from '../../store/useAppStore';
+import { useBU } from '../../contexts/BUContext';
 
 interface KPIOverviewProps {
     activities: Activity[];
@@ -13,10 +14,12 @@ interface KPIOverviewProps {
 
 export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousActivities = [], b2cData = [] }) => {
     const { viewSettings } = useAppStore();
+    const { selectedBUs } = useBU();
     const perspective = viewSettings.perspective;
 
     const showB2C = perspective === 'total' || perspective === 'b2c';
     const showCRM = perspective === 'total' || perspective === 'crm';
+    const isOnlySeguros = selectedBUs.length === 1 && selectedBUs[0] === 'Seguros';
 
     const calculateMetrics = (acts: Activity[], b2c: B2CDataRow[] = []) => {
         let baseEnviada = showCRM ? acts.reduce((sum, a) => sum + (a.kpis?.baseEnviada || 0), 0) : 0;
@@ -32,7 +35,7 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
             viewSettings.filtrosGlobais.jornadas.length > 0 ||
             viewSettings.filtrosGlobais.canais.length > 0;
 
-        if (showB2C && b2c.length > 0 && !hasGranularFilters) {
+        if (showB2C && b2c.length > 0 && !hasGranularFilters && !isOnlySeguros) {
             const b2cPropostas = b2c.reduce((sum, d) => sum + (Number(d.propostas_b2c_total) || 0), 0);
             const b2cEmissoes = b2c.reduce((sum, d) => sum + (Number(d.emissoes_b2c_total) || 0), 0);
 
@@ -65,8 +68,8 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({ activities, previousAc
         };
     };
 
-    const currentMetrics = useMemo(() => calculateMetrics(activities, b2cData), [activities, b2cData, perspective, viewSettings.filtrosGlobais]);
-    const previousMetrics = useMemo(() => calculateMetrics(previousActivities, []), [previousActivities, perspective, viewSettings.filtrosGlobais]);
+    const currentMetrics = useMemo(() => calculateMetrics(activities, b2cData), [activities, b2cData, perspective, viewSettings.filtrosGlobais, isOnlySeguros]);
+    const previousMetrics = useMemo(() => calculateMetrics(previousActivities, []), [previousActivities, perspective, viewSettings.filtrosGlobais, isOnlySeguros]);
 
     const getVariation = (current: number, previous: number) => {
         if (previous === 0) return 0;

@@ -19,11 +19,14 @@ interface LaunchPlannerKPIsProps {
 export const LaunchPlannerKPIs: React.FC<LaunchPlannerKPIsProps> = ({ activities, goals, currentMonth }) => {
 
     const { dailyAnalysis } = useB2CAnalysis();
-    const { isBUSelected } = useBU();
+    const { isBUSelected, selectedBUs } = useBU();
     const { viewSettings } = useAppStore();
     const perspective = viewSettings.perspective;
+    const isOnlySeguros = selectedBUs.length === 1 && selectedBUs[0] === 'Seguros';
+    const comparableActivities = useMemo(() => activities.filter((activity) => activity.bu !== 'Seguros'), [activities]);
+    const segurosActivities = useMemo(() => activities.filter((activity) => activity.bu === 'Seguros'), [activities]);
 
-    const showCharts = !isBUSelected('B2B2C') && !isBUSelected('Plurix');
+    const showCharts = !isOnlySeguros && selectedBUs.includes('B2C') && !isBUSelected('B2B2C') && !isBUSelected('Plurix');
 
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -58,21 +61,25 @@ export const LaunchPlannerKPIs: React.FC<LaunchPlannerKPIsProps> = ({ activities
         let label = 'Meta';
         const currentGoal = goals.find(g => g.mes === currentMonth);
 
-        if (perspective === 'b2c' || (perspective === 'total' && !isBUSelected('Plurix') && !isBUSelected('B2B2C'))) {
+        if (isOnlySeguros) {
+            totalCards = segurosActivities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
+            goalCards = currentGoal?.bus?.Seguros?.cartoes || 0;
+            label = 'Meta (Seguros)';
+        } else if (perspective === 'b2c' || (perspective === 'total' && !isBUSelected('Plurix') && !isBUSelected('B2B2C'))) {
             totalCards = dailyAnalysis.reduce((sum, d) => sum + d.emissoes_b2c_total, 0);
             goalCards = currentGoal?.b2c_meta || 0;
             label = 'Meta (Total B2C)';
         } else {
             if (isBUSelected('Plurix')) {
-                totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
+                totalCards = comparableActivities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
                 goalCards = currentGoal?.plurix_meta || 0;
                 label = 'Meta (Plurix)';
             } else if (isBUSelected('B2B2C')) {
-                totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
+                totalCards = comparableActivities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
                 goalCards = currentGoal?.b2b2c_meta || 0;
                 label = 'Meta (B2B2C)';
             } else {
-                totalCards = activities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
+                totalCards = comparableActivities.reduce((sum, act) => sum + (act.kpis?.cartoes || 0), 0);
                 goalCards = currentGoal?.cartoes_meta || 0;
                 label = 'Meta (CRM)';
             }
@@ -86,7 +93,7 @@ export const LaunchPlannerKPIs: React.FC<LaunchPlannerKPIsProps> = ({ activities
             goalProgress,
             label
         };
-    }, [activities, goals, currentMonth, dailyAnalysis, isBUSelected, perspective]);
+    }, [goals, currentMonth, dailyAnalysis, isBUSelected, perspective, isOnlySeguros, comparableActivities, segurosActivities]);
 
     const metaChartData = [
         { name: 'Realizado', value: metrics.totalCards, color: '#3B82F6' },

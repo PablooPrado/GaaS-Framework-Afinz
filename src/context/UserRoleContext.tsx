@@ -3,7 +3,7 @@ import { supabase } from '../services/supabaseClient';
 import { useAuth } from './AuthContext';
 
 export type Role = 'admin' | 'growth_b2c' | 'analista_plurix';
-export type BU = 'B2C' | 'B2B2C' | 'Plurix';
+export type BU = 'B2C' | 'B2B2C' | 'Plurix' | 'Seguros';
 
 export interface UserProfile {
   id: string;
