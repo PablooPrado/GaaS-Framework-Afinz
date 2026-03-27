@@ -131,6 +131,21 @@ const GRADIENTS = [
 ];
 const hashStr = (s: string) => s.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
 
+// Extrai chave estável da imagem — CDN nodes e tokens variam, mas o filename é fixo
+// Ex: "https://scontent-gru1-1.xx.fbcdn.net/.../560092369_...n.png?..." → "560092369_...n.png"
+// Ex: "https://www.facebook.com/ads/image/?d=AQLox..." → "AQLox..."
+const stableImageKey = (url?: string): string | undefined => {
+    if (!url) return undefined;
+    try {
+        const u = new URL(url);
+        const filename = u.pathname.split('/').pop();
+        if (filename && filename.length > 4) return `file:${filename}`;
+        const d = u.searchParams.get('d');
+        if (d) return `fbad:${d.slice(0, 40)}`;
+    } catch { /* ignore */ }
+    return undefined;
+};
+
 // Status badge
 type StatusType = 'VENCEDOR' | 'FADIGA' | 'EXCELENTE' | 'BOM' | 'ATENCAO';
 const getStatus = (ctr: number, cpa: number, avgCpa: number, freq?: number): StatusType => {
@@ -349,13 +364,13 @@ export const AdsTab: React.FC = () => {
             frequency: r.freqCount > 0 ? r.freqSum / r.freqCount : undefined,
         }));
 
-        // ── Pass 2: deduplicate by image_hash → thumbnail_path → unique ────
-        // Priority: image_hash > thumbnail_path > ad_id (each more specific)
+        // ── Pass 2: deduplicate by image_hash → stable filename → unique ────
+        // CDN nodes and tokens vary; only the filename/d-param is stable
         const hashGroups = new Map<string, typeof finalized[0][]>();
         finalized.forEach(ad => {
             const hash = ad.creative?.image_hash;
-            const thumb = ad.thumbnail_url;
-            const gKey = hash ? `hash:${hash}` : thumb ? `thumb:${thumb}` : `unique:${ad.adId}`;
+            const imgKey = stableImageKey(ad.thumbnail_url);
+            const gKey = hash ? `hash:${hash}` : imgKey ?? `unique:${ad.adId}`;
             if (!hashGroups.has(gKey)) hashGroups.set(gKey, []);
             hashGroups.get(gKey)!.push(ad);
         });
