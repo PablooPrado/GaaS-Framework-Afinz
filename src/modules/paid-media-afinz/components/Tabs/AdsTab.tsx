@@ -57,7 +57,7 @@ interface AdSummary {
     reach?: number;
     frequency?: number;
     thumbnail_url?: string;
-    mediaType: 'image' | 'video';
+    mediaType: 'image' | 'video' | 'unknown';
     isStory: boolean;
     bu: 'afinz' | 'plurix';
     // Creative enrichment
@@ -328,22 +328,27 @@ export const AdsTab: React.FC = () => {
             if (!raw.has(key)) {
                 const creative = creativeMap.get(d.ad_id || '');
 
-                // Prefer image_url (high-res) over thumbnail_path (low-res)
-                const rawUrl = creative?.image_url || creative?.thumbnail_path;
+                // ── Thumbnail URL: priority image_url (1080px) > video_thumbnail_url > thumbnail_path ──
+                const rawUrl =
+                    creative?.image_url           // HIGH-RES: url_1080 from /adimages
+                    || creative?.video_thumbnail_url // HIGH-RES: picture from /{video_id}
+                    || creative?.thumbnail_path;    // low-res fallback
                 const thumbnailUrl = rawUrl
                     ? rawUrl.startsWith('https://')
                         ? rawUrl
                         : `${SUPABASE_URL}/storage/v1/object/public/ad-thumbnails/${rawUrl}`
                     : undefined;
 
-                // media_type from v2 intelligence fields (reliable)
-                // Fallback: video_id presence, then image_hash heuristic
-                const mediaType: 'image' | 'video' =
+                // ── media_type: reliable source from Edge Function v25 ──
+                // When creative is undefined (join miss), use 'unknown' — DO NOT default to 'image'
+                // 'unknown' cards appear in 'Todos' but not in 'Imagem' or 'Vídeo' filters
+                const mediaType: 'image' | 'video' | 'unknown' =
                     creative?.media_type === 'video' ? 'video'
                     : creative?.media_type === 'image' ? 'image'
                     : creative?.video_id ? 'video'
                     : creative?.image_hash ? 'image'
-                    : 'image'; // default to image when unknown
+                    : creative !== undefined ? 'image'  // creative found but no media hints → likely image
+                    : 'unknown';                        // creative not found at all
 
                 const adNameRaw = d.ad_name || d.ad_id || d.campaign;
                 // aspect_ratio from v2: < 0.8 = portrait/story
@@ -465,7 +470,11 @@ export const AdsTab: React.FC = () => {
             .filter(a => {
                 // Stories (9:16) quebram o layout — ocultos por default
                 if (a.isStory) return false;
-                if (mediaFilter !== 'all' && a.mediaType !== mediaFilter) return false;
+                if (mediaFilter !== 'all') {
+                    // 'unknown' = creative not found, show only in 'Todos'
+                    if (a.mediaType === 'unknown') return false;
+                    if (a.mediaType !== mediaFilter) return false;
+                }
                 if (search) {
                     const q = search.toLowerCase();
                     if (!a.adName.toLowerCase().includes(q) && !a.campaign.toLowerCase().includes(q)

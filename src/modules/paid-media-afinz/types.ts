@@ -49,14 +49,15 @@ export interface AdCreative {
     ad_name?: string;
     campaign?: string;
     adset_name?: string;
-    // Image fields
-    thumbnail_path?: string;   // low-res fallback / video thumbnail
-    image_url?: string;        // high-res original image URL
+    // Image fields (priority: image_url > video_thumbnail_url > thumbnail_path)
+    thumbnail_path?: string;        // low-res fallback / legacy field
+    image_url?: string;             // HIGH-RES: url_1080 from /adimages (images)
+    video_thumbnail_url?: string;   // HIGH-RES: picture from /{video_id}?fields=picture (videos)
     image_hash?: string;
-    // Creative intelligence fields (v2)
-    media_type?: 'image' | 'video';
+    // Creative intelligence fields (from Meta API v25)
+    media_type?: 'image' | 'video'; // reliable: set from video_id / image_hash presence
     video_id?: string;
-    aspect_ratio?: number;     // width/height: 1.0=square, 0.5625=portrait(9:16)
+    aspect_ratio?: number;          // width/height from /adimages: 1.0=square, 0.5625=portrait(9:16)
     // Copy
     body?: string;
     title?: string;
