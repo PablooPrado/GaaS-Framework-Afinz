@@ -59,6 +59,7 @@ interface AdSummary {
     thumbnail_url?: string;
     mediaType: 'image' | 'video';
     isStory: boolean;
+    bu: 'afinz' | 'plurix';
     // Creative enrichment
     body?: string;
     title?: string;
@@ -167,8 +168,6 @@ const STATUS_LABEL: Record<StatusType, string> = {
     BOM: 'BOM', ATENCAO: 'ATENCAO',
 };
 
-const AVATAR_COLORS = ['bg-blue-500','bg-rose-500','bg-violet-500','bg-amber-500','bg-teal-500','bg-emerald-500'];
-const avatarColor = (name: string) => AVATAR_COLORS[hashStr(name) % AVATAR_COLORS.length];
 
 // ── Meta-style Ad Card ────────────────────────────────────────────────────────
 const MetaAdCard: React.FC<{
@@ -178,8 +177,8 @@ const MetaAdCard: React.FC<{
 }> = ({ ad, avgCpa, onClick }) => {
     const status = getStatus(ad.ctr, ad.cpa, avgCpa, ad.frequency);
     const gradient = GRADIENTS[hashStr(ad.adId) % GRADIENTS.length];
-    const brandInitial = (ad.campaign || ad.adName).charAt(0).toUpperCase();
-    const channelLabel = ad.channel === 'meta' ? 'Meta Ads' : ad.channel === 'google' ? 'Google Ads' : ad.channel;
+    const isPluriq = ad.bu === 'plurix';
+    const avatarBg = isPluriq ? 'bg-purple-600' : 'bg-blue-600';
     const ctrColor = ad.ctr >= 1 ? 'text-emerald-600' : ad.ctr >= 0.5 ? 'text-amber-600' : 'text-red-500';
     const displayBody = ad.body || ad.adName;
     const displayTitle = ad.title || ad.adName;
@@ -192,8 +191,10 @@ const MetaAdCard: React.FC<{
             {/* Meta-style Header */}
             <div className="px-3 pt-3 pb-2 flex items-start justify-between">
                 <div className="flex items-center gap-2 min-w-0">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-black flex-shrink-0 ${avatarColor(ad.campaign)}`}>
-                        {brandInitial}
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white flex-shrink-0 ${avatarBg}`}>
+                        <span className="text-[9px] font-black tracking-tight leading-none">
+                            {isPluriq ? 'PLX' : 'AFZ'}
+                        </span>
                     </div>
                     <div className="min-w-0">
                         <p className="text-[12px] font-semibold text-slate-900 leading-tight truncate max-w-[150px]" title={ad.adName}>
@@ -303,7 +304,6 @@ export const AdsTab: React.FC = () => {
     const showCompare = filters.isCompareEnabled;
 
     const [search, setSearch] = useState('');
-    const [channelFilter, setChannelFilter] = useState<'all' | 'meta' | 'google'>('all');
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
     const [sortKey, setSortKey] = useState<SortKey>('conversions');
@@ -351,9 +351,10 @@ export const AdsTab: React.FC = () => {
                 const isStory = creative?.aspect_ratio != null
                     ? creative.aspect_ratio < 0.8
                     : isStoryFormat(adNameRaw, d.adset_name);
+                const bu: 'afinz' | 'plurix' = /plurix/i.test(d.campaign || '') ? 'plurix' : 'afinz';
                 raw.set(key, {
                     adId: key, adName: adNameRaw, campaign: d.campaign,
-                    adset: d.adset_name, channel: d.channel,
+                    adset: d.adset_name, channel: d.channel, bu,
                     spend: 0, impressions: 0, clicks: 0, conversions: 0,
                     ctr: 0, cpa: 0, cpm: 0, reach: 0, frequency: 0,
                     freqCount: 0, freqSum: 0,
@@ -464,7 +465,6 @@ export const AdsTab: React.FC = () => {
             .filter(a => {
                 // Stories (9:16) quebram o layout — ocultos por default
                 if (a.isStory) return false;
-                if (channelFilter !== 'all' && a.channel !== channelFilter) return false;
                 if (mediaFilter !== 'all' && a.mediaType !== mediaFilter) return false;
                 if (search) {
                     const q = search.toLowerCase();
@@ -484,7 +484,7 @@ export const AdsTab: React.FC = () => {
                 }
                 return b[sortKey] - a[sortKey];
             });
-    }, [allAds, channelFilter, search, statusFilter, sortKey, avgCpa]);
+    }, [allAds, search, statusFilter, sortKey, avgCpa]);
 
     // ── Top 5 ───────────────────────────────────────────────────────────────
     const top5 = useMemo(() =>
@@ -538,15 +538,6 @@ export const AdsTab: React.FC = () => {
                     <input type="text" placeholder="Buscar anuncio ou campanha..."
                         value={search} onChange={e => setSearch(e.target.value)}
                         className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#00C6CC]/30" />
-                </div>
-
-                <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg">
-                    {(['all', 'meta', 'google'] as const).map(ch => (
-                        <button key={ch} onClick={() => setChannelFilter(ch)}
-                            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${channelFilter === ch ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>
-                            {ch === 'all' ? 'Todos' : ch === 'meta' ? 'Meta' : 'Google'}
-                        </button>
-                    ))}
                 </div>
 
                 {/* Media type filter */}
