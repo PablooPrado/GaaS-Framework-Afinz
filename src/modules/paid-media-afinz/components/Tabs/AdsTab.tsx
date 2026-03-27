@@ -351,11 +351,12 @@ export const AdsTab: React.FC = () => {
                     : 'unknown';                        // creative not found at all
 
                 const adNameRaw = d.ad_name || d.ad_id || d.campaign;
-                // aspect_ratio from v2: < 0.8 = portrait/story
-                // Fallback: name-based detection
+                // aspect_ratio from API: < 0.7 = portrait/story (9:16 is 0.56)
+                // Fallback: name-based detection (keywords in name/adset)
                 const isStory = creative?.aspect_ratio != null
-                    ? creative.aspect_ratio < 0.8
-                    : isStoryFormat(adNameRaw, d.adset_name);
+                    ? creative.aspect_ratio < 0.7
+                    : isStoryFormat(adNameRaw, d.adset_name || '');
+
                 const bu: 'afinz' | 'plurix' = /plurix/i.test(d.campaign || '') ? 'plurix' : 'afinz';
                 raw.set(key, {
                     adId: key, adName: adNameRaw, campaign: d.campaign,
