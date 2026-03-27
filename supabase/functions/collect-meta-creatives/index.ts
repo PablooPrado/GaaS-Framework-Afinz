@@ -2,10 +2,14 @@
 // Meta Marketing API v25 | March 2026
 //
 // Strategy:
-// 1. Read high-resolution creative metadata from Meta.
-// 2. Download the best available image/video thumbnail binary.
-// 3. Persist the asset in Supabase Storage with deterministic paths.
-// 4. Upsert ad_creatives with hosted URLs first, Meta URLs only as fallback/debug.
+// 1. Fetch ads with creative fields INLINE (single API call, no per-creative requests).
+// 2. Use image_hash to fetch url_1080 from /adimages (high-resolution).
+// 3. Download and persist assets in Supabase Storage with deterministic paths.
+// 4. Upsert ad_creatives with hosted URLs first, Meta URLs as fallback.
+//
+// Safety:
+// - Guard: abort upsert if no creative data returned (protects existing data).
+// - COALESCE: never overwrite existing non-null values with null.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -292,35 +296,65 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const adsFields = 'id,name,adset_id,campaign_id,effective_status,creative{id}';
+    // Fetch ads with minimal safe creative fields INLINE.
+    // Only image_hash, video_id, thumbnail_url — sufficient for high-res resolution.
+    // body/title/description/object_story_spec require ads_management and are skipped here.
+    const adsFields = 'id,name,adset_id,campaign_id,effective_status,creative{id,image_hash,video_id,thumbnail_url}';
+
     let allAds: any[] = [];
-    let nextUrl: string | null = `${GRAPH_API_BASE}/${AD_ACCOUNT_ID}/ads?fields=${adsFields}&limit=200&access_token=${META_TOKEN}`;
+    let adsApiError: string | null = null;
+    let nextUrl: string | null = `${GRAPH_API_BASE}/${AD_ACCOUNT_ID}/ads?fields=${encodeURIComponent(adsFields)}&limit=200&access_token=${META_TOKEN}`;
 
     while (nextUrl) {
       const response = await fetch(nextUrl);
       const json = await response.json();
-      if (json.error) break;
+      if (json.error) {
+        adsApiError = JSON.stringify(json.error);
+        console.error('[collect-meta-creatives] Ads fetch error:', adsApiError);
+        break;
+      }
       allAds = allAds.concat(json.data || []);
       nextUrl = json.paging?.next || null;
       if (nextUrl) await sleep(300);
     }
 
-    console.log(`[collect-meta-creatives] Ads found: ${allAds.length}`);
-
-    const creativeFields = 'id,name,thumbnail_url,image_url,image_hash,video_id,body,title,description,call_to_action_type,object_story_spec,effective_status';
-    const creativeDetailsMap = new Map<string, any>();
-    const creativeIds = [...new Set(allAds.map((ad) => ad.creative?.id).filter(Boolean))];
-
-    for (const batch of chunks(creativeIds, 15)) {
-      await Promise.all(batch.map(async (creativeId) => {
-        const data = await metaGet(`/${creativeId}?fields=${creativeFields}&access_token=${META_TOKEN}`, META_TOKEN);
-        if (data) creativeDetailsMap.set(creativeId, data);
-      }));
-      await sleep(300);
+    if (allAds.length === 0 && adsApiError) {
+      return new Response(JSON.stringify({ error: 'Meta API ads fetch failed', detail: adsApiError }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      });
     }
 
-    const imageHashes = [...new Set([...creativeDetailsMap.values()].map((creative) => creative.image_hash).filter(Boolean))];
+    console.log(`[collect-meta-creatives] Ads found: ${allAds.length}`);
+
+    // Build creativeDetailsMap directly from inline creative data — no extra API calls.
+    const creativeDetailsMap = new Map<string, any>();
+    for (const ad of allAds) {
+      if (ad.creative?.id) {
+        creativeDetailsMap.set(ad.creative.id, ad.creative);
+      }
+    }
+
+    console.log(`[collect-meta-creatives] Creatives from inline fields: ${creativeDetailsMap.size}`);
+
+    // GUARD: abort if no creative data to protect existing records.
+    if (creativeDetailsMap.size === 0) {
+      console.warn('[collect-meta-creatives] GUARD: No creative data in ads response. Aborting upsert.');
+      return new Response(JSON.stringify({
+        ok: false,
+        warning: 'No creative data in Meta API response — upsert skipped to protect existing records.',
+        ads_found: allAds.length,
+        upserted: 0,
+      }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
+
+    // Fetch high-res image data from /adimages using collected hashes.
+    const imageHashes = [...new Set([...creativeDetailsMap.values()].map((c) => c.image_hash).filter(Boolean))];
     const imageDataMap = new Map<string, { url_1080: string | null; width: number | null; height: number | null }>();
+
+    console.log(`[collect-meta-creatives] Image hashes to resolve: ${imageHashes.length}`);
 
     for (const hashBatch of chunks(imageHashes, META_BATCH_SIZE)) {
       const hashParam = encodeURIComponent(JSON.stringify(hashBatch));
@@ -344,7 +378,10 @@ Deno.serve(async (req) => {
       await sleep(200);
     }
 
-    const videoIds = [...new Set([...creativeDetailsMap.values()].map((creative) => creative.video_id).filter(Boolean))];
+    console.log(`[collect-meta-creatives] High-res image data resolved: ${imageDataMap.size}`);
+
+    // Fetch high-res video thumbnails.
+    const videoIds = [...new Set([...creativeDetailsMap.values()].map((c) => c.video_id).filter(Boolean))];
     const videoDataMap = new Map<string, { picture: string | null; width: number | null; height: number | null }>();
 
     for (const batch of chunks(videoIds, 10)) {
@@ -373,6 +410,7 @@ Deno.serve(async (req) => {
       await sleep(300);
     }
 
+    // Fetch adset names.
     const adsetIds = [...new Set(allAds.map((ad) => ad.adset_id).filter(Boolean))];
     const adsetMap = new Map<string, string>();
 
@@ -384,15 +422,25 @@ Deno.serve(async (req) => {
       await sleep(200);
     }
 
+    // Fetch existing rows for COALESCE protection.
+    const adIds = allAds.map((ad) => ad.id);
+    const { data: existingRows } = await supabase
+      .from('ad_creatives')
+      .select('ad_id,image_url,image_hash,video_id,media_type,thumbnail_path,creative_id,video_thumbnail_url,aspect_ratio,body,title,description,call_to_action_type,effective_status,adset_name,asset_public_url,asset_storage_path,asset_storage_bucket,asset_source_url,asset_width,asset_height,asset_content_type,asset_origin,asset_sync_status,asset_sync_error')
+      .in('ad_id', adIds);
+
+    const existingMap = new Map<string, any>((existingRows || []).map((r: any) => [r.ad_id, r]));
+
     const upsertRows: any[] = [];
 
     for (const batch of chunks(allAds, ASSET_UPLOAD_CONCURRENCY)) {
       const resolvedRows = await Promise.all(batch.map(async (ad) => {
+        const existing = existingMap.get(ad.id) || {};
         const creative = creativeDetailsMap.get(ad.creative?.id);
         const mediaType: MediaType = creative?.video_id ? 'video' : creative?.image_hash ? 'image' : null;
 
         const imageData = creative?.image_hash ? imageDataMap.get(creative.image_hash) : null;
-        const imageUrl = imageData?.url_1080 || creative?.image_url || null;
+        const imageUrl = imageData?.url_1080 || null;
         const videoData = creative?.video_id ? videoDataMap.get(creative.video_id) : null;
         const videoThumbnailUrl = videoData?.picture || creative?.thumbnail_url || null;
 
@@ -412,8 +460,10 @@ Deno.serve(async (req) => {
           description = linkData.description || description;
         }
 
+        const sourceUrl = mediaType === 'image' ? imageUrl : videoThumbnailUrl;
+
         const hostedAsset = await hostCreativeAsset(supabase, SUPABASE_URL, assetCache, {
-          sourceUrl: mediaType === 'image' ? imageUrl : videoThumbnailUrl,
+          sourceUrl,
           mediaType,
           creativeId: creative?.id || null,
           assetKey: mediaType === 'image' ? creative?.image_hash || null : creative?.video_id || null,
@@ -421,30 +471,32 @@ Deno.serve(async (req) => {
           height: mediaType === 'image' ? imageData?.height || null : videoData?.height || null,
         });
 
+        // COALESCE: never overwrite non-null existing values with null.
         return {
           ad_id: ad.id,
           ad_name: ad.name,
-          adset_name: adsetMap.get(ad.adset_id) || null,
-          creative_id: creative?.id || null,
-          thumbnail_path: videoThumbnailUrl,
-          image_url: imageUrl,
-          video_thumbnail_url: videoThumbnailUrl,
-          image_hash: creative?.image_hash || null,
-          video_id: creative?.video_id || null,
-          media_type: mediaType,
-          aspect_ratio: aspectRatio,
-          body,
-          title,
-          description,
-          call_to_action_type: creative?.call_to_action_type || null,
-          effective_status: ad.effective_status || creative?.effective_status || null,
-          asset_storage_bucket: hostedAsset.bucket,
-          asset_storage_path: hostedAsset.storagePath,
-          asset_public_url: hostedAsset.publicUrl,
-          asset_source_url: hostedAsset.sourceUrl,
-          asset_width: hostedAsset.width,
-          asset_height: hostedAsset.height,
-          asset_content_type: hostedAsset.contentType,
+          adset_name: adsetMap.get(ad.adset_id) || existing.adset_name || null,
+          creative_id: creative?.id || existing.creative_id || null,
+          thumbnail_path: videoThumbnailUrl ?? existing.thumbnail_path ?? null,
+          image_url: imageUrl ?? existing.image_url ?? null,
+          video_thumbnail_url: videoThumbnailUrl ?? existing.video_thumbnail_url ?? null,
+          image_hash: creative?.image_hash || existing.image_hash || null,
+          video_id: creative?.video_id || existing.video_id || null,
+          media_type: mediaType ?? existing.media_type ?? null,
+          aspect_ratio: aspectRatio ?? existing.aspect_ratio ?? null,
+          body: body ?? existing.body ?? null,
+          title: title ?? existing.title ?? null,
+          description: description ?? existing.description ?? null,
+          call_to_action_type: creative?.call_to_action_type || existing.call_to_action_type || null,
+          effective_status: ad.effective_status || creative?.effective_status || existing.effective_status || null,
+          // Asset storage — COALESCE: keep existing hosted asset if new sync failed.
+          asset_storage_bucket: hostedAsset.bucket ?? existing.asset_storage_bucket ?? null,
+          asset_storage_path: hostedAsset.storagePath ?? existing.asset_storage_path ?? null,
+          asset_public_url: hostedAsset.publicUrl ?? existing.asset_public_url ?? null,
+          asset_source_url: hostedAsset.sourceUrl ?? existing.asset_source_url ?? null,
+          asset_width: hostedAsset.width ?? existing.asset_width ?? null,
+          asset_height: hostedAsset.height ?? existing.asset_height ?? null,
+          asset_content_type: hostedAsset.contentType ?? existing.asset_content_type ?? null,
           asset_origin: hostedAsset.origin,
           asset_last_synced_at: new Date().toISOString(),
           asset_sync_status: hostedAsset.syncStatus,
@@ -467,13 +519,17 @@ Deno.serve(async (req) => {
     }
 
     const hostedCount = upsertRows.filter((row) => row.asset_sync_status === 'hosted').length;
+    const sourceOnlyCount = upsertRows.filter((row) => row.asset_sync_status === 'source-only').length;
     const failedCount = upsertRows.filter((row) => row.asset_sync_status === 'sync-failed').length;
 
     return new Response(JSON.stringify({
       ok: true,
       ads_found: allAds.length,
+      creatives_fetched: creativeDetailsMap.size,
+      image_hashes_resolved: imageDataMap.size,
       upserted,
       hosted_assets: hostedCount,
+      source_only: sourceOnlyCount,
       failed_assets: failedCount,
       bucket: CREATIVE_BUCKET,
     }), {
