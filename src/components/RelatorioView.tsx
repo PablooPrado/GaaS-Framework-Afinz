@@ -1,9 +1,10 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Download, FileSpreadsheet, FileText, Save, ArrowLeft, TrendingUp, DollarSign, BarChart2, Info, ChevronUp, ChevronDown } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Save, ArrowLeft, TrendingUp, DollarSign, BarChart2, Info, ChevronUp, ChevronDown, Search, PanelRightClose, PanelRightOpen, FilterX } from 'lucide-react';
 import { CalendarData, Activity } from '../types/framework';
 import { supabase } from '../services/supabaseClient';
 import { ActivityRow } from '../types/activity';
+import { useAppStore } from '../store/useAppStore';
 
 interface RelatorioViewProps {
   data: CalendarData;
@@ -137,6 +138,8 @@ const PARCEIRO_COLORS: Record<string, string> = {
 };
 
 export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }) => {
+  const { viewSettings, setGlobalFilters } = useAppStore();
+  const globalFilters = viewSettings.filtrosGlobais;
   const allActivities = useMemo(() => Object.values(data).flat(), [data]);
 
   // ── Descrições por disparo ──
@@ -149,12 +152,18 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
   const [destaqueFilter, setDestaqueFilter] = useState<'top-conversores' | 'aguardando' | null>(null);
   const [showDestaqueMenu, setShowDestaqueMenu] = useState(false);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
+  const [tableSearch, setTableSearch] = useState('');
+  const [detailSegmentFilter, setDetailSegmentFilter] = useState<string | null>(null);
+  const [detailCanalFilter, setDetailCanalFilter] = useState<string | null>(null);
 
   // Reset internal filters when external data (global filters) change
   useEffect(() => {
     setDestaqueFilter(null);
     setSortKey(null);
     setSortDir('desc');
+    setTableSearch('');
+    setDetailSegmentFilter(null);
+    setDetailCanalFilter(null);
   }, [data]);
 
   // ── Ordenação ──
@@ -283,18 +292,43 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
 
   // ── Filtro destaque sobre detailRows ──
   const filteredRows = useMemo((): DetailRow[] => {
+    let rows = detailRows;
+
+    if (detailSegmentFilter) {
+      rows = rows.filter(r => r.segmento === detailSegmentFilter);
+    }
+
+    if (detailCanalFilter) {
+      rows = rows.filter(r => r.canal === detailCanalFilter);
+    }
+
+    const search = tableSearch.trim().toLowerCase();
+    if (search) {
+      rows = rows.filter(r => {
+        const description = editingDescs[r.activityName] ?? descriptions[r.activityName] ?? '';
+        return [
+          r.activityName,
+          r.jornada,
+          r.segmento,
+          r.canal,
+          r.parceiro,
+          description,
+        ].some(value => value?.toLowerCase().includes(search));
+      });
+    }
+
     if (destaqueFilter === 'top-conversores') {
-      const withEmissoes = detailRows.filter(r => r.emissoes > 0);
-      const base = withEmissoes.length > 0 ? withEmissoes : detailRows;
+      const withEmissoes = rows.filter(r => r.emissoes > 0);
+      const base = withEmissoes.length > 0 ? withEmissoes : rows;
       const sorted = [...base].sort((a, b) => b.taxaConversaoBase - a.taxaConversaoBase);
       const top20 = Math.max(1, Math.ceil(sorted.length * 0.2));
       return sorted.slice(0, top20);
     }
     if (destaqueFilter === 'aguardando') {
-      return detailRows.filter(r => r.aguardando);
+      return rows.filter(r => r.aguardando);
     }
-    return detailRows;
-  }, [detailRows, destaqueFilter]);
+    return rows;
+  }, [descriptions, detailCanalFilter, detailRows, detailSegmentFilter, destaqueFilter, editingDescs, tableSearch]);
 
   // ── Ordenação sobre filteredRows ──
   const displayRows = useMemo((): DetailRow[] => {
@@ -380,6 +414,27 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
     });
     return map;
   }, [segmentoRows]);
+
+  const applyGlobalSegmentFilter = useCallback((segmento: string) => {
+    const next = globalFilters.segmentos.length === 1 && globalFilters.segmentos[0] === segmento
+      ? []
+      : [segmento];
+    setGlobalFilters({ segmentos: next });
+  }, [globalFilters.segmentos, setGlobalFilters]);
+
+  const applyGlobalCanalFilter = useCallback((canal: string) => {
+    const next = globalFilters.canais.length === 1 && globalFilters.canais[0] === canal
+      ? []
+      : [canal];
+    setGlobalFilters({ canais: next });
+  }, [globalFilters.canais, setGlobalFilters]);
+
+  const clearDetailQuickFilters = useCallback(() => {
+    setTableSearch('');
+    setDetailSegmentFilter(null);
+    setDetailCanalFilter(null);
+    setDestaqueFilter(null);
+  }, []);
 
   const exportSegmento = useCallback(() => {
     const headers = ['Segmento', 'Base Enviada', 'Base Entregue', '% Entrega', 'Propostas', '% Proposta', 'Aprovados', '% Aprovação', 'Emissões', '% Finalização', 'Custo/Cartão', 'Custo Total', '% Conv da Base'];
@@ -577,9 +632,21 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                   return (
                     <tr
                       key={row.label}
-                      className={`border-t border-slate-100 hover:brightness-95 transition-all ${color?.bg ?? (isBanded ? 'bg-slate-50' : 'bg-white')}`}
+                      className={`border-t border-slate-100 hover:brightness-95 transition-all cursor-pointer ${color?.bg ?? (isBanded ? 'bg-slate-50' : 'bg-white')}`}
+                      onClick={() => {
+                        setDetailSegmentFilter(current => current === row.label ? null : row.label);
+                        setSelectedActivityRow(null);
+                      }}
+                      title="Filtrar detalhamento por este segmento"
                     >
-                      <td className={`px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap ${color?.border ?? ''}`}>
+                      <td
+                        className={`px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap ${color?.border ?? ''}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          applyGlobalSegmentFilter(row.label);
+                        }}
+                        title="Aplicar este segmento no filtro global"
+                      >
                         {row.label}
                       </td>
                       <td className="text-right px-4 py-2.5 text-slate-600">{fmtN(row.baseEnviada)}</td>
@@ -709,9 +776,23 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                 {canalRows.map((row, idx) => (
                   <tr
                     key={row.label}
-                    className={`border-t border-slate-100 hover:bg-cyan-50 transition-all ${idx % 2 !== 0 ? 'bg-slate-50' : 'bg-white'}`}
+                    className={`border-t border-slate-100 hover:bg-cyan-50 transition-all cursor-pointer ${idx % 2 !== 0 ? 'bg-slate-50' : 'bg-white'}`}
+                    onClick={() => {
+                      setDetailCanalFilter(current => current === row.label ? null : row.label);
+                      setSelectedActivityRow(null);
+                    }}
+                    title="Filtrar detalhamento por este canal"
                   >
-                    <td className="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap">{row.label}</td>
+                    <td
+                      className="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        applyGlobalCanalFilter(row.label);
+                      }}
+                      title="Aplicar este canal no filtro global"
+                    >
+                      {row.label}
+                    </td>
                     <td className="text-right px-4 py-2.5 text-slate-600">{fmtN(row.baseEnviada)}</td>
                     <td className="text-right px-4 py-2.5 text-slate-600">{fmtN(row.baseEntregue)}</td>
                     <td className="text-right px-4 py-2.5 text-slate-600">{fmtPct(row.taxaEntrega)}</td>
@@ -808,6 +889,19 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
           </div>
           {!selectedActivityRow && (
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsDescriptionCollapsed(value => !value)}
+                className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-colors font-medium ${
+                  isDescriptionCollapsed
+                    ? 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    : 'bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100'
+                }`}
+                title={isDescriptionCollapsed ? 'Mostrar coluna de descrição' : 'Ocultar coluna de descrição'}
+              >
+                {isDescriptionCollapsed ? <PanelRightOpen size={13} /> : <PanelRightClose size={13} />}
+                {isDescriptionCollapsed ? 'Mostrar descrição' : 'Ocultar descrição'}
+              </button>
               {/* Filtros Destaque */}
               <div className="relative">
                 <button
@@ -970,16 +1064,56 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
         })()}
 
         {!selectedActivityRow && <div className="bg-white border border-slate-200 rounded-b-xl shadow-sm overflow-hidden">
+          <div className="border-b border-slate-100 px-3 py-3 bg-slate-50/70">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative min-w-[220px] flex-1 max-w-sm">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={tableSearch}
+                  onChange={(event) => setTableSearch(event.target.value)}
+                  placeholder="Buscar campanha, jornada, segmento ou descrição..."
+                  className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                />
+              </div>
+              {detailSegmentFilter && (
+                <button
+                  type="button"
+                  onClick={() => setDetailSegmentFilter(null)}
+                  className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700"
+                >
+                  Segmento: {detailSegmentFilter}
+                </button>
+              )}
+              {detailCanalFilter && (
+                <button
+                  type="button"
+                  onClick={() => setDetailCanalFilter(null)}
+                  className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700"
+                >
+                  Canal: {detailCanalFilter}
+                </button>
+              )}
+              {(detailSegmentFilter || detailCanalFilter || tableSearch || destaqueFilter) && (
+                <button
+                  type="button"
+                  onClick={clearDetailQuickFilters}
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-700 hover:bg-white"
+                >
+                  <FilterX size={13} />
+                  Limpar tabela
+                </button>
+              )}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+              <span className="font-medium">Atalhos:</span>
+              <span>Clique em um segmento ou canal nos blocos acima para filtrar o detalhamento.</span>
+              <span>Clique nos chips da tabela para aplicar o filtro global da tela.</span>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
-              <thead onClick={(event) => {
-                const header = (event.target as HTMLElement).closest('th');
-                if (!header) return;
-                const label = header.textContent?.toLowerCase() ?? '';
-                if (label.includes('descri')) {
-                  setIsDescriptionCollapsed((value) => !value);
-                }
-              }}>
+              <thead>
                 <tr style={{ background: '#1E293B' }} className="text-white">
                   <th
                     className="text-left px-2 py-2 font-semibold whitespace-nowrap w-12 cursor-pointer select-none group hover:bg-slate-700 transition-colors"
@@ -994,7 +1128,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                   <th className="text-center px-2 py-2 font-semibold whitespace-nowrap min-w-[90px]">Segmento</th>
                   <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Parceiro</th>
                   <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Canal</th>
-                  <th className="text-left px-2 py-2 font-semibold whitespace-nowrap min-w-[130px]">Descrição</th>
+                  {!isDescriptionCollapsed && <th className="text-left px-2 py-2 font-semibold whitespace-nowrap min-w-[130px]">Descrição</th>}
                   <th
                     className="text-center px-2 py-2 font-semibold whitespace-nowrap cursor-pointer select-none group hover:bg-slate-700 transition-colors"
                     onClick={() => handleSort('baseEntregue')}
@@ -1123,9 +1257,17 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                       </td>
                       <td className={`px-2 py-1.5 text-center ${detailLeadCellClass(color, isBanded)}`}>
                         {row.segmento ? (
-                          <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${color?.bg ?? 'bg-slate-100'} ${color?.text ?? 'text-slate-600'} border ${color?.border ? 'border-current' : 'border-slate-200'}`}>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              applyGlobalSegmentFilter(row.segmento);
+                            }}
+                            className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${color?.bg ?? 'bg-slate-100'} ${color?.text ?? 'text-slate-600'} border ${color?.border ? 'border-current' : 'border-slate-200'}`}
+                            title="Aplicar este segmento no filtro global"
+                          >
                             {row.segmento}
-                          </span>
+                          </button>
                         ) : (
                           <span className="text-slate-400 text-xs">—</span>
                         )}
@@ -1138,9 +1280,17 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                       </td>
                       {/* Canal */}
                       <td className="px-2 py-1.5 whitespace-nowrap text-center bg-white">
-                        <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap border ${CANAL_COLORS[row.canal ?? ''] ?? 'bg-slate-50 text-slate-500 border-slate-200'}`}>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (row.canal) applyGlobalCanalFilter(row.canal);
+                          }}
+                          className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap border ${CANAL_COLORS[row.canal ?? ''] ?? 'bg-slate-50 text-slate-500 border-slate-200'}`}
+                          title="Aplicar este canal no filtro global"
+                        >
                           {row.canal || '—'}
-                        </span>
+                        </button>
                       </td>
                       {/* Descrição */}
                       {!isDescriptionCollapsed && <td className="px-2 py-1.5 bg-white" onClick={e => e.stopPropagation()}>
