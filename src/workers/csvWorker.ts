@@ -133,9 +133,11 @@ const handleFramework = (csvText: string) => {
                 const errors: string[] = [];
 
                 rawRows.forEach((row, idx) => {
-                    const mappedRow: any = {};
+                    const mappedRow: any = { ...row };
                     Object.entries(columnMap).forEach(([standardKey, csvKey]) => {
-                        if (csvKey) mappedRow[standardKey] = row[csvKey];
+                        if (csvKey && standardKey !== csvKey) {
+                            mappedRow[standardKey] = row[csvKey];
+                        }
                     });
 
                     const validation = FrameworkRowSchema.safeParse(mappedRow);

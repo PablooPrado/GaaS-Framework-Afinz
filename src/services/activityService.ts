@@ -250,8 +250,8 @@ export const syncFrameworkActivities = async (
             "Cartões Gerados": a.kpis?.cartoes ?? parseNum(a.raw?.['Cartões Gerados']),
             "Aprovados": a.kpis?.aprovados ?? parseNum(a.raw?.['Aprovados']),
             "Propostas": a.kpis?.propostas ?? parseNum(a.raw?.['Propostas']),
-            "Emissões Independentes": 0, // Ajustar se tiver coluna
-            "Emissões Assistidas": 0
+            "Emissões Independentes": parseNum(a.raw?.['Emissões Independentes']),
+            "Emissões Assistidas": parseNum(a.raw?.['Emissões Assistidas'])
         };
     });
 

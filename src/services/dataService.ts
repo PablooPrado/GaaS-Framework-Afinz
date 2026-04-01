@@ -102,6 +102,9 @@ export const mapSqlToActivity = (row: any): Activity => {
         'Aprovados': row['Aprovados'],
         'Propostas': row['Propostas'],
         'CAC': row['CAC'],
+        'Emissões Independentes': row['Emissões Independentes'],
+        'Emissões Assistidas': row['Emissões Assistidas'],
+        ...row, // Preserve any newly added columns from DB
     };
 
     return {
