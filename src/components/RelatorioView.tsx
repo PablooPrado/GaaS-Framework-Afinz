@@ -166,7 +166,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
   const [selectedActivityRow, setSelectedActivityRow] = useState<ActivityRow | null>(null);
 
   // ── Filtros Destaque ──
-  const [destaqueFilter, setDestaqueFilter] = useState<'top-conversores' | 'aguardando' | null>(null);
+  const [destaqueFilter, setDestaqueFilter] = useState<'top-conversores' | 'conversores' | 'aguardando' | null>(null);
   const [showDestaqueMenu, setShowDestaqueMenu] = useState(false);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   const [tableSearch, setTableSearch] = useState('');
@@ -338,8 +338,11 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
       const withEmissoes = rows.filter(r => r.emissoes > 0);
       const base = withEmissoes.length > 0 ? withEmissoes : rows;
       const sorted = [...base].sort((a, b) => b.taxaConversaoBase - a.taxaConversaoBase);
-      const top20 = Math.max(1, Math.ceil(sorted.length * 0.2));
-      return sorted.slice(0, top20);
+      const top40 = Math.max(3, Math.ceil(sorted.length * 0.4));
+      return sorted.slice(0, top40);
+    }
+    if (destaqueFilter === 'conversores') {
+      return rows.filter(r => r.emissoes > 0);
     }
     if (destaqueFilter === 'aguardando') {
       return rows.filter(r => r.aguardando);
@@ -452,6 +455,12 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
     setDetailCanalFilter(null);
     setDestaqueFilter(null);
   }, []);
+
+  const destaqueOptions = [
+    { key: 'top-conversores' as const, label: 'Top Conversores', desc: 'Top 40% por taxa de conversão entre os disparos conversores' },
+    { key: 'conversores' as const, label: 'Conversores', desc: 'Todos os disparos com emissões/conversão' },
+    { key: 'aguardando' as const, label: 'Aguardando Resultado', desc: 'Disparos em janela D-3' },
+  ];
 
   const exportSegmento = useCallback(() => {
     const headers = ['Segmento', 'Base Enviada', 'Base Entregue', '% Entrega', 'Propostas', '% Proposta', 'Aprovados', '% Aprovação', 'Emissões', '% Finalização', 'Custo/Cartão', 'Custo Total', '% Conv da Base'];
@@ -932,18 +941,17 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                   <Info size={13} />
                   {destaqueFilter === 'top-conversores'
                     ? 'Top Conversores'
+                    : destaqueFilter === 'conversores'
+                    ? 'Conversores'
                     : destaqueFilter === 'aguardando'
                     ? 'Aguardando'
                     : 'Filtros'}
                   {destaqueFilter && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />}
                 </button>
                 {showDestaqueMenu && (
-                  <div className="absolute right-0 top-8 z-20 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 min-w-[200px]">
+                  <div className="absolute right-0 top-8 z-20 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 min-w-[240px]">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-3 pt-1 pb-1.5">Filtros</p>
-                    {([
-                      { key: 'top-conversores' as const, label: '🏆 Top Conversores', desc: 'Top 20% por taxa de conversão' },
-                      { key: 'aguardando' as const, label: '⏳ Aguardando Resultado', desc: 'Disparos em janela D-3' },
-                    ] as const).map(opt => (
+                    {destaqueOptions.map(opt => (
                       <button
                         key={opt.key}
                         onClick={() => { setDestaqueFilter(destaqueFilter === opt.key ? null : opt.key); setShowDestaqueMenu(false); }}
@@ -1410,3 +1418,4 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
     </>
   );
 };
+
