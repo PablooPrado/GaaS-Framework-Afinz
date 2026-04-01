@@ -153,9 +153,20 @@ const handleFramework = (csvText: string) => {
                 let validCount = 0;
                 const errors: string[] = [];
 
+                // Pre-compute mapped keys and Sets outside the loop (CRITICAL Performance Fix)
+                const columnMapEntries = Object.entries(columnMap);
+                const standardMappedKeysSet = new Set(Object.values(columnMap));
+                
+                // Fields to always ignore in prunedRaw (Standard IDs)
+                standardMappedKeysSet.add('Activity name / Taxonomia');
+                standardMappedKeysSet.add('Data de Disparo');
+                standardMappedKeysSet.add('BU');
+
                 rawRows.forEach((row, idx) => {
                     const mappedRow: any = { ...row };
-                    Object.entries(columnMap).forEach(([standardKey, csvKey]) => {
+                    
+                    // Efficient Mapping (O(C) where C is our standard map size)
+                    columnMapEntries.forEach(([standardKey, csvKey]) => {
                         if (csvKey && standardKey !== csvKey) {
                             mappedRow[standardKey] = row[csvKey];
                         }
@@ -190,12 +201,11 @@ const handleFramework = (csvText: string) => {
                         jornadaValue = 'Carrinho Abandonado';
                     }
 
-                    // Memory Optimization: Prune row data to only keep unmapped/extra columns
+                    // Ultra-Fast Memory Pruning: use Set for O(1) lookup
                     const prunedRaw: any = {};
-                    const standardMappedKeys = Object.values(columnMap);
                     Object.entries(validRow).forEach(([k, v]) => {
-                        // Keep if it's an extra column (dynamic flexibility)
-                        if (!standardMappedKeys.includes(k) && k !== 'Activity name / Taxonomia' && k !== 'Data de Disparo' && k !== 'BU') {
+                        // Skip if it's a standard/mapped column or empty noise
+                        if (!standardMappedKeysSet.has(k) && v !== null && v !== undefined && v !== '') {
                             prunedRaw[k] = v;
                         }
                     });
@@ -229,7 +239,7 @@ const handleFramework = (csvText: string) => {
                             cac: parseCurrency(validRow['CAC']),
                             custoTotal: parseCurrency(validRow['Custo Total Campanha'])
                         },
-                        raw: prunedRaw // Now much smaller
+                        raw: prunedRaw // Now ultra efficient
                     };
                     newActivities.push(activity);
                     validCount++;
