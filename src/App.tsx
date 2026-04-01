@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, Component, ErrorInfo, ReactNode } from 'react';
 import { Menu } from 'lucide-react';
 import { CSVUpload } from './components/CSVUpload';
 import { InlineFilterBar } from './components/InlineFilterBar';
@@ -29,6 +29,44 @@ import { AnimatePresence } from 'framer-motion';
 import { PageTransition } from './components/layout/PageTransition';
 import './App.css';
 import { useAuth } from './context/AuthContext';
+
+class AppErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[AppErrorBoundary] Render error caught:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-screen w-full bg-slate-50 flex flex-col items-center justify-center gap-4 p-8">
+          <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 shadow-lg p-8 text-center">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-red-500 text-2xl">!</span>
+            </div>
+            <h2 className="text-lg font-bold text-slate-800 mb-2">Algo deu errado</h2>
+            <p className="text-slate-500 text-sm mb-6">Ocorreu um erro inesperado. Clique abaixo para tentar novamente.</p>
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-medium text-sm transition-colors"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function App() {
   const { user, loading: authLoading } = useAuth();
@@ -190,10 +228,15 @@ function App() {
   }
 
   if (activeTab === 'midia-paga') {
-    return <PaidMediaAfinzApp onBack={() => setTab('launch')} />;
+    return (
+      <AppErrorBoundary>
+        <PaidMediaAfinzApp onBack={() => setTab('launch')} />
+      </AppErrorBoundary>
+    );
   }
 
   return (
+    <AppErrorBoundary>
     <MainLayout
       onHeaderMouseEnter={openFilterDrop}
     >
@@ -359,6 +402,7 @@ function App() {
         )}
       </div>
     </MainLayout>
+    </AppErrorBoundary>
   );
 }
 

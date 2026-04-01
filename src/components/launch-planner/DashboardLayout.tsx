@@ -19,11 +19,7 @@ interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayClick, onProgramDispatch }) => {
     const [displayDate, setDisplayDate] = React.useState(new Date());
     const { goals, b2cData } = useAppStore();
-    const { startDate, endDate, compareEnabled, setPeriod, setPreset } = usePeriod();
-
-    useEffect(() => {
-        setPreset('thisMonth');
-    }, []);
+    const { startDate, endDate, compareEnabled, setPeriod } = usePeriod();
 
     useEffect(() => {
         if (endDate && format(endDate, 'yyyy-MM') !== format(displayDate, 'yyyy-MM')) {
@@ -39,14 +35,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
     const allActivities = useMemo(() => Object.values(data).flat(), [data]);
 
     const currentPeriodActivities = useMemo(() => {
-        return allActivities.filter(a =>
-            isWithinInterval(a.dataDisparo, { start: startDate, end: endDate })
-        );
+        return allActivities.filter(a => {
+            if (!a.dataDisparo || isNaN(a.dataDisparo.getTime())) return false;
+            return isWithinInterval(a.dataDisparo, { start: startDate, end: endDate });
+        });
     }, [allActivities, startDate, endDate]);
 
     const currentB2CData = useMemo(() => {
         return b2cData.filter(d => {
             const date = typeof d.data === 'string' ? new Date(d.data + 'T12:00:00') : new Date(d.data);
+            if (isNaN(date.getTime())) return false;
             return isWithinInterval(date, { start: startDate, end: endDate });
         });
     }, [b2cData, startDate, endDate]);
@@ -58,9 +56,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ data, onDayCli
         const prevStart = subDays(startDate, duration);
         const prevEnd = subDays(endDate, duration);
 
-        return allActivities.filter(a =>
-            isWithinInterval(a.dataDisparo, { start: prevStart, end: prevEnd })
-        );
+        return allActivities.filter(a => {
+            if (!a.dataDisparo || isNaN(a.dataDisparo.getTime())) return false;
+            return isWithinInterval(a.dataDisparo, { start: prevStart, end: prevEnd });
+        });
     }, [allActivities, startDate, endDate, compareEnabled]);
 
     return (

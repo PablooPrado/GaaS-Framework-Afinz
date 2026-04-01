@@ -150,6 +150,13 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
   const [showDestaqueMenu, setShowDestaqueMenu] = useState(false);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
 
+  // Reset internal filters when external data (global filters) change
+  useEffect(() => {
+    setDestaqueFilter(null);
+    setSortKey(null);
+    setSortDir('desc');
+  }, [data]);
+
   // ── Ordenação ──
   const [sortKey, setSortKey] = useState<keyof DetailRow | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -232,6 +239,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
 
   const detailRows = useMemo((): DetailRow[] => {
     return allActivities
+      .filter(a => a.dataDisparo && !isNaN(a.dataDisparo.getTime()))
       .map(a => {
         const baseEnviada = a.kpis.baseEnviada ?? 0;
         const baseEntregue = a.kpis.baseEntregue ?? 0;

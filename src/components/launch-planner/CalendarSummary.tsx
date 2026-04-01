@@ -25,7 +25,10 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
     const allActivities = useMemo(() => Object.values(data).flat(), [data]);
 
     const getDayMetrics = (day: Date) => {
-        const activities = allActivities.filter(a => isSameDay(a.dataDisparo, day));
+        const activities = allActivities.filter(a => {
+            if (!a.dataDisparo || isNaN(a.dataDisparo.getTime())) return false;
+            return isSameDay(a.dataDisparo, day);
+        });
         const count = activities.length;
         const hasDraft = activities.some(a => a.status === 'Rascunho');
 
