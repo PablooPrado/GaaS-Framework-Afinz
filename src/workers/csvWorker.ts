@@ -120,6 +120,24 @@ const handleFramework = (csvText: string) => {
                 columnMap['Custo Total Campanha'] = findCol('Custo Total Campanha') ?? 'Custo Total Campanha';
                 columnMap['Emissões Independentes'] = findCol('Emissões Independentes') ?? 'Emissões Independentes';
                 columnMap['Emissões Assistidas'] = findCol('Emissões Assistidas') ?? 'Emissões Assistidas';
+                
+                // Add columns used by activityService.ts but not in core Activity object
+                columnMap['Data Fim'] = findCol('Data Fim') ?? 'Data Fim';
+                columnMap['Produto'] = findCol('Produto') ?? 'Produto';
+                columnMap['Promocional'] = findCol('Promocional') ?? 'Promocional';
+                columnMap['Subgrupos'] = findCol('Subgrupos') ?? 'Subgrupos';
+                columnMap['Etapa de aquisição'] = findCol('Etapa de aquisição', ['Etapa']) ?? 'Etapa de aquisição';
+                columnMap['% Otimização de base'] = findCol('% Otimização de base') ?? '% Otimização de base';
+                columnMap['Custo Unitário Oferta'] = findCol('Custo Unitário Oferta') ?? 'Custo Unitário Oferta';
+                columnMap['Custo Total da Oferta'] = findCol('Custo Total da Oferta') ?? 'Custo Total da Oferta';
+                columnMap['Custo unitário do canal'] = findCol('Custo unitário do canal') ?? 'Custo unitário do canal';
+                columnMap['Custo total canal'] = findCol('Custo total canal') ?? 'Custo total canal';
+                columnMap['Taxa de Clique'] = findCol('Taxa de Clique') ?? 'Taxa de Clique';
+                columnMap['Oferta 2'] = findCol('Oferta 2') ?? 'Oferta 2';
+                columnMap['Promocional 2'] = findCol('Promocional 2') ?? 'Promocional 2';
+                columnMap['SIGLA'] = findCol('SIGLA') ?? 'SIGLA';
+                columnMap['SIGLA.1'] = findCol('SIGLA.1') ?? 'SIGLA.1';
+                columnMap['SIGLA.2'] = findCol('SIGLA.2') ?? 'SIGLA.2';
 
                 const missing = requiredColumns.filter(col => !columnMap[col]);
                 if (missing.length > 0) {
@@ -172,6 +190,16 @@ const handleFramework = (csvText: string) => {
                         jornadaValue = 'Carrinho Abandonado';
                     }
 
+                    // Memory Optimization: Prune row data to only keep unmapped/extra columns
+                    const prunedRaw: any = {};
+                    const standardMappedKeys = Object.values(columnMap);
+                    Object.entries(validRow).forEach(([k, v]) => {
+                        // Keep if it's an extra column (dynamic flexibility)
+                        if (!standardMappedKeys.includes(k) && k !== 'Activity name / Taxonomia' && k !== 'Data de Disparo' && k !== 'BU') {
+                            prunedRaw[k] = v;
+                        }
+                    });
+
                     const activity: Activity = {
                         id: validRow['Activity name / Taxonomia'],
                         dataDisparo: date,
@@ -201,7 +229,7 @@ const handleFramework = (csvText: string) => {
                             cac: parseCurrency(validRow['CAC']),
                             custoTotal: parseCurrency(validRow['Custo Total Campanha'])
                         },
-                        raw: validRow
+                        raw: prunedRaw // Now much smaller
                     };
                     newActivities.push(activity);
                     validCount++;

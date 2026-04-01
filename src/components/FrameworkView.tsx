@@ -102,12 +102,41 @@ interface SelectedNode { bu?: string; segmento?: string; canal?: string }
 export const FrameworkView: React.FC = () => {
     const { frameworkData, setFrameworkData, activities } = useAppStore();
 
-    // ── Data source — priority: Supabase (activities.raw), fallback: CSV ──────
+    // ── Data source — reconstructed from Activity fields + pruned raw data ──────
     const displayData = useMemo<FrameworkRow[]>(() => {
         if (activities && activities.length > 0) {
-            return (activities as Activity[])
-                .map(a => a.raw)
-                .filter((r): r is FrameworkRow => Boolean(r));
+            return (activities as Activity[]).map(a => {
+                const row: any = { 
+                    ...a.raw,
+                    'Activity name / Taxonomia': a.id,
+                    'Data de Disparo': format(a.dataDisparo, 'yyyy-MM-dd'),
+                    'BU': a.bu,
+                    'Canal': a.canal,
+                    'Segmento': a.segmento,
+                    'Jornada': a.jornada,
+                    'Parceiro': a.parceiro,
+                    'Oferta': a.oferta,
+                    'Ordem de disparo': a.ordemDisparo,
+                    'Safra': a.safraKey,
+                    // KPIs
+                    'Base Total': a.kpis?.baseEnviada,
+                    'Base Acionável': a.kpis?.baseEntregue,
+                    'Taxa de Entrega': a.kpis?.taxaEntrega,
+                    'Propostas': a.kpis?.propostas,
+                    'Taxa de Proposta': a.kpis?.taxaPropostas,
+                    'Aprovados': a.kpis?.aprovados,
+                    'Taxa de Aprovação': a.kpis?.taxaAprovacao,
+                    'Cartões Gerados': a.kpis?.cartoes,
+                    'Taxa de Finalização': a.kpis?.taxaFinalizacao,
+                    'Taxa de Conversão': a.kpis?.taxaConversao,
+                    'Taxa de Abertura': a.kpis?.taxaAbertura,
+                    'CAC': a.kpis?.cac,
+                    'Custo Total Campanha': a.kpis?.custoTotal,
+                    'Emissões Independentes': a.kpis?.emissoesIndependentes,
+                    'Emissões Assistidas': a.kpis?.emissoesAssistidas
+                };
+                return row as FrameworkRow;
+            });
         }
         return frameworkData;
     }, [activities, frameworkData]);
@@ -127,6 +156,7 @@ export const FrameworkView: React.FC = () => {
     const [edits, setEdits] = useState<{ [idx: number]: Partial<FrameworkRow> }>({});
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [visibleCount, setVisibleCount] = useState(100);
 
     const { versions, currentVersion, saveNewVersion, restoreVersion, deleteVersion, exportVersion, storageUsage } = useVersionManager();
 
@@ -250,6 +280,7 @@ export const FrameworkView: React.FC = () => {
     const selectNode = (bu?: string, segmento?: string, canal?: string) => {
         setSelected({ bu, segmento, canal });
         setDetailRow(null);
+        setVisibleCount(100); // Reset on filter change
         if (bu && !expandedBUs.has(bu)) setExpandedBUs(prev => new Set([...prev, bu]));
     };
 
@@ -635,8 +666,8 @@ export const FrameworkView: React.FC = () => {
                                                     </span>
                                                 </div>
 
-                                                {/* Result rows */}
-                                                {group.rows.map(row => (
+                                                {/* Result rows (Optimized) */}
+                                                {group.rows.slice(0, 50).map(row => (
                                                     <button
                                                         key={row._origIdx}
                                                         onClick={() => setDetailRow(row)}
@@ -662,6 +693,11 @@ export const FrameworkView: React.FC = () => {
                                                         <ExternalLink size={12} className="text-slate-300 shrink-0 group-hover:text-[#00c6cc] transition-colors" />
                                                     </button>
                                                 ))}
+                                                {group.rows.length > 50 && (
+                                                    <div className="p-2 text-center text-[10px] text-slate-400 italic">
+                                                        e mais {group.rows.length - 50} resultados... refine sua busca.
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })
@@ -695,7 +731,7 @@ export const FrameworkView: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {flatRows.map((row, i) => {
+                                        {flatRows.slice(0, visibleCount).map((row, i) => {
                                             const buCfg = BU_CONFIG[row.BU] || BU_CONFIG['B2C'];
                                             const isSelected = detailRow?._origIdx === row._origIdx;
                                             return (
@@ -738,6 +774,20 @@ export const FrameworkView: React.FC = () => {
                                         })}
                                     </tbody>
                                 </table>
+
+                                {flatRows.length > visibleCount && (
+                                    <div className="p-8 flex flex-col items-center gap-4 bg-slate-50/30 border-t border-slate-100">
+                                        <p className="text-xs text-slate-500 italic">
+                                            Exibindo {visibleCount} de {flatRows.length} linhas para performance.
+                                        </p>
+                                        <button
+                                            onClick={() => setVisibleCount(prev => prev + 200)}
+                                            className="px-6 py-2 bg-white border border-slate-200 text-slate-700 rounded-full text-xs font-bold hover:bg-slate-50 hover:border-blue-300 transition-all shadow-sm"
+                                        >
+                                            Ver mais 200 linhas
+                                        </button>
+                                    </div>
+                                )}
                                 {flatRows.length === 0 && (
                                     <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
                                         <Folder size={28} className="opacity-30" />
