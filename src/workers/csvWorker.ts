@@ -117,6 +117,8 @@ const handleFramework = (csvText: string) => {
                 columnMap['Taxa de Abertura'] = findCol('Taxa de Abertura')!;
                 columnMap['CAC'] = findCol('CAC')!;
                 columnMap['Custo Total Campanha'] = findCol('Custo Total Campanha')!;
+                columnMap['Emissões Independentes'] = findCol('Emissões Independentes')!;
+                columnMap['Emissões Assistidas'] = findCol('Emissões Assistidas')!;
 
                 const missing = requiredColumns.filter(col => !columnMap[col]);
                 if (missing.length > 0) {
@@ -193,6 +195,8 @@ const handleFramework = (csvText: string) => {
                             taxaConversao: parsePercentage(validRow['Taxa de Conversão']),
                             taxaAbertura: parsePercentage(validRow['Taxa de Abertura']),
                             cartoes: parseNumber(validRow['Cartões Gerados']),
+                            emissoesIndependentes: parseNumber(validRow['Emissões Independentes']),
+                            emissoesAssistidas: parseNumber(validRow['Emissões Assistidas']),
                             cac: parseCurrency(validRow['CAC']),
                             custoTotal: parseCurrency(validRow['Custo Total Campanha'])
                         },

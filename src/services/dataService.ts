@@ -54,20 +54,24 @@ export const mapSqlToActivity = (row: any): Activity => {
     const promocional = normalizeText(row['Promocional']);
 
     // Reconstruct Raw Object (for compatibility)
-    // The DB returns keys exactly as defined in the CREATE TABLE (Human Readable)
+    // The DB returns keys exactly as defined in the CREATE TABLE (Human Readable).
+    // IMPORTANT: ...row is spread FIRST so that all explicit field mappings below
+    // take precedence. This prevents SQL system/renamed columns (e.g. lowercase
+    // 'jornada', 'prog_gaas', 'created_at') from overwriting the human-readable keys.
     const raw: FrameworkRow = {
+        ...row, // Base: all DB columns (includes any newly added dynamic columns)
+        // Explicit overrides — corrects renamed/reformatted DB columns:
         id: row.id,
         'Activity name / Taxonomia': row['Activity name / Taxonomia'],
         'Data de Disparo': row['Data de Disparo'],
         'Data Fim': row['Data Fim'],
         'BU': bu,
         'Canal': canal,
-        // Jornada e Siglas que mudam de nome
-        'Jornada': jornada,
+        'Jornada': jornada,   // DB stores as lowercase 'jornada'
         'Parceiro': parceiro,
-        'SIGLA': row['SIGLA_Parceiro'],
+        'SIGLA': row['SIGLA_Parceiro'],   // DB stores as SIGLA_Parceiro
         'Segmento': segmento,
-        'SIGLA.1': row['SIGLA_Segmento'],
+        'SIGLA.1': row['SIGLA_Segmento'], // DB stores as SIGLA_Segmento
         'Subgrupos': row['Subgrupos'],
         'Etapa de aquisição': row['Etapa de aquisição'],
         'Ordem de disparo': row['Ordem de disparo'],
@@ -75,21 +79,20 @@ export const mapSqlToActivity = (row: any): Activity => {
         'Perfil de Crédito': row['Perfil de Crédito'],
         'Produto': row['Produto'],
         'Oferta': oferta,
-        'SIGLA.2': row['SIGLA_Oferta'],
+        'SIGLA.2': row['SIGLA_Oferta'],   // DB stores as SIGLA_Oferta
         'Oferta 2': row['Oferta 2'],
         'Promocional': promocional,
         'Promocional 2': row['Promocional 2'],
-        'Disparado?': row['status'] === 'Realizado' ? 'Sim' : 'Não', // Infer or use if column existed
+        'Disparado?': row['status'] === 'Realizado' ? 'Sim' : 'Não',
         'Base Total': row['Base Total'],
         'Base Acionável': row['Base Acionável'],
         '% Otimização de base': row['% Otimização de base'],
-        'Base Enviada': row['Base Total'], // Fallback or mapping?
+        'Base Enviada': row['Base Total'],
         'Custo Unitário Oferta': row['Custo Unitário Oferta'],
         'Custo Total da Oferta': row['Custo Total da Oferta'],
         'Custo unitário do canal': row['Custo unitário do canal'],
         'Custo total canal': row['Custo total canal'],
         'Custo Total Campanha': row['Custo Total Campanha'],
-        // Rates
         'Taxa de Entrega': row['Taxa de Entrega'],
         'Taxa de Abertura': row['Taxa de Abertura'],
         'Taxa de Clique': row['Taxa de Clique'],
@@ -97,14 +100,12 @@ export const mapSqlToActivity = (row: any): Activity => {
         'Taxa de Aprovação': row['Taxa de Aprovação'],
         'Taxa de Finalização': row['Taxa de Finalização'],
         'Taxa de Conversão': row['Taxa de Conversão'],
-        // Volumes e KPIs
         'Cartões Gerados': row['Cartões Gerados'],
         'Aprovados': row['Aprovados'],
         'Propostas': row['Propostas'],
         'CAC': row['CAC'],
         'Emissões Independentes': row['Emissões Independentes'],
         'Emissões Assistidas': row['Emissões Assistidas'],
-        ...row, // Preserve any newly added columns from DB
     };
 
     return {
@@ -133,6 +134,8 @@ export const mapSqlToActivity = (row: any): Activity => {
             taxaConversao: row['Taxa de Conversão'],
             taxaAbertura: row['Taxa de Abertura'],
             cartoes: row['Cartões Gerados'],
+            emissoesIndependentes: row['Emissões Independentes'],
+            emissoesAssistidas: row['Emissões Assistidas'],
             cac: row['CAC'],
             custoTotal: row['Custo Total Campanha']
         },

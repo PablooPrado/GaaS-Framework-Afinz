@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { parseDate } from '../utils/formatters';
 import { ActivityFormSchema, ActivityFormInput } from '../schemas/ActivityFormSchema';
 import { ActivityRow } from '../types/activity';
 
@@ -169,24 +170,30 @@ export const syncFrameworkActivities = async (
 
     // 2. Mapear para Formato SQL (Aspas e Tipos)
     const sqlBatch = frameworkActivities.map(a => {
-        // Helper to parse numbers safely
-        const parseNum = (val: any) => {
-            if (typeof val === 'number') return val;
-            if (!val) return 0;
-            // Remove R$, %, spaces
-            /* 
-             * OBS: O Worker já faz parse parcial, mas 'a.raw' tem o dado bruto.
-             *      'a.kpis' tem o dado limpo.
-             *      Vamos usar 'a.kpis' onde possível, ou limpar de 'a.raw'.
-             */
-            let s = String(val).replace(/[R$\s%]/g, '');
+        // Helper to parse numbers safely — returns null for blank/invalid cells
+        // IMPORTANT: must return null (not 0) so blank CSV cells are not stored as zero
+        const parseNum = (val: any): number | null => {
+            if (typeof val === 'number') return Number.isFinite(val) ? val : null;
+            if (val === null || val === undefined || val === '' || val === 'N/A' || val === '#DIV/0!') return null;
+            let s = String(val).trim().replace(/[R$\s%]/g, '');
+            if (!s || s === '-') return null;
             // BR Format handling (1.000,00)
             if (s.includes(',') && s.includes('.')) {
                 s = s.replace(/\./g, '').replace(',', '.'); // 1.000,00 -> 1000.00
             } else if (s.includes(',')) {
                 s = s.replace(',', '.'); // 10,5 -> 10.5
             }
-            return parseFloat(s) || 0;
+            const n = parseFloat(s);
+            return Number.isFinite(n) ? n : null;
+        };
+
+        // Helper to safely serialize a date value (Date object OR any string format) to ISO
+        const toISOSafe = (val: any): string | null => {
+            if (!val) return null;
+            if (val instanceof Date) return Number.isFinite(val.getTime()) ? val.toISOString() : null;
+            const parsed = parseDate(String(val));
+            if (parsed && Number.isFinite(parsed.getTime())) return parsed.toISOString();
+            return null;
         };
 
         return {
@@ -198,8 +205,8 @@ export const syncFrameworkActivities = async (
             // Mapeando o ID "slug" do CSV para o campo de Taxonomia
             "Activity name / Taxonomia": a.id || a.raw?.['Activity name / Taxonomia'],
 
-            "Data de Disparo": a.dataDisparo ? new Date(a.dataDisparo).toISOString() : null,
-            "Data Fim": a.raw?.['Data Fim'] ? new Date(a.raw['Data Fim']).toISOString() : null,
+            "Data de Disparo": toISOSafe(a.dataDisparo),
+            "Data Fim": toISOSafe(a.raw?.['Data Fim']),
 
             "BU": a.bu,
             "Canal": a.canal,
@@ -246,12 +253,12 @@ export const syncFrameworkActivities = async (
             "Taxa de Finalização": a.kpis?.taxaFinalizacao ?? parseNum(a.raw?.['Taxa de Finalização']),
             "Taxa de Conversão": a.kpis?.taxaConversao ?? parseNum(a.raw?.['Taxa de Conversão']),
 
-            // Volumes
+            // Volumes e Resultados
             "Cartões Gerados": a.kpis?.cartoes ?? parseNum(a.raw?.['Cartões Gerados']),
             "Aprovados": a.kpis?.aprovados ?? parseNum(a.raw?.['Aprovados']),
             "Propostas": a.kpis?.propostas ?? parseNum(a.raw?.['Propostas']),
-            "Emissões Independentes": parseNum(a.raw?.['Emissões Independentes']),
-            "Emissões Assistidas": parseNum(a.raw?.['Emissões Assistidas'])
+            "Emissões Independentes": a.kpis?.emissoesIndependentes ?? parseNum(a.raw?.['Emissões Independentes']),
+            "Emissões Assistidas": a.kpis?.emissoesAssistidas ?? parseNum(a.raw?.['Emissões Assistidas'])
         };
     });
 

@@ -9,6 +9,8 @@ export interface KPIs {
   aprovados: number | null;
   taxaAprovacao: number | null;
   emissoes: number | null;
+  emissoesIndependentes: number | null;
+  emissoesAssistidas: number | null;
   taxaFinalizacao: number | null;
   taxaConversao: number | null;
   taxaAbertura: number | null;
