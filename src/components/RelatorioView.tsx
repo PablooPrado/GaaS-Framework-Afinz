@@ -140,24 +140,10 @@ const PARCEIRO_COLORS: Record<string, string> = {
 export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }) => {
   const { viewSettings, setGlobalFilters } = useAppStore();
   const globalFilters = viewSettings.filtrosGlobais;
+  // data = advancedFilteredData já vem filtrado por segmentos, canais, jornadas, parceiros, BU e período
+  // Não re-filtrar aqui para evitar dessincronização entre as fontes de dados
   const allActivities = useMemo(() => Object.values(data).flat(), [data]);
-  const reportActivities = useMemo(() => (
-    allActivities.filter((activity) => {
-      if (globalFilters.segmentos.length > 0 && !globalFilters.segmentos.includes(activity.segmento)) {
-        return false;
-      }
-      if (globalFilters.canais.length > 0 && !globalFilters.canais.includes(activity.canal)) {
-        return false;
-      }
-      if (globalFilters.jornadas.length > 0 && !globalFilters.jornadas.includes(activity.jornada)) {
-        return false;
-      }
-      if (globalFilters.parceiros.length > 0 && !globalFilters.parceiros.includes(activity.parceiro)) {
-        return false;
-      }
-      return true;
-    })
-  ), [allActivities, globalFilters.canais, globalFilters.jornadas, globalFilters.parceiros, globalFilters.segmentos]);
+  const reportActivities = allActivities;
 
   // ── Descrições por disparo ──
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
