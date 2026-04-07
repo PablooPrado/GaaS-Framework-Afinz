@@ -123,7 +123,7 @@ export const CampaignMapperModal: React.FC<CampaignMapperModalProps> = ({ isOpen
                                                     <select
                                                         value={selectValue}
                                                         onChange={(e) => {
-                                                            const val = e.target.value as 'marca' | 'b2c' | 'plurix';
+                                                            const val = e.target.value as 'marca' | 'b2c' | 'plurix' | 'seguros';
                                                             if (val) {
                                                                 updateMapping(campaignName, val);
                                                             }
@@ -136,6 +136,7 @@ export const CampaignMapperModal: React.FC<CampaignMapperModalProps> = ({ isOpen
                                                         <option value="marca">Branding (Marca)</option>
                                                         <option value="b2c">Performance (B2C)</option>
                                                         <option value="plurix">Plurix</option>
+                                                        <option value="seguros">Seguros</option>
                                                     </select>
                                                 </td>
                                             </tr>

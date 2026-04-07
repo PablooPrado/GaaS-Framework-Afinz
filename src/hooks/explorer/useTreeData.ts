@@ -6,6 +6,7 @@ const BU_COLORS: Record<string, string> = {
   B2C: '#3B82F6',
   B2B2C: '#10B981',
   Plurix: '#A855F7',
+  Seguros: '#F97316',
 };
 
 const CANAL_COLORS: Record<string, string> = {

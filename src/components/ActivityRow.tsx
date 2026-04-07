@@ -12,7 +12,8 @@ interface ActivityRowProps {
 const BU_COLORS: { [key: string]: string } = {
   B2C: 'text-blue-300',
   B2B2C: 'text-emerald-300',
-  Plurix: 'text-purple-300'
+  Plurix: 'text-purple-300',
+  Seguros: 'text-orange-300'
 };
 
 export const ActivityRow: React.FC<ActivityRowProps> = ({ activity, index }) => {

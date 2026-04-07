@@ -5,7 +5,7 @@ export interface Budget {
     id?: string;
     month: string; // "MM/yyyy"
     channel: 'meta' | 'google';
-    objective: 'marca' | 'b2c' | 'plurix';
+    objective: 'marca' | 'b2c' | 'plurix' | 'seguros';
     value: number; // Budgeted Amount
     notes?: string;
 }

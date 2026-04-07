@@ -243,6 +243,7 @@ export const dataService = {
             let mappedObjective = mappingDict[group.campaign] || group.objective;
             if (mappedObjective === 'conversion') mappedObjective = 'b2c';
             if (mappedObjective === 'brand') mappedObjective = 'marca';
+            if (mappedObjective === 'seguros' || mappedObjective === 'seguro' || mappedObjective === 'Seguros') mappedObjective = 'seguros';
 
             return {
                 date: group.date,
@@ -291,6 +292,7 @@ export const dataService = {
             let mappedObjective = mappingDict[row.campaign] || row.objective;
             if (mappedObjective === 'conversion') mappedObjective = 'b2c';
             if (mappedObjective === 'brand') mappedObjective = 'marca';
+            if (mappedObjective === 'seguros' || mappedObjective === 'seguro' || mappedObjective === 'Seguros') mappedObjective = 'seguros';
             
             return {
                 date: new Date(row.date + 'T12:00:00Z'),
@@ -372,6 +374,7 @@ export const dataService = {
             let mappedObjective = mappingDict[group.campaign] || group.objective;
             if (mappedObjective === 'conversion') mappedObjective = 'b2c';
             if (mappedObjective === 'brand') mappedObjective = 'marca';
+            if (mappedObjective === 'seguros' || mappedObjective === 'seguro' || mappedObjective === 'Seguros') mappedObjective = 'seguros';
 
             return {
                 date: group.date,
@@ -435,6 +438,7 @@ export const dataService = {
             let mappedObjective = mappingDict[row.campaign] || row.objective;
             if (mappedObjective === 'conversion') mappedObjective = 'b2c';
             if (mappedObjective === 'brand') mappedObjective = 'marca';
+            if (mappedObjective === 'seguros' || mappedObjective === 'seguro' || mappedObjective === 'Seguros') mappedObjective = 'seguros';
             
             return {
                 date: new Date(row.date + 'T12:00:00Z'),

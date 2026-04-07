@@ -3,6 +3,7 @@ import { CalendarData, FilterState, Activity } from '../../types/framework';
 import { DashboardLayout } from './DashboardLayout';
 import { DailyDetailsModal } from '../jornada/DailyDetailsModal';
 import { ProgramarDisparoModal } from '../dispatch/ProgramarDisparoModal';
+import { JornadaCreatorModal } from '../dispatch/wizard/JornadaCreatorModal';
 import { useAdvancedFilters } from '../../hooks/useAdvancedFilters';
 import { useAppStore } from '../../store/useAppStore';
 import { ActivityRow } from '../../types/activity';
@@ -19,6 +20,7 @@ interface LaunchPlannerProps {
 export const LaunchPlanner: React.FC<LaunchPlannerProps> = ({ data, onActivityUpdate }) => {
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isWizardOpen, setIsWizardOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState<ActivityRow | null>(null);
 
     // Get global filters from store
@@ -103,10 +105,7 @@ export const LaunchPlanner: React.FC<LaunchPlannerProps> = ({ data, onActivityUp
                 data={data}
                 onActivityUpdate={onActivityUpdate}
                 onDayClick={handleDayClick}
-                onProgramDispatch={() => {
-                    setEditingActivity(null);
-                    setIsModalOpen(true);
-                }}
+                onProgramDispatch={() => setIsWizardOpen(true)}
             />
 
             {selectedDate && (
@@ -119,7 +118,13 @@ export const LaunchPlanner: React.FC<LaunchPlannerProps> = ({ data, onActivityUp
                 />
             )}
 
-            {/* Modal de Programar Atividade */}
+            {/* Wizard: Nova Jornada (criação) */}
+            <JornadaCreatorModal
+                isOpen={isWizardOpen}
+                onClose={() => setIsWizardOpen(false)}
+            />
+
+            {/* Modal legado: Editar atividade existente */}
             <ProgramarDisparoModal
                 isOpen={isModalOpen}
                 onClose={() => {

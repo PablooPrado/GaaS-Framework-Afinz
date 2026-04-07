@@ -25,13 +25,15 @@ interface DayCellProps {
 const BU_BG_COLORS: { [key: string]: string } = {
   B2C: 'bg-blue-50 border-blue-200 hover:bg-blue-100',
   B2B2C: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
-  Plurix: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
+  Plurix: 'bg-purple-50 border-purple-200 hover:bg-purple-100',
+  Seguros: 'bg-orange-50 border-orange-200 hover:bg-orange-100'
 };
 
 const BU_TEXT_COLORS: { [key: string]: string } = {
   B2C: 'text-blue-600',
   B2B2C: 'text-emerald-600',
-  Plurix: 'text-purple-600'
+  Plurix: 'text-purple-600',
+  Seguros: 'text-orange-600'
 };
 
 export const DayCell: React.FC<DayCellProps> = ({

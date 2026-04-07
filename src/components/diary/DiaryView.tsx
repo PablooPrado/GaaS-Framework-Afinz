@@ -9,12 +9,14 @@ const BU_COLORS: { [key: string]: string } = {
     'B2C': 'bg-blue-500/20 text-blue-100 border-blue-500/50',
     'B2B2C': 'bg-emerald-500/20 text-emerald-100 border-emerald-500/50',
     'Plurix': 'bg-purple-500/20 text-purple-100 border-purple-500/50',
+    'Seguros': 'bg-orange-500/20 text-orange-100 border-orange-500/50',
 };
 
 const BU_BADGE: { [key: string]: string } = {
     'B2C': 'bg-blue-600 text-blue-50',
     'B2B2C': 'bg-emerald-600 text-emerald-50',
     'Plurix': 'bg-purple-600 text-purple-50',
+    'Seguros': 'bg-orange-600 text-orange-50',
 };
 
 const STATUS_CONFIG = {
@@ -285,6 +287,7 @@ export const DiaryView: React.FC = () => {
                                 <option value="B2C">B2C</option>
                                 <option value="B2B2C">B2B2C</option>
                                 <option value="Plurix">Plurix</option>
+                                <option value="Seguros">Seguros</option>
                             </select>
                         </div>
                         <div className="flex items-end">

@@ -2,7 +2,7 @@ export interface DailyMetrics {
     date: string | Date; // Allow both for compatibility
     channel: 'meta' | 'google' | 'tiktok' | 'unknown'; // Expanded
     campaign: string;
-    objective?: 'marca' | 'b2c' | 'brand' | 'conversion' | 'unknown' | 'plurix'; // Expanded compatibility
+    objective?: 'marca' | 'b2c' | 'brand' | 'conversion' | 'unknown' | 'plurix' | 'seguros'; // Expanded compatibility
     adset_name?: string;
     adset_id?: string;
     ad_name?: string;
@@ -82,11 +82,14 @@ export interface AdCreative {
     title_asset_insights?: AssetInsight[];
 }
 
+export type PaidMediaObjective = 'marca' | 'b2c' | 'plurix' | 'seguros';
+export const ALL_PAID_MEDIA_OBJECTIVES: PaidMediaObjective[] = ['marca', 'b2c', 'plurix', 'seguros'];
+
 export interface FilterState {
     dateRange: DateRange;
     timeRangeOption: TimeRangeOption;
     selectedChannels: ('meta' | 'google')[];
-    selectedObjectives: ('marca' | 'b2c' | 'plurix')[];
+    selectedObjectives: PaidMediaObjective[];
     selectedCampaigns: string[];
     selectedAdsets: string[];
     selectedAds: string[];

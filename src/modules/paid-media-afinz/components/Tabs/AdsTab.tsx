@@ -58,7 +58,7 @@ interface AdSummary {
     thumbnail_url?: string;
     mediaType: 'image' | 'video' | 'unknown';
     isStory: boolean;
-    bu: 'afinz' | 'plurix';
+    bu: 'afinz' | 'plurix' | 'seguros';
     // Creative enrichment
     body?: string;
     title?: string;
@@ -177,7 +177,7 @@ const MetaAdCard: React.FC<{
     const status = getStatus(ad.ctr, ad.cpa, avgCpa, ad.frequency);
     const gradient = GRADIENTS[hashStr(ad.adId) % GRADIENTS.length];
     const isPluriq = ad.bu === 'plurix';
-    const avatarBg = isPluriq ? 'bg-purple-600' : 'bg-blue-600';
+    const avatarBg = ad.bu === 'seguros' ? 'bg-orange-600' : isPluriq ? 'bg-purple-600' : 'bg-blue-600';
     const ctrColor = ad.ctr >= 1 ? 'text-emerald-600' : ad.ctr >= 0.5 ? 'text-amber-600' : 'text-red-500';
     const displayBody = ad.body || ad.adName;
     const displayTitle = ad.title || ad.adName;
@@ -356,7 +356,9 @@ export const AdsTab: React.FC = () => {
                     ? creative.aspect_ratio < 0.7
                     : isStoryFormat(adNameRaw, d.adset_name || '');
 
-                const bu: 'afinz' | 'plurix' = /plurix/i.test(d.campaign || '') ? 'plurix' : 'afinz';
+                const bu: 'afinz' | 'plurix' | 'seguros' = /plurix/i.test(d.campaign || '') ? 'plurix'
+                    : (d.objective === 'seguros' || /seguro/i.test(d.campaign || '')) ? 'seguros'
+                    : 'afinz';
                 raw.set(key, {
                     adId: key, adName: adNameRaw, campaign: d.campaign,
                     adset: d.adset_name, channel: d.channel, bu,

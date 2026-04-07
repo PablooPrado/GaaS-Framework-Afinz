@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { DailyMetrics, FilterState, AdCreative } from '../types';
+import type { DailyMetrics, FilterState, AdCreative, PaidMediaObjective } from '../types';
 import { endOfDay, format, startOfDay } from 'date-fns';
 import { usePeriod } from '../../../contexts/PeriodContext';
 import { dataService } from '../../../services/dataService';
@@ -13,7 +13,7 @@ interface FilterContextType {
     filters: FilterState;
     setFilters: {
         toggleChannel: (channel: 'meta' | 'google') => void;
-        toggleObjective: (obj: 'marca' | 'b2c' | 'plurix') => void;
+        toggleObjective: (obj: PaidMediaObjective) => void;
         toggleCampaign: (campaign: string) => void;
         setSelectedCampaigns: (campaigns: string[]) => void;
         setSelectedAdsets: (adsets: string[]) => void;
@@ -40,7 +40,7 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const dateTo = endOfDay(endDate);
 
     const [selectedChannels, setSelectedChannels] = useState<('meta' | 'google')[]>(['meta', 'google']);
-    const [selectedObjectives, setSelectedObjectives] = useState<('marca' | 'b2c' | 'plurix')[]>(['marca', 'b2c', 'plurix']);
+    const [selectedObjectives, setSelectedObjectives] = useState<PaidMediaObjective[]>(['marca', 'b2c', 'plurix', 'seguros']);
     const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
     const [selectedAdsets, setSelectedAdsets] = useState<string[]>([]);
     const [selectedAds, setSelectedAds] = useState<string[]>([]);
@@ -76,7 +76,7 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             const d = new Date(item.date);
             if (d < dateFrom || d > dateTo) return false;
             if (!selectedChannels.includes(item.channel as 'meta' | 'google')) return false;
-            if (item.objective && !selectedObjectives.includes(item.objective as 'marca' | 'b2c' | 'plurix')) return false;
+            if (item.objective && !selectedObjectives.includes(item.objective as PaidMediaObjective)) return false;
             return true;
         });
     }, [rawData, dateFrom, dateTo, selectedChannels, selectedObjectives]);
@@ -100,7 +100,7 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             const d = new Date(item.date);
             if (d < prevFrom || d > prevTo) return false;
             if (!selectedChannels.includes(item.channel as 'meta' | 'google')) return false;
-            if (item.objective && !selectedObjectives.includes(item.objective as 'marca' | 'b2c' | 'plurix')) return false;
+            if (item.objective && !selectedObjectives.includes(item.objective as PaidMediaObjective)) return false;
             if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return false;
             if (selectedAdsets.length > 0 && (!item.adset_name || !selectedAdsets.includes(item.adset_name))) return false;
             if (selectedAds.length > 0 && (!item.ad_name || !selectedAds.includes(item.ad_name))) return false;
@@ -138,7 +138,7 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     const toggleChannel = (ch: 'meta' | 'google') =>
         setSelectedChannels(p => p.includes(ch) ? p.filter(c => c !== ch) : [...p, ch]);
-    const toggleObjective = (obj: 'marca' | 'b2c' | 'plurix') =>
+    const toggleObjective = (obj: PaidMediaObjective) =>
         setSelectedObjectives(p => p.includes(obj) ? p.filter(o => o !== obj) : [...p, obj]);
     const toggleCampaign = (c: string) =>
         setSelectedCampaigns(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);

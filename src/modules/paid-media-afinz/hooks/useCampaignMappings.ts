@@ -25,7 +25,7 @@ export function useCampaignMappings() {
         fetchMappings();
     }, []);
 
-    const updateMapping = async (campaign_name: string, objective: 'marca' | 'b2c' | 'plurix') => {
+    const updateMapping = async (campaign_name: string, objective: 'marca' | 'b2c' | 'plurix' | 'seguros') => {
         try {
             // Optimistic update
             setMappings(prev => {

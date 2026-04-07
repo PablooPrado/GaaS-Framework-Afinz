@@ -1,5 +1,6 @@
 import React from 'react';
 import { useFilters } from '../context/FilterContext';
+import type { PaidMediaObjective } from '../types';
 import { Share2, Target, ChevronDown, Filter } from 'lucide-react';
 import { PeriodSelector } from '../../../components/period-selector/PeriodSelector';
 
@@ -14,7 +15,7 @@ const channelChipClass = (channel: 'meta' | 'google', active: boolean): string =
         : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200/70';
 };
 
-const objectiveChipClass = (objective: 'marca' | 'b2c' | 'plurix', active: boolean): string => {
+const objectiveChipClass = (objective: PaidMediaObjective, active: boolean): string => {
     if (objective === 'marca') {
         return active
             ? 'bg-violet-50/40 border-violet-300/70 text-slate-700 shadow-sm'
@@ -22,12 +23,22 @@ const objectiveChipClass = (objective: 'marca' | 'b2c' | 'plurix', active: boole
     }
     if (objective === 'b2c') {
         return active
+            ? 'bg-blue-50/40 border-blue-300/70 text-slate-700 shadow-sm'
+            : 'bg-white border-slate-200 text-slate-500 hover:border-blue-200/70';
+    }
+    if (objective === 'plurix') {
+        return active
+            ? 'bg-purple-50/40 border-purple-300/70 text-slate-700 shadow-sm'
+            : 'bg-white border-slate-200 text-slate-500 hover:border-purple-200/70';
+    }
+    if (objective === 'seguros') {
+        return active
             ? 'bg-orange-50/40 border-orange-300/70 text-slate-700 shadow-sm'
             : 'bg-white border-slate-200 text-slate-500 hover:border-orange-200/70';
     }
     return active
-        ? 'bg-cyan-50/40 border-cyan-300/70 text-slate-700 shadow-sm'
-        : 'bg-white border-slate-200 text-slate-500 hover:border-cyan-200/70';
+        ? 'bg-slate-50/40 border-slate-300/70 text-slate-700 shadow-sm'
+        : 'bg-white border-slate-200 text-slate-500';
 };
 
 export const FilterBar: React.FC = () => {
@@ -80,7 +91,7 @@ export const FilterBar: React.FC = () => {
                     <span className="text-xs font-semibold uppercase tracking-wider">Objetivo:</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    {(['marca', 'b2c', 'plurix'] as const).map((obj) => (
+                    {(['marca', 'b2c', 'plurix', 'seguros'] as const).map((obj) => (
                         <label key={obj} className={`
                             cursor-pointer select-none px-2.5 py-1 rounded-md border text-xs font-medium transition-all
                             ${objectiveChipClass(obj, filters.selectedObjectives.includes(obj))}
@@ -91,7 +102,7 @@ export const FilterBar: React.FC = () => {
                                 checked={filters.selectedObjectives.includes(obj)}
                                 onChange={() => setFilters.toggleObjective(obj)}
                             />
-                            {obj === 'marca' ? 'Branding' : obj === 'b2c' ? 'Performance (B2C)' : 'Plurix'}
+                            {obj === 'marca' ? 'Branding' : obj === 'b2c' ? 'Performance (B2C)' : obj === 'plurix' ? 'Plurix' : 'Seguros'}
                         </label>
                     ))}
                 </div>

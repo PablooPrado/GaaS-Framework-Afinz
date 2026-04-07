@@ -78,8 +78,9 @@ export const CreateBudgetModal: React.FC<CreateBudgetModalProps> = ({ existingBu
                                 onChange={e => setFormData({ ...formData, objective: e.target.value as any })}
                             >
                                 <option value="marca">Branding</option>
-                                <option value="b2c">Conversão</option>
+                                <option value="b2c">Conversão (B2C)</option>
                                 <option value="plurix">Plurix</option>
+                                <option value="seguros">Seguros</option>
                             </select>
                         </div>
                     </div>

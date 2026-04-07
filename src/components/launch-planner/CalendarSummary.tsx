@@ -62,6 +62,7 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
             case 'B2C': return 'bg-blue-50 border-blue-200 hover:bg-blue-100';
             case 'B2B2C': return 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100';
             case 'PLURIX': return 'bg-violet-50 border-violet-200 hover:bg-violet-100';
+            case 'SEGUROS': return 'bg-orange-50 border-orange-200 hover:bg-orange-100';
             default: return 'bg-slate-50 border-slate-200 hover:bg-slate-100';
         }
     };
@@ -71,6 +72,7 @@ export const CalendarSummary: React.FC<CalendarSummaryProps> = ({ data, onDayCli
             case 'B2C': return 'bg-blue-600 hover:bg-blue-500';
             case 'B2B2C': return 'bg-emerald-600 hover:bg-emerald-500';
             case 'PLURIX': return 'bg-violet-600 hover:bg-violet-500';
+            case 'SEGUROS': return 'bg-orange-600 hover:bg-orange-500';
             default: return 'bg-slate-500 hover:bg-slate-400';
         }
     };

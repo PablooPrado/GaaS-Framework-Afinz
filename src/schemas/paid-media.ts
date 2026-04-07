@@ -45,7 +45,7 @@ export type Budget = z.infer<typeof BudgetSchema>;
 export const CampaignMappingSchema = z.object({
     id: z.string().optional(),
     campaign_name: z.string(),
-    objective: z.enum(['marca', 'b2c', 'plurix']),
+    objective: z.enum(['marca', 'b2c', 'plurix', 'seguros']),
     created_at: z.string().optional(),
     updated_at: z.string().optional(),
 });

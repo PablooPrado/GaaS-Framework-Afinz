@@ -140,10 +140,24 @@ const PARCEIRO_COLORS: Record<string, string> = {
 export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }) => {
   const { viewSettings, setGlobalFilters } = useAppStore();
   const globalFilters = viewSettings.filtrosGlobais;
-  // data = advancedFilteredData já vem filtrado por segmentos, canais, jornadas, parceiros, BU e período
-  // Não re-filtrar aqui para evitar dessincronização entre as fontes de dados
   const allActivities = useMemo(() => Object.values(data).flat(), [data]);
-  const reportActivities = allActivities;
+  const reportActivities = useMemo(() => (
+    allActivities.filter((activity) => {
+      if (globalFilters.segmentos.length > 0 && !globalFilters.segmentos.includes(activity.segmento)) {
+        return false;
+      }
+      if (globalFilters.canais.length > 0 && !globalFilters.canais.includes(activity.canal)) {
+        return false;
+      }
+      if (globalFilters.jornadas.length > 0 && !globalFilters.jornadas.includes(activity.jornada)) {
+        return false;
+      }
+      if (globalFilters.parceiros.length > 0 && !globalFilters.parceiros.includes(activity.parceiro)) {
+        return false;
+      }
+      return true;
+    })
+  ), [allActivities, globalFilters]);
 
   // ── Descrições por disparo ──
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
@@ -527,7 +541,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
     downloadBlob(blob, `relatorio_completo_${format(new Date(), 'yyyyMMdd')}.csv`);
   }, [segmentoRows, segmentoTotal, canalRows, canalTotal, totalCanalEmissoes, detailRows]);
 
-  if (allActivities.length === 0) {
+  if (reportActivities.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-400">
         <FileText size={40} className="opacity-40" />
@@ -553,7 +567,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                 </span>
               </div>
               <p className="text-cyan-100 text-sm">
-                {allActivities.length} disparos analisados
+                {reportActivities.length} disparos analisados
                 {selectedBU ? ` · BU: ${selectedBU}` : ' · Todas as BUs'}
                 {' · '}
                 {segmentoRows.length} segmentos · {canalRows.length} canais
@@ -979,7 +993,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
           const fmtR = (v?: number | null) => v != null ? v.toLocaleString('pt-BR', { minimumFractionDigits: 0 }) : '—';
           const fmtP = (v?: number | null) => v != null ? `${(v * 100).toFixed(2)}%` : '—';
           const fmtBR = (v?: number | null) => v != null ? v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—';
-          const BU_COLOR: Record<string, string> = { B2C: '#3B82F6', B2B2C: '#10B981', Plurix: '#A855F7' };
+          const BU_COLOR: Record<string, string> = { B2C: '#3B82F6', B2B2C: '#10B981', Plurix: '#A855F7', Seguros: '#F97316' };
           const buColor = BU_COLOR[a.BU] ?? '#64748B';
           const CANAL_EMOJI: Record<string, string> = { 'E-mail': '📧', 'SMS': '💬', 'WhatsApp': '📱', 'Push': '🔔' };
           return (
@@ -1124,6 +1138,24 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
+              <colgroup>
+                <col />{/* Data */}
+                <col />{/* Campanha */}
+                <col />{/* Segmento */}
+                <col />{/* Parceiro */}
+                <col />{/* Canal */}
+                <col style={isDescriptionCollapsed ? { visibility: 'collapse' } : undefined} />{/* Descrição */}
+                <col />{/* Entregas */}
+                <col />{/* Propostas */}
+                <col />{/* % Proposta */}
+                <col />{/* Aprovados */}
+                <col />{/* % Aprovação */}
+                <col />{/* Emissões */}
+                <col />{/* % Final. */}
+                <col />{/* C./Cartão */}
+                <col />{/* Custo Total */}
+                <col />{/* % Conv */}
+              </colgroup>
               <thead>
                 <tr style={{ background: '#1E293B' }} className="text-white">
                   <th
@@ -1139,7 +1171,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                   <th className="text-center px-2 py-2 font-semibold whitespace-nowrap min-w-[90px]">Segmento</th>
                   <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Parceiro</th>
                   <th className="text-center px-2 py-2 font-semibold whitespace-nowrap">Canal</th>
-                  {!isDescriptionCollapsed && <th className="text-left px-2 py-2 font-semibold whitespace-nowrap min-w-[130px]">Descrição</th>}
+                  <th className="text-left px-2 py-2 font-semibold whitespace-nowrap min-w-[130px]">Descrição</th>
                   <th
                     className="text-center px-2 py-2 font-semibold whitespace-nowrap cursor-pointer select-none group hover:bg-slate-700 transition-colors"
                     onClick={() => handleSort('baseEntregue')}
@@ -1303,28 +1335,30 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                           {row.canal || '—'}
                         </button>
                       </td>
-                      {/* Descrição */}
-                      {!isDescriptionCollapsed && <td className="px-2 py-1.5 bg-white" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-start gap-1.5">
-                          <textarea
-                            className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded px-2 py-1 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-400 min-w-[120px]"
-                            rows={2}
-                            placeholder="Adicionar descrição..."
-                            value={editingDescs[row.activityName] ?? ''}
-                            onChange={e => setEditingDescs(prev => ({ ...prev, [row.activityName]: e.target.value }))}
-                          />
-                          {(editingDescs[row.activityName] ?? '') !== (descriptions[row.activityName] ?? '') && (
-                            <button
-                              onClick={() => saveDescription(row.activityName)}
-                              disabled={savingDesc.has(row.activityName)}
-                              className="flex-shrink-0 p-1 rounded bg-cyan-500 hover:bg-cyan-600 text-white transition-colors disabled:opacity-50"
-                              title="Salvar descrição"
-                            >
-                              <Save size={13} />
-                            </button>
-                          )}
-                        </div>
-                      </td>}
+                      {/* Descrição — sempre no DOM; visibilidade controlada pelo <col> */}
+                      <td className="px-2 py-1.5 bg-white" onClick={e => e.stopPropagation()}>
+                        {!isDescriptionCollapsed && (
+                          <div className="flex items-start gap-1.5">
+                            <textarea
+                              className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded px-2 py-1 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-400 min-w-[120px]"
+                              rows={2}
+                              placeholder="Adicionar descrição..."
+                              value={editingDescs[row.activityName] ?? ''}
+                              onChange={e => setEditingDescs(prev => ({ ...prev, [row.activityName]: e.target.value }))}
+                            />
+                            {(editingDescs[row.activityName] ?? '') !== (descriptions[row.activityName] ?? '') && (
+                              <button
+                                onClick={() => saveDescription(row.activityName)}
+                                disabled={savingDesc.has(row.activityName)}
+                                className="flex-shrink-0 p-1 rounded bg-cyan-500 hover:bg-cyan-600 text-white transition-colors disabled:opacity-50"
+                                title="Salvar descrição"
+                              >
+                                <Save size={13} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
                       {/* Entregas */}
                       <td className="text-center px-2 py-1.5">
                         {row.aguardando
@@ -1363,7 +1397,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
               {displayRows.length > 0 && (
                 <tfoot>
                   <tr style={{ background: '#1E293B' }} className="text-white text-xs font-bold">
-                    <td colSpan={isDescriptionCollapsed ? 5 : 6} className="px-2 py-2 font-bold whitespace-nowrap">
+                    <td colSpan={6} className="px-2 py-2 font-bold whitespace-nowrap">
                       Totais · {displayRows.length} disparo{displayRows.length !== 1 ? 's' : ''}
                       {destaqueFilter && <span className="ml-1.5 text-amber-300 font-normal">(filtrado)</span>}
                     </td>

@@ -56,7 +56,7 @@ export const BudgetCard: React.FC<BudgetCardProps> = ({ budget, actualSpend, onE
                 <div>
                     <h4 className="font-bold text-slate-800 text-lg">{budget.channel === 'meta' ? 'Meta Ads' : 'Google Ads'}</h4>
                     <p className="text-xs text-slate-500 uppercase font-medium tracking-wide bg-slate-100 inline-block px-1.5 py-0.5 rounded mt-1">
-                        {budget.objective === 'b2c' ? 'Conversão' : 'Branding'}
+                        {budget.objective === 'b2c' ? 'Conversão' : budget.objective === 'plurix' ? 'Plurix' : budget.objective === 'seguros' ? 'Seguros' : 'Branding'}
                     </p>
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
