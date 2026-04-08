@@ -200,6 +200,16 @@ export const AdDetailModal: React.FC<Props> = ({ ad, creative, dailyData, onClos
     const titleText = creative?.title || creative?.title_variations?.[0] || '';
     const channelLabel = ad.channel === 'meta' ? 'Meta Ads' : ad.channel === 'google' ? 'Google Ads' : ad.channel;
 
+    // Build Meta Ads Manager URL with filter by ad name for quick navigation
+    const metaAdsUrl = (() => {
+        if (creative?.permalink_url) return creative.permalink_url;
+        const rs = '\x1E';
+        const safeName = ad.adName.replace(/"/g, '\\"');
+        const rawFilter = `SEARCH_BY_AD_NAME-STRING${rs}CONTAINS_ALL${rs}"[\\"${safeName}\\"]"`;
+        const qs = `selected_ad_ids=${encodeURIComponent(ad.adId)}&filter_set=${encodeURIComponent(rawFilter)}&nav_source=no_referrer`;
+        return `https://adsmanager.facebook.com/adsmanager/manage/ads?${qs}`;
+    })();
+
     // Daily sparkline data
     const sparkData = useMemo(() => {
         const map = new Map<string, { date: string; spend: number; clicks: number; impressions: number }>();
@@ -237,21 +247,9 @@ export const AdDetailModal: React.FC<Props> = ({ ad, creative, dailyData, onClos
                 {/* ── Header bar ── */}
                 <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100">
                     <h2 className="text-sm font-bold text-slate-800">Detalhes do Anuncio</h2>
-                    <div className="flex items-center gap-2">
-                        <a
-                            href={creative?.permalink_url || `https://adsmanager.facebook.com/adsmanager/manage/ads?selected_ad_ids=${ad.adId}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors border border-blue-100"
-                            title={creative?.permalink_url ? 'Ver anúncio no Facebook' : 'Ver no Meta Ads Manager'}
-                        >
-                            <ExternalLink size={13} />
-                            {creative?.permalink_url ? 'Ver Anúncio' : 'Ads Manager'}
-                        </a>
-                        <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-                            <X size={18} />
-                        </button>
-                    </div>
+                    <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                        <X size={18} />
+                    </button>
                 </div>
 
                 {/* ── Two-column layout ── */}
@@ -319,17 +317,29 @@ export const AdDetailModal: React.FC<Props> = ({ ad, creative, dailyData, onClos
                         )}
 
                         {/* Link preview */}
-                        <div className="bg-[#F0F2F5] rounded-b-lg px-4 py-2.5 flex items-center justify-between -mt-1">
-                            <div className="min-w-0">
+                        <div className="bg-[#F0F2F5] rounded-b-lg px-4 py-2.5 flex items-center justify-between gap-2 -mt-1">
+                            <div className="min-w-0 flex-1">
                                 <p className="text-[10px] text-slate-500 uppercase tracking-wider">afinz.com.br</p>
                                 <p className="text-sm font-semibold text-slate-900 truncate">{titleText}</p>
                                 {creative?.description && (
                                     <p className="text-xs text-slate-500 truncate mt-0.5">{creative.description}</p>
                                 )}
                             </div>
-                            <button className="flex-shrink-0 px-4 py-2 bg-[#E4E6EB] hover:bg-[#D8DADF] text-slate-700 text-sm font-semibold rounded-md transition-colors">
-                                {ctaText}
-                            </button>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <button className="px-4 py-2 bg-[#E4E6EB] hover:bg-[#D8DADF] text-slate-700 text-sm font-semibold rounded-md transition-colors">
+                                    {ctaText}
+                                </button>
+                                <a
+                                    href={metaAdsUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title={creative?.permalink_url ? 'Ver anúncio no Facebook' : 'Abrir no Meta Ads Manager com filtro por nome'}
+                                    className="flex items-center gap-1.5 px-3 py-2 bg-[#1877F2] hover:bg-[#166FE5] text-white text-xs font-semibold rounded-md transition-colors"
+                                >
+                                    <ExternalLink size={12} />
+                                    {creative?.permalink_url ? 'Ver Anúncio' : 'Meta Ads'}
+                                </a>
+                            </div>
                         </div>
 
                         {/* Engagement bar */}
