@@ -373,7 +373,8 @@ export const AdsTab: React.FC = () => {
                     ctr: 0, cpa: 0, cpm: 0, reach: 0, frequency: 0,
                     freqCount: 0, freqSum: 0,
                     thumbnail_url: thumbnailUrl, mediaType, isStory,
-                    body: creative?.body, title: creative?.title,
+                    body: creative?.body || creative?.body_variations?.[0],
+                    title: creative?.title || creative?.title_variations?.[0],
                     ctaLabel: creative?.call_to_action_type
                         ? CTA_MAP[creative.call_to_action_type] || 'Saiba mais' : undefined,
                     creative, placements: [],

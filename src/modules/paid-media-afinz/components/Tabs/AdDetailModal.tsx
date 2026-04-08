@@ -196,8 +196,8 @@ export const AdDetailModal: React.FC<Props> = ({ ad, creative, dailyData, onClos
         ? CTA_MAP[creative.call_to_action_type] || 'Saiba mais'
         : 'Saiba mais';
 
-    const bodyText = creative?.body || ad.adName;
-    const titleText = creative?.title || ad.adName;
+    const bodyText = creative?.body || creative?.body_variations?.[0] || '';
+    const titleText = creative?.title || creative?.title_variations?.[0] || '';
     const channelLabel = ad.channel === 'meta' ? 'Meta Ads' : ad.channel === 'google' ? 'Google Ads' : ad.channel;
 
     // Daily sparkline data
@@ -237,9 +237,18 @@ export const AdDetailModal: React.FC<Props> = ({ ad, creative, dailyData, onClos
                 {/* ── Header bar ── */}
                 <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100">
                     <h2 className="text-sm font-bold text-slate-800">Detalhes do Anuncio</h2>
-                    <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-                        <X size={18} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {creative?.permalink_url && (
+                            <a href={creative.permalink_url} target="_blank" rel="noopener noreferrer"
+                               className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors">
+                                <ExternalLink size={13} />
+                                Ver no Facebook
+                            </a>
+                        )}
+                        <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                            <X size={18} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* ── Two-column layout ── */}
