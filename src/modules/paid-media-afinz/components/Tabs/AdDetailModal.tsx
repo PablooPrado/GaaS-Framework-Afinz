@@ -238,13 +238,16 @@ export const AdDetailModal: React.FC<Props> = ({ ad, creative, dailyData, onClos
                 <div className="flex items-center justify-between px-6 py-3 border-b border-slate-100">
                     <h2 className="text-sm font-bold text-slate-800">Detalhes do Anuncio</h2>
                     <div className="flex items-center gap-2">
-                        {creative?.permalink_url && (
-                            <a href={creative.permalink_url} target="_blank" rel="noopener noreferrer"
-                               className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors">
-                                <ExternalLink size={13} />
-                                Ver no Facebook
-                            </a>
-                        )}
+                        <a
+                            href={creative?.permalink_url || `https://adsmanager.facebook.com/adsmanager/manage/ads?selected_ad_ids=${ad.adId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors border border-blue-100"
+                            title={creative?.permalink_url ? 'Ver anúncio no Facebook' : 'Ver no Meta Ads Manager'}
+                        >
+                            <ExternalLink size={13} />
+                            {creative?.permalink_url ? 'Ver Anúncio' : 'Ads Manager'}
+                        </a>
                         <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
                             <X size={18} />
                         </button>
