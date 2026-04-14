@@ -211,36 +211,33 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
   const handleDayClick = React.useCallback((date: string) => {
     const focusId = comparisonFocusNodeId;
 
-    // Usa activities (ActivityRow[]) cujas datas já estão parseadas em YYYY-MM-DD
-    const matchingRows = activities.filter((a) => {
-      const actDate = (a['Data de Disparo'] as string | undefined)?.slice(0, 10);
+    // Filtra storeActivitiesRaw (Activity[]) diretamente — usa format() do date-fns
+    // que é 100% confiável com objetos Date
+    const dayActivities = storeActivitiesRaw.filter((a) => {
+      let actDate = '';
+      try { actDate = format(a.dataDisparo, 'yyyy-MM-dd'); } catch { return false; }
       if (actDate !== date) return false;
+
       if (focusId) {
         const colonIdx = focusId.indexOf(':');
         const type = focusId.slice(0, colonIdx);
         const payload = focusId.slice(colonIdx + 1);
-        if (type === 'bu' && a.BU !== payload) return false;
+        if (type === 'bu' && a.bu !== payload) return false;
         if (type === 'segmento') {
           const [bu, seg] = payload.split('|');
-          if (a.BU !== bu || a.Segmento !== seg) return false;
+          if (a.bu !== bu || a.segmento !== seg) return false;
         }
         if (type === 'canal') {
           const [bu, seg, canal] = payload.split('|');
-          if (a.BU !== bu || a.Segmento !== seg || a.Canal !== canal) return false;
+          if (a.bu !== bu || a.segmento !== seg || a.canal !== canal) return false;
         }
       }
       return true;
     });
 
-    if (matchingRows.length === 0) return;
-
-    // Cruza IDs com storeActivitiesRaw (Activity[]) para obter objetos tipados para o modal
-    const matchingIds = new Set(matchingRows.map((r) => r.id));
-    const dayActivities = storeActivitiesRaw.filter((a) => matchingIds.has(a.id));
-
     setSelectedDayDate(new Date(`${date}T00:00:00`));
-    setSelectedDayActivities(dayActivities.length > 0 ? dayActivities : matchingRows as unknown as Activity[]);
-  }, [activities, storeActivitiesRaw, comparisonFocusNodeId]);
+    setSelectedDayActivities(dayActivities);
+  }, [storeActivitiesRaw, comparisonFocusNodeId]);
 
   const handleViewAll = () => {
     if (!detailsData || !onNavigateToFramework) return;

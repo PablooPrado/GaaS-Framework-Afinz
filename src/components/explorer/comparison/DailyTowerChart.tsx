@@ -93,11 +93,6 @@ export const DailyTowerChart: React.FC<DailyTowerChartProps> = ({
             data={data}
             margin={{ top: 8, right: 80, left: 0, bottom: 6 }}
             style={onBarClick ? { cursor: 'pointer' } : undefined}
-            onClick={(e: { activePayload?: { payload: DailyTowerPoint }[] } | null) => {
-              if (onBarClick && e?.activePayload?.[0]) {
-                onBarClick(e.activePayload[0].payload.date);
-              }
-            }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
             <XAxis dataKey="label" tick={{ fill: '#64748B', fontSize: 11 }} tickLine={false} axisLine={false} />
@@ -127,10 +122,23 @@ export const DailyTowerChart: React.FC<DailyTowerChartProps> = ({
               />
             )}
             {mode === 'simple' ? (
-              <Bar dataKey="total" fill="#3B82F6" radius={[4, 4, 0, 0]} activeBar={{ fill: '#60A5FA' }} />
+              <Bar
+                dataKey="total"
+                fill="#3B82F6"
+                radius={[4, 4, 0, 0]}
+                activeBar={{ fill: '#60A5FA' }}
+                onClick={(barData: DailyTowerPoint) => onBarClick?.(barData.date)}
+              />
             ) : (
               stackedKeys.map((key, idx) => (
-                <Bar key={key} dataKey={key} stackId="daily" fill={COLORS[idx % COLORS.length]} radius={idx === stackedKeys.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+                <Bar
+                  key={key}
+                  dataKey={key}
+                  stackId="daily"
+                  fill={COLORS[idx % COLORS.length]}
+                  radius={idx === stackedKeys.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                  onClick={(barData: DailyTowerPoint) => onBarClick?.(barData.date)}
+                />
               ))
             )}
           </BarChart>
