@@ -34,26 +34,26 @@ const AnalyticalTooltip = ({
   if (!active || !payload?.length) return null;
   const total = payload.reduce((sum, p) => sum + (Number(p.value) || 0), 0);
   return (
-    <div className="bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-2xl min-w-[160px]">
-      <p className="text-slate-400 text-[11px] font-mono mb-2">Dia {label}</p>
+    <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-lg min-w-[150px]">
+      <p className="text-slate-500 text-[11px] font-medium mb-1.5">Dia {label}</p>
       {payload.length === 1 ? (
-        <p className="text-slate-100 text-sm font-bold">{formatMetricValue(total, metric)}</p>
+        <p className="text-slate-800 text-sm font-bold">{formatMetricValue(total, metric)}</p>
       ) : (
         <>
           {payload.map((entry) => (
             <div key={entry.dataKey as string} className="flex justify-between gap-3 text-xs mb-1">
-              <span style={{ color: entry.color ?? '#94A3B8' }}>{entry.name}</span>
-              <span className="font-semibold text-slate-100">{formatMetricValue(Number(entry.value), metric)}</span>
+              <span style={{ color: entry.color ?? '#64748B' }}>{entry.name}</span>
+              <span className="font-semibold text-slate-700">{formatMetricValue(Number(entry.value), metric)}</span>
             </div>
           ))}
-          <div className="mt-1.5 pt-1.5 border-t border-slate-700 flex justify-between text-xs">
+          <div className="mt-1.5 pt-1.5 border-t border-slate-100 flex justify-between text-xs">
             <span className="text-slate-400">Total</span>
-            <span className="font-bold text-slate-100">{formatMetricValue(total, metric)}</span>
+            <span className="font-bold text-slate-800">{formatMetricValue(total, metric)}</span>
           </div>
         </>
       )}
       {canDrillDown && (
-        <p className="text-slate-500 text-[10px] mt-2">Clique para ver disparos</p>
+        <p className="text-slate-400 text-[10px] mt-2">Clique para ver disparos</p>
       )}
     </div>
   );
