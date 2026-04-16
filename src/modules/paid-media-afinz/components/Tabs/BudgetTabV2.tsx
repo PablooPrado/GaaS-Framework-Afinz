@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Plus, Wallet } from 'lucide-react';
+import { Plus, Wallet, Settings2 } from 'lucide-react';
 import { dataService } from '../../../../services/dataService';
 import { useBudgetHierarchy } from '../../hooks/useBudgetHierarchy';
 import { useFilters } from '../../context/FilterContext';
@@ -15,9 +15,10 @@ import { ObjectiveBudgetCard } from '../ObjectiveBudgetCard';
 import { CampaignBudgetTable } from '../CampaignBudgetTable';
 import { EditCampaignBudgetModal } from '../Modals/EditCampaignBudgetModal';
 import { EditObjectiveBudgetModal } from '../Modals/EditObjectiveBudgetModal';
+import { CampaignMappingsModal } from '../Modals/CampaignMappingsModal';
 import { RealocateBudgetOrchestrator } from '../Modals/RealocateBudgetOrchestrator';
 import { CampaignBudget, ObjectiveBudget, BudgetObjective } from '../../types/budget';
-import { format } from 'date-fns';
+import { format, getDate, getDaysInMonth, parseISO } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 
 export const BudgetTabV2: React.FC = () => {
@@ -30,6 +31,7 @@ export const BudgetTabV2: React.FC = () => {
   // Objective modal state
   const [editingObjective, setEditingObjective] = useState<ObjectiveBudget | undefined>();
   const [isObjectiveModalOpen, setIsObjectiveModalOpen] = useState(false);
+  const [isMappingsModalOpen, setIsMappingsModalOpen] = useState(false);
 
   // Campaign modal state
   const [expandedObjective, setExpandedObjective] = useState<string | null>(null);
@@ -185,12 +187,62 @@ export const BudgetTabV2: React.FC = () => {
   return (
     <div className="animate-fade-in space-y-6">
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <div>
-        <h2 className="text-2xl font-bold text-slate-800">Gestão de Orçamento — {currentMonth}</h2>
-        <p className="text-slate-500 mt-1">
-          Acompanhe seus gastos diários vs planejado com projeções em tempo real
-        </p>
-      </div>
+      {(() => {
+        const [mm, yyyy] = currentMonth.split('/');
+        const monthDate = parseISO(`${yyyy}-${mm}-01`);
+        const daysPassed = getDate(new Date());
+        const daysInMonth_ = getDaysInMonth(monthDate);
+        const daysRemaining = Math.max(0, daysInMonth_ - daysPassed);
+        const pctMonth = Math.round((daysPassed / daysInMonth_) * 100);
+        const totalPlanned = objectives.reduce((s, o) => s + o.totalBudget, 0);
+        const idealBurnToday = totalPlanned > 0
+          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(totalPlanned / daysInMonth_)
+          : null;
+
+        return (
+          <>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800">Gestão de Orçamento — {currentMonth}</h2>
+                <p className="text-slate-500 mt-0.5 text-sm">
+                  Acompanhe seus gastos vs planejado com projeções lineares
+                </p>
+              </div>
+              <button
+                onClick={() => setIsMappingsModalOpen(true)}
+                className="shrink-0 flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors shadow-sm"
+              >
+                <Settings2 size={15} />
+                Gerenciar Objetivos
+              </button>
+            </div>
+
+            {/* Month progress bar */}
+            <div className="bg-white rounded-xl border border-slate-200 px-5 py-3 flex items-center gap-4 shadow-sm">
+              <div className="shrink-0 text-sm font-semibold text-slate-700 tabular-nums">
+                Dia {daysPassed}<span className="font-normal text-slate-400">/{daysInMonth_}</span>
+              </div>
+              <div className="flex-1 relative h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="absolute inset-y-0 left-0 bg-blue-500 rounded-full transition-all"
+                  style={{ width: `${pctMonth}%` }}
+                />
+              </div>
+              <div className="shrink-0 flex items-center gap-4 text-sm text-slate-500">
+                <span className="font-semibold text-slate-700">{pctMonth}%</span>
+                <span>·</span>
+                <span><span className="font-medium text-slate-700">{daysRemaining}</span> dias restantes</span>
+                {idealBurnToday && (
+                  <>
+                    <span>·</span>
+                    <span>Queima ideal <span className="font-medium text-slate-700">{idealBurnToday}/dia</span></span>
+                  </>
+                )}
+              </div>
+            </div>
+          </>
+        );
+      })()}
 
       {/* ── Overall KPI Cards ────────────────────────────────────────── */}
       <div className="grid grid-cols-4 gap-4">
@@ -362,6 +414,13 @@ export const BudgetTabV2: React.FC = () => {
           isLoading={isLoading}
         />
       )}
+
+      {/* Campaign Mappings Modal */}
+      <CampaignMappingsModal
+        isOpen={isMappingsModalOpen}
+        onClose={() => setIsMappingsModalOpen(false)}
+        onMappingsChanged={() => refetch()}
+      />
     </div>
   );
 };

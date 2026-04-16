@@ -691,6 +691,26 @@ export const dataService = {
         if (error) throw error;
     },
 
+    async deleteCampaignMapping(campaignName: string) {
+        const { error } = await supabase
+            .from('paid_media_campaign_mappings')
+            .delete()
+            .eq('campaign_name', campaignName);
+        if (error) throw error;
+    },
+
+    /** Retorna nomes únicos de campanhas que existem em paid_media_metrics */
+    async fetchDistinctCampaigns(): Promise<string[]> {
+        const { data, error } = await supabase
+            .from('paid_media_metrics')
+            .select('campaign')
+            .not('campaign', 'is', null)
+            .order('campaign');
+        if (error) throw error;
+        const unique = [...new Set((data || []).map((d: any) => d.campaign).filter(Boolean))] as string[];
+        return unique.sort();
+    },
+
     async fetchAdCreatives(): Promise<any[]> {
         const { data, error } = await supabase
             .from('ad_creatives')
