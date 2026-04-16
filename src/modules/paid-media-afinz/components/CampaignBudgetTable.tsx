@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { Edit2, Trash2, MoreVertical, TrendingUp, TrendingDown, CheckCircle } from 'lucide-react';
+import { Edit2, Trash2, MoreVertical, TrendingUp, TrendingDown, CheckCircle, Plus } from 'lucide-react';
 import { CampaignBudget, formatPaceStatus } from '../types/budget';
 
 interface CampaignBudgetTableProps {
@@ -14,6 +14,7 @@ interface CampaignBudgetTableProps {
   onEdit: (campaign: CampaignBudget) => void;
   onDelete: (id: string) => void;
   onRelocate: () => void;
+  onAdd?: () => void;
 }
 
 const formatCurrency = (value: number) =>
@@ -31,6 +32,7 @@ export const CampaignBudgetTable: React.FC<CampaignBudgetTableProps> = ({
   onEdit,
   onDelete,
   onRelocate,
+  onAdd,
 }) => {
   const [sortBy, setSortBy] = useState<'name' | 'allocated' | 'realized' | 'pace'>('name');
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
@@ -52,22 +54,42 @@ export const CampaignBudgetTable: React.FC<CampaignBudgetTableProps> = ({
   if (campaigns.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
-        <p className="text-slate-500 text-sm">Nenhuma campanha alocada neste objetivo</p>
+        <p className="text-slate-500 text-sm mb-3">Nenhuma campanha alocada neste objetivo</p>
+        {onAdd && (
+          <button
+            onClick={onAdd}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+          >
+            <Plus size={14} />
+            Adicionar Campanha
+          </button>
+        )}
       </div>
     );
   }
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      {/* Header with action button */}
+      {/* Header with action buttons */}
       <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
         <h4 className="font-bold text-slate-800">Detalhamento por Campanha</h4>
-        <button
-          onClick={onRelocate}
-          className="text-sm px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium"
-        >
-          ⟳ Realocar Budget
-        </button>
+        <div className="flex items-center gap-2">
+          {onAdd && (
+            <button
+              onClick={onAdd}
+              className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-1.5"
+            >
+              <Plus size={14} />
+              Adicionar
+            </button>
+          )}
+          <button
+            onClick={onRelocate}
+            className="text-sm px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
+          >
+            ⟳ Realocar
+          </button>
+        </div>
       </div>
 
       {/* Table */}

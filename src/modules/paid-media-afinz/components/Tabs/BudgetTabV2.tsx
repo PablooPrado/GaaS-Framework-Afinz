@@ -7,14 +7,16 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { Plus, Wallet } from 'lucide-react';
 import { dataService } from '../../../../services/dataService';
 import { useBudgetHierarchy } from '../../hooks/useBudgetHierarchy';
 import { useFilters } from '../../context/FilterContext';
 import { ObjectiveBudgetCard } from '../ObjectiveBudgetCard';
 import { CampaignBudgetTable } from '../CampaignBudgetTable';
 import { EditCampaignBudgetModal } from '../Modals/EditCampaignBudgetModal';
+import { EditObjectiveBudgetModal } from '../Modals/EditObjectiveBudgetModal';
 import { RealocateBudgetOrchestrator } from '../Modals/RealocateBudgetOrchestrator';
-import { CampaignBudget, ObjectiveBudget } from '../../types/budget';
+import { CampaignBudget, ObjectiveBudget, BudgetObjective } from '../../types/budget';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 
@@ -25,9 +27,14 @@ export const BudgetTabV2: React.FC = () => {
   // Data fetching
   const { objectives, campaigns, status, loading, error, refetch } = useBudgetHierarchy(currentMonth);
 
-  // Modals state
+  // Objective modal state
+  const [editingObjective, setEditingObjective] = useState<ObjectiveBudget | undefined>();
+  const [isObjectiveModalOpen, setIsObjectiveModalOpen] = useState(false);
+
+  // Campaign modal state
   const [expandedObjective, setExpandedObjective] = useState<string | null>(null);
   const [editingCampaign, setEditingCampaign] = useState<CampaignBudget | undefined>();
+  const [newCampaignObjectiveId, setNewCampaignObjectiveId] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isReallocateOpen, setIsReallocateOpen] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,21 +42,60 @@ export const BudgetTabV2: React.FC = () => {
   // Get campaigns for expanded objective
   const campaignsForObjective = useMemo(() => {
     if (!expandedObjective) return [];
-    return campaigns.filter((c) => c.objective_budget_id === expandedObjective);
+    return campaigns.filter((c) => c.objectiveBudgetId === expandedObjective);
   }, [campaigns, expandedObjective]);
 
-  // Handle save campaign
+  // ── Objective CRUD ──────────────────────────────────────────────────────
+
+  const handleSaveObjective = async (data: {
+    id?: string;
+    month: string;
+    objective: BudgetObjective;
+    budget: number;
+    channel?: string | null;
+  }) => {
+    setIsLoading(true);
+    try {
+      const dbPayload = {
+        id: data.id || crypto.randomUUID(),
+        month: data.month,
+        objective: data.objective,
+        budget: data.budget,
+        channel: data.channel || null,
+      };
+      await dataService.upsertPaidMediaBudget(dbPayload);
+      await refetch();
+      setIsObjectiveModalOpen(false);
+      setEditingObjective(undefined);
+    } catch (err) {
+      console.error('Error saving objective:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ── Campaign CRUD ───────────────────────────────────────────────────────
+
   const handleSaveCampaign = async (campaign: Omit<CampaignBudget, 'createdAt' | 'updatedAt'>) => {
     setIsLoading(true);
     try {
-      const campaignWithId = {
-        ...campaign,
+      // Map camelCase TypeScript types → snake_case DB columns
+      const dbPayload = {
         id: campaign.id || crypto.randomUUID(),
+        month: campaign.month || currentMonth,
+        objective_budget_id: campaign.objectiveBudgetId,
+        campaign_name: campaign.campaignName,
+        objective: campaign.objective,
+        channel: campaign.channel,
+        allocated_budget: campaign.allocatedBudget,
+        notes: campaign.notes || null,
       };
-      await dataService.upsertCampaignBudget(campaignWithId);
+      await dataService.upsertCampaignBudget(dbPayload);
       await refetch();
       setIsEditModalOpen(false);
       setEditingCampaign(undefined);
+      setNewCampaignObjectiveId(null);
     } catch (err) {
       console.error('Error saving campaign:', err);
       throw err;
@@ -58,7 +104,6 @@ export const BudgetTabV2: React.FC = () => {
     }
   };
 
-  // Handle delete campaign
   const handleDeleteCampaign = async (id: string) => {
     if (!confirm('Tem certeza que deseja deletar esta campanha?')) return;
 
@@ -74,11 +119,17 @@ export const BudgetTabV2: React.FC = () => {
     }
   };
 
-  // Handle reallocation
+  // ── Reallocation ────────────────────────────────────────────────────────
+
   const handleConfirmReallocation = async (reallocations: Array<{ id: string; allocatedBudget: number }>) => {
     setIsLoading(true);
     try {
-      await dataService.updateCampaignBudgetAllocations(reallocations);
+      // Map camelCase → snake_case for the DB call
+      const dbPayload = reallocations.map((r) => ({
+        id: r.id,
+        allocated_budget: r.allocatedBudget,
+      }));
+      await dataService.updateCampaignBudgetAllocations(dbPayload);
       await refetch();
       setIsReallocateOpen(null);
     } catch (err) {
@@ -89,7 +140,22 @@ export const BudgetTabV2: React.FC = () => {
     }
   };
 
-  // Loading state
+  // ── Helper: get the objective to pass to the campaign modal ────────────
+
+  const getCampaignModalObjective = (): ObjectiveBudget => {
+    if (editingCampaign) {
+      return (objectives.find((o) => o.id === editingCampaign.objectiveBudgetId) as ObjectiveBudget)
+        ?? objectives[0] as ObjectiveBudget;
+    }
+    if (newCampaignObjectiveId) {
+      return (objectives.find((o) => o.id === newCampaignObjectiveId) as ObjectiveBudget)
+        ?? objectives[0] as ObjectiveBudget;
+    }
+    return objectives[0] as ObjectiveBudget;
+  };
+
+  // ── States ──────────────────────────────────────────────────────────────
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -101,7 +167,6 @@ export const BudgetTabV2: React.FC = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-xl p-6">
@@ -119,7 +184,7 @@ export const BudgetTabV2: React.FC = () => {
 
   return (
     <div className="animate-fade-in space-y-6">
-      {/* Header */}
+      {/* ── Header ──────────────────────────────────────────────────── */}
       <div>
         <h2 className="text-2xl font-bold text-slate-800">Gestão de Orçamento — {currentMonth}</h2>
         <p className="text-slate-500 mt-1">
@@ -127,7 +192,7 @@ export const BudgetTabV2: React.FC = () => {
         </p>
       </div>
 
-      {/* Overall Status Cards */}
+      {/* ── Overall KPI Cards ────────────────────────────────────────── */}
       <div className="grid grid-cols-4 gap-4">
         {[
           {
@@ -171,42 +236,82 @@ export const BudgetTabV2: React.FC = () => {
         ))}
       </div>
 
-      {/* Objectives List */}
+      {/* ── Objectives List ──────────────────────────────────────────── */}
       <div className="space-y-4">
-        <h3 className="text-lg font-bold text-slate-800">Orçamento por Objetivo</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-slate-800">Orçamento por Objetivo</h3>
+          <button
+            onClick={() => {
+              setEditingObjective(undefined);
+              setIsObjectiveModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+          >
+            <Plus size={14} />
+            Novo Objetivo
+          </button>
+        </div>
 
         {objectives.length === 0 ? (
-          <div className="bg-slate-50 rounded-xl border border-slate-200 p-8 text-center">
-            <p className="text-slate-500">Nenhum orçamento configurado para este mês</p>
-            <p className="text-slate-400 text-sm mt-1">
-              Configure metas em <strong>Configurações</strong> para começar
+          <div className="bg-slate-50 rounded-xl border border-dashed border-slate-300 p-10 text-center">
+            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Wallet size={22} className="text-slate-400" />
+            </div>
+            <p className="text-slate-700 font-medium mb-1">Nenhum orçamento configurado para {currentMonth}</p>
+            <p className="text-slate-400 text-sm mb-5">
+              Crie orçamentos por objetivo para acompanhar seus gastos e projeções
             </p>
+            <button
+              onClick={() => {
+                setEditingObjective(undefined);
+                setIsObjectiveModalOpen(true);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors"
+            >
+              <Plus size={15} />
+              Criar Primeiro Orçamento
+            </button>
           </div>
         ) : (
           objectives.map((objective) => (
             <div key={objective.id}>
-              {/* Objective Card */}
               <ObjectiveBudgetCard
                 objective={objective}
-                status={status}
-                campaignsCount={campaigns.filter((c) => c.objective_budget_id === objective.id).length}
+                campaignsCount={campaigns.filter((c) => c.objectiveBudgetId === objective.id).length}
                 isExpanded={expandedObjective === objective.id}
                 onToggleExpand={() =>
                   setExpandedObjective(expandedObjective === objective.id ? null : objective.id)
                 }
+                onEdit={() => {
+                  setEditingObjective(objective);
+                  setIsObjectiveModalOpen(true);
+                }}
+                onAddCampaign={() => {
+                  setEditingCampaign(undefined);
+                  setNewCampaignObjectiveId(objective.id);
+                  // Auto-expand
+                  setExpandedObjective(objective.id);
+                  setIsEditModalOpen(true);
+                }}
               />
 
               {/* Expanded Campaign Table */}
               {expandedObjective === objective.id && (
-                <div className="mt-4 animate-fade-in">
+                <div className="mt-3 animate-fade-in">
                   <CampaignBudgetTable
                     campaigns={campaignsForObjective}
                     onEdit={(campaign) => {
                       setEditingCampaign(campaign);
+                      setNewCampaignObjectiveId(null);
                       setIsEditModalOpen(true);
                     }}
                     onDelete={handleDeleteCampaign}
                     onRelocate={() => setIsReallocateOpen(objective.id)}
+                    onAdd={() => {
+                      setEditingCampaign(undefined);
+                      setNewCampaignObjectiveId(objective.id);
+                      setIsEditModalOpen(true);
+                    }}
                   />
                 </div>
               )}
@@ -215,23 +320,39 @@ export const BudgetTabV2: React.FC = () => {
         )}
       </div>
 
-      {/* Modals */}
-      <EditCampaignBudgetModal
-        isOpen={isEditModalOpen}
-        campaign={editingCampaign}
-        objective={
-          editingCampaign
-            ? (objectives.find((o) => o.id === editingCampaign.objective_budget_id) as ObjectiveBudget)
-            : (objectives[0] as ObjectiveBudget)
-        }
-        onSave={handleSaveCampaign}
+      {/* ── Modals ───────────────────────────────────────────────────── */}
+
+      {/* Objective Modal */}
+      <EditObjectiveBudgetModal
+        isOpen={isObjectiveModalOpen}
+        objective={editingObjective}
+        month={currentMonth}
+        onSave={handleSaveObjective}
         onClose={() => {
-          setIsEditModalOpen(false);
-          setEditingCampaign(undefined);
+          setIsObjectiveModalOpen(false);
+          setEditingObjective(undefined);
         }}
         isLoading={isLoading}
       />
 
+      {/* Campaign Modal */}
+      {objectives.length > 0 && (
+        <EditCampaignBudgetModal
+          isOpen={isEditModalOpen}
+          campaign={editingCampaign}
+          objective={getCampaignModalObjective()}
+          currentMonth={currentMonth}
+          onSave={handleSaveCampaign}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingCampaign(undefined);
+            setNewCampaignObjectiveId(null);
+          }}
+          isLoading={isLoading}
+        />
+      )}
+
+      {/* Reallocation Modal */}
       {isReallocateOpen && (
         <RealocateBudgetOrchestrator
           isOpen={true}

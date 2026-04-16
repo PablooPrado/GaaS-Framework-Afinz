@@ -1,22 +1,33 @@
 /**
  * ObjectiveBudgetCard Component
  *
- * Displays aggregated budget metrics for an objective (e.g., B2C, Branding)
- * Shows: Planejado, Realizado, Projeção, Ritmo
+ * Displays aggregated budget metrics for a single objective (e.g., B2C, Branding)
+ * Computes its own per-objective status from objective.realizedSpend / projectedSpend
  * Expandable to show campaign details
  */
 
 import React from 'react';
-import { ChevronDown, ChevronUp, TrendingDown, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react';
-import { ObjectiveBudget, BudgetStatus, formatPaceStatus } from '../types/budget';
+import {
+  ChevronDown, ChevronUp, TrendingDown, TrendingUp,
+  CheckCircle, Edit2, Plus,
+} from 'lucide-react';
+import { ObjectiveBudget, formatPaceStatus, getPaceStatus } from '../types/budget';
+import { getDate, getDaysInMonth } from 'date-fns';
+
+const OBJECTIVE_LABELS: Record<string, string> = {
+  marca: 'Marca (Branding)',
+  b2c: 'Performance (B2C)',
+  plurix: 'Plurix',
+  seguros: 'Seguros',
+};
 
 interface ObjectiveBudgetCardProps {
   objective: ObjectiveBudget;
-  status: BudgetStatus;
   campaignsCount: number;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onEdit?: () => void;
+  onAddCampaign?: () => void;
 }
 
 const formatCurrency = (value: number) =>
@@ -27,124 +38,166 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-const formatPercentage = (value: number) => `${Math.round(value)}%`;
-
 export const ObjectiveBudgetCard: React.FC<ObjectiveBudgetCardProps> = ({
   objective,
-  status,
   campaignsCount,
   isExpanded,
   onToggleExpand,
   onEdit,
+  onAddCampaign,
 }) => {
-  const percentUsed = objective.totalBudget > 0 ? (status.cumulativeActual / objective.totalBudget) * 100 : 0;
-  const statusDisplay = formatPaceStatus(status.status);
+  // Per-objective metrics — computed from objective data, not global status
+  const realizedSpend = objective.realizedSpend || 0;
+  const projectedSpend = objective.projectedSpend || 0;
+  const totalBudget = objective.totalBudget;
+  const paceIndex = totalBudget > 0 ? projectedSpend / totalBudget : 0;
+  const localStatus = getPaceStatus(paceIndex);
+  const statusDisplay = formatPaceStatus(localStatus);
 
-  // Progress bar color based on pacing
-  let progressColor = 'bg-emerald-500'; // ontrack
-  if (status.status === 'overspending' || status.status === 'atrisk') progressColor = 'bg-red-500';
-  if (status.status === 'underspending') progressColor = 'bg-amber-500';
+  const daysPassed = getDate(new Date());
+  const daysInMonth = getDaysInMonth(new Date());
+  const daysRemaining = Math.max(0, daysInMonth - daysPassed);
+  const dailyProjected = totalBudget / daysInMonth;
+  const percentUsed = totalBudget > 0 ? Math.min((realizedSpend / totalBudget) * 100, 100) : 0;
+
+  // Progress bar color
+  let progressColor = 'bg-emerald-500';
+  if (localStatus === 'overspending' || localStatus === 'atrisk') progressColor = 'bg-red-500';
+  else if (localStatus === 'underspending') progressColor = 'bg-amber-500';
+  else if (localStatus === 'severe') progressColor = 'bg-slate-400';
+
+  const projectionDiff = projectedSpend - totalBudget;
+  const label = OBJECTIVE_LABELS[objective.objective] || objective.objective.toUpperCase();
+  const channelLabel = objective.channel === 'meta' ? ' · Meta' : objective.channel === 'google' ? ' · Google' : '';
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-      {/* Header */}
-      <div
-        className="p-6 cursor-pointer hover:bg-slate-50 transition-colors flex items-center justify-between"
-        onClick={onToggleExpand}
-      >
-        <div className="flex-1">
-          <h3 className="text-lg font-bold text-slate-800 mb-1">{objective.objective.toUpperCase()}</h3>
-          <p className="text-sm text-slate-500">{campaignsCount} campanhas</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <div className={`text-sm font-medium ${statusDisplay.color}`}>{statusDisplay.label}</div>
-            <div className="text-xs text-slate-400">{status.paceIndex.toFixed(2)}x ritmo</div>
+      {/* ── Header ─────────────────────────────────────────────────── */}
+      <div className="px-6 pt-5 pb-4 flex items-center gap-3">
+        {/* Expand toggle */}
+        <button
+          onClick={onToggleExpand}
+          className="flex-1 flex items-center gap-3 text-left min-w-0"
+        >
+          <div className="min-w-0">
+            <h3 className="text-base font-bold text-slate-800 leading-tight">
+              {label}
+              <span className="text-xs font-normal text-slate-400 ml-1">{channelLabel}</span>
+            </h3>
+            <p className="text-sm text-slate-400 mt-0.5">
+              {campaignsCount} {campaignsCount === 1 ? 'campanha' : 'campanhas'}
+            </p>
           </div>
+        </button>
 
-          {isExpanded ? (
-            <ChevronUp size={24} className="text-slate-400" />
-          ) : (
-            <ChevronDown size={24} className="text-slate-400" />
-          )}
+        {/* Status badge */}
+        <div className={`shrink-0 text-xs font-semibold px-3 py-1 rounded-full ${statusDisplay.color}`}>
+          {statusDisplay.label} · {paceIndex.toFixed(2)}x
         </div>
+
+        {/* Action buttons */}
+        {onAddCampaign && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddCampaign(); }}
+            title="Adicionar Campanha"
+            className="shrink-0 p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+          >
+            <Plus size={17} />
+          </button>
+        )}
+        {onEdit && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            title="Editar Orçamento"
+            className="shrink-0 p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          >
+            <Edit2 size={15} />
+          </button>
+        )}
+        <button
+          onClick={onToggleExpand}
+          className="shrink-0 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+        >
+          {isExpanded
+            ? <ChevronUp size={18} className="text-slate-400" />
+            : <ChevronDown size={18} className="text-slate-400" />
+          }
+        </button>
       </div>
 
-      {/* Progress bar */}
+      {/* ── Progress bar ──────────────────────────────────────────── */}
       <div className="px-6 pb-4">
+        <div className="flex justify-between text-xs text-slate-500 mb-1.5">
+          <span>R$ 0</span>
+          <span className="font-medium text-slate-700">{Math.round(percentUsed)}% realizado</span>
+          <span>{formatCurrency(totalBudget)}</span>
+        </div>
         <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
           <div
             className={`h-full ${progressColor} transition-all duration-300`}
-            style={{ width: `${Math.min(percentUsed, 100)}%` }}
+            style={{ width: `${percentUsed}%` }}
           />
-        </div>
-        <div className="flex justify-between mt-2 text-xs text-slate-500">
-          <span>R$ 0</span>
-          <span className="font-medium text-slate-700">{formatPercentage(percentUsed)}</span>
-          <span>{formatCurrency(objective.totalBudget)}</span>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="px-6 pb-6 grid grid-cols-4 gap-3">
+      {/* ── KPI Cards ─────────────────────────────────────────────── */}
+      <div className="px-6 pb-5 grid grid-cols-4 gap-3">
         {/* Planejado */}
         <div className="bg-slate-50 p-3 rounded-lg">
           <p className="text-xs text-slate-500 mb-1">Planejado</p>
-          <p className="text-lg font-bold text-slate-800">{formatCurrency(objective.totalBudget)}</p>
+          <p className="text-base font-bold text-slate-800">{formatCurrency(totalBudget)}</p>
+          <p className="text-xs text-slate-400 mt-0.5">{formatCurrency(dailyProjected)}/dia</p>
         </div>
 
         {/* Realizado */}
         <div className="bg-blue-50 p-3 rounded-lg">
           <p className="text-xs text-slate-500 mb-1">Realizado</p>
-          <p className="text-lg font-bold text-blue-600">{formatCurrency(status.cumulativeActual)}</p>
-          <p className="text-xs text-slate-400 mt-1">{formatPercentage(percentUsed)}</p>
+          <p className="text-base font-bold text-blue-600">{formatCurrency(realizedSpend)}</p>
+          <p className="text-xs text-slate-400 mt-0.5">{Math.round(percentUsed)}% do planejado</p>
         </div>
 
         {/* Projeção */}
         <div
           className={`p-3 rounded-lg ${
-            status.status === 'overspending'
-              ? 'bg-red-50'
-              : status.status === 'underspending'
-                ? 'bg-amber-50'
-                : 'bg-slate-50'
+            localStatus === 'overspending' ? 'bg-red-50'
+            : localStatus === 'underspending' ? 'bg-amber-50'
+            : 'bg-slate-50'
           }`}
         >
           <p className="text-xs text-slate-500 mb-1">Projeção</p>
           <p
-            className={`text-lg font-bold ${
-              status.status === 'overspending'
-                ? 'text-red-600'
-                : status.status === 'underspending'
-                  ? 'text-amber-600'
-                  : 'text-slate-800'
+            className={`text-base font-bold ${
+              localStatus === 'overspending' ? 'text-red-600'
+              : localStatus === 'underspending' ? 'text-amber-600'
+              : 'text-slate-800'
             }`}
           >
-            {formatCurrency(status.projectionFull)}
+            {formatCurrency(projectedSpend)}
+          </p>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {projectionDiff > 0
+              ? `+${formatCurrency(projectionDiff)} acima`
+              : projectionDiff < 0
+                ? `-${formatCurrency(Math.abs(projectionDiff))} abaixo`
+                : 'exato'
+            }
           </p>
         </div>
 
         {/* Ritmo */}
-        <div className="bg-slate-50 p-3 rounded-lg flex flex-col justify-between">
-          <p className="text-xs text-slate-500">Ritmo</p>
+        <div className="bg-slate-50 p-3 rounded-lg">
+          <p className="text-xs text-slate-500 mb-1">Ritmo</p>
           <div className="flex items-center gap-1">
-            <p className="text-lg font-bold text-slate-800">{status.paceIndex.toFixed(2)}x</p>
-            {status.status === 'overspending' && <TrendingUp size={16} className="text-red-500" />}
-            {status.status === 'underspending' && <TrendingDown size={16} className="text-amber-500" />}
-            {status.status === 'ontrack' && <CheckCircle size={16} className="text-emerald-500" />}
+            <p className="text-base font-bold text-slate-800">{paceIndex.toFixed(2)}x</p>
+            {localStatus === 'overspending' && <TrendingUp size={14} className="text-red-500" />}
+            {localStatus === 'underspending' && <TrendingDown size={14} className="text-amber-500" />}
+            {localStatus === 'ontrack' && <CheckCircle size={14} className="text-emerald-500" />}
           </div>
+          <p className="text-xs text-slate-400 mt-0.5">{daysRemaining} dias restantes</p>
         </div>
       </div>
 
-      {/* Divider if expandable */}
-      {isExpanded && <div className="h-px bg-slate-200" />}
-
-      {/* Metadata footer */}
-      <div className="px-6 py-3 bg-slate-50 text-xs text-slate-500 flex justify-between">
-        <span>Taxa diária: {formatCurrency(status.dailyProjected)}</span>
-        <span>Dias restantes: {Math.max(0, 30 - new Date().getDate())}</span>
-      </div>
+      {isExpanded && <div className="h-px bg-slate-100" />}
     </div>
   );
 };

@@ -114,20 +114,32 @@ export const useBudgetHierarchy = (
           id: b.id,
           month: b.month,
           objective: b.objective,
-          channel: b.channel,
-          totalBudget: b.value || 0,
+          channel: b.channel || undefined,
+          totalBudget: b.budget || 0,  // DB column is "budget" not "value"
           createdAt: b.created_at ? new Date(b.created_at) : undefined,
           updatedAt: b.updated_at ? new Date(b.updated_at) : undefined,
         }));
 
-      // 2. Fetch CampaignBudgets
-      const campaignsData = await dataService.fetchCampaignBudgetsByMonth(month);
+      // 2. Fetch CampaignBudgets — map snake_case DB columns to camelCase TypeScript types
+      const campaignsRaw = await dataService.fetchCampaignBudgetsByMonth(month);
+      const campaignsMapped: CampaignBudget[] = campaignsRaw.map((c: any) => ({
+        id: c.id,
+        month: c.month,
+        objectiveBudgetId: c.objective_budget_id,
+        campaignName: c.campaign_name,
+        objective: c.objective,
+        channel: c.channel,
+        allocatedBudget: c.allocated_budget,
+        notes: c.notes || undefined,
+        createdAt: c.created_at ? new Date(c.created_at) : undefined,
+        updatedAt: c.updated_at ? new Date(c.updated_at) : undefined,
+      }));
 
       // 3. Fetch paid_media_metrics for realized spend
       const metricsData = await dataService.fetchPaidMediaByAd();
 
       setObjectives(objectivesData);
-      setCampaigns(campaignsData as CampaignBudget[]);
+      setCampaigns(campaignsMapped);
       setDailyMetrics(metricsData);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch budget data'));
@@ -179,16 +191,19 @@ export const useBudgetHierarchy = (
   const enrichedObjectives = useMemo(() => {
     return objectives.map((objective) => {
       const objectiveCampaigns = filteredCampaigns.filter(
-        (c) => c.objective_budget_id === objective.id
+        (c) => c.objectiveBudgetId === objective.id
       );
 
-      const realizedSpend = objectiveCampaigns.reduce((sum, c) => sum + c.realizedSpend, 0);
-      const projectedSpend = objectiveCampaigns.reduce((sum, c) => sum + c.projectedSpend, 0);
+      const realizedSpend = objectiveCampaigns.reduce((sum, c) => sum + (c.realizedSpend || 0), 0);
+      const projectedSpend = objectiveCampaigns.reduce((sum, c) => sum + (c.projectedSpend || 0), 0);
+      const paceIndex = objective.totalBudget > 0 ? projectedSpend / objective.totalBudget : 0;
 
       return {
         ...objective,
         realizedSpend,
         projectedSpend,
+        paceIndex,
+        paceStatus: getPaceStatus(paceIndex),
       };
     });
   }, [objectives, filteredCampaigns]);

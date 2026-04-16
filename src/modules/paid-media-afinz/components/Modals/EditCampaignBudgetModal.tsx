@@ -11,6 +11,7 @@ interface EditCampaignBudgetModalProps {
   isOpen: boolean;
   campaign?: CampaignBudget;
   objective: ObjectiveBudget;
+  currentMonth: string;
   onSave: (campaign: Omit<CampaignBudget, 'createdAt' | 'updatedAt'>) => Promise<void>;
   onClose: () => void;
   isLoading?: boolean;
@@ -20,6 +21,7 @@ export const EditCampaignBudgetModal: React.FC<EditCampaignBudgetModalProps> = (
   isOpen,
   campaign,
   objective,
+  currentMonth,
   onSave,
   onClose,
   isLoading,
@@ -27,6 +29,7 @@ export const EditCampaignBudgetModal: React.FC<EditCampaignBudgetModalProps> = (
   const [formData, setFormData] = useState<Partial<CampaignBudget>>({
     campaignName: '',
     allocatedBudget: 0,
+    channel: 'meta',
     notes: '',
   });
   const [error, setError] = useState<string>('');
@@ -37,12 +40,14 @@ export const EditCampaignBudgetModal: React.FC<EditCampaignBudgetModalProps> = (
       setFormData({
         campaignName: campaign.campaignName,
         allocatedBudget: campaign.allocatedBudget,
+        channel: campaign.channel || 'meta',
         notes: campaign.notes,
       });
     } else {
       setFormData({
         campaignName: '',
         allocatedBudget: 0,
+        channel: 'meta',
         notes: '',
       });
     }
@@ -74,11 +79,11 @@ export const EditCampaignBudgetModal: React.FC<EditCampaignBudgetModalProps> = (
     try {
       await onSave({
         id: campaign?.id || '',
-        month: campaign?.month || '',
+        month: campaign?.month || currentMonth,
         objectiveBudgetId: campaign?.objectiveBudgetId || objective.id,
         campaignName: formData.campaignName.trim(),
         objective: objective.objective,
-        channel: campaign?.channel || 'meta',
+        channel: (formData.channel || 'meta') as 'meta' | 'google',
         allocatedBudget: formData.allocatedBudget,
         notes: formData.notes,
       });
@@ -129,6 +134,20 @@ export const EditCampaignBudgetModal: React.FC<EditCampaignBudgetModalProps> = (
               disabled={isLoading}
               className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
             />
+          </div>
+
+          {/* Canal */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Canal</label>
+            <select
+              value={formData.channel || 'meta'}
+              onChange={(e) => setFormData({ ...formData, channel: e.target.value as 'meta' | 'google' })}
+              disabled={isLoading}
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+            >
+              <option value="meta">Meta Ads</option>
+              <option value="google">Google Ads</option>
+            </select>
           </div>
 
           {/* Allocated Budget */}
