@@ -8,9 +8,24 @@
  * Calculated fields (paceIndex, projections) are derived from paid_media_metrics
  */
 
-export type BudgetObjective = 'marca' | 'b2c' | 'plurix' | 'seguros';
+// String aberto — aceita qualquer objetivo (marca, b2c, plurix, seguros, rentabilizacao...)
+export type BudgetObjective = string;
 export type BudgetChannel = 'meta' | 'google';
 export type PaceStatus = 'ontrack' | 'atrisk' | 'overspending' | 'underspending' | 'severe';
+
+// Objetivos conhecidos/padrão (display names)
+export const KNOWN_OBJECTIVES: Record<string, string> = {
+  marca: 'Marca (Branding)',
+  b2c: 'Performance (B2C)',
+  plurix: 'Plurix',
+  seguros: 'Seguros',
+  rentabilizacao: 'Rentabilização',
+};
+
+/** Retorna label legível de um objetivo — graceful fallback para objetivos desconhecidos */
+export function getObjectiveLabel(objective: string): string {
+  return KNOWN_OBJECTIVES[objective] ?? objective.charAt(0).toUpperCase() + objective.slice(1);
+}
 
 /**
  * ObjectiveBudget

@@ -5,14 +5,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Save, AlertCircle } from 'lucide-react';
-import { ObjectiveBudget, BudgetObjective, BudgetChannel } from '../../types/budget';
+import { ObjectiveBudget, BudgetObjective, BudgetChannel, KNOWN_OBJECTIVES } from '../../types/budget';
 
-const OBJECTIVES: { value: BudgetObjective; label: string }[] = [
-  { value: 'marca', label: 'Marca (Branding)' },
-  { value: 'b2c', label: 'Performance (B2C)' },
-  { value: 'plurix', label: 'Plurix' },
-  { value: 'seguros', label: 'Seguros' },
-];
+const DEFAULT_OBJECTIVES = Object.entries(KNOWN_OBJECTIVES).map(([value, label]) => ({ value, label }));
+const CUSTOM_SENTINEL = '__custom__';
 
 interface EditObjectiveBudgetModalProps {
   isOpen: boolean;
@@ -38,28 +34,37 @@ export const EditObjectiveBudgetModal: React.FC<EditObjectiveBudgetModalProps> =
   isLoading,
 }) => {
   const [formData, setFormData] = useState<{
-    objective: BudgetObjective;
+    objective: string;
+    customObjective: string;
     budget: number;
     channel: string;
   }>({
     objective: 'b2c',
+    customObjective: '',
     budget: 0,
     channel: '',
   });
   const [error, setError] = useState('');
 
+  const isKnownObjective = (val: string) => val in KNOWN_OBJECTIVES;
+
   useEffect(() => {
     if (objective) {
+      const known = isKnownObjective(objective.objective);
       setFormData({
-        objective: objective.objective,
+        objective: known ? objective.objective : CUSTOM_SENTINEL,
+        customObjective: known ? '' : objective.objective,
         budget: objective.totalBudget,
         channel: objective.channel || '',
       });
     } else {
-      setFormData({ objective: 'b2c', budget: 0, channel: '' });
+      setFormData({ objective: 'b2c', customObjective: '', budget: 0, channel: '' });
     }
     setError('');
   }, [objective, isOpen]);
+
+  const resolvedObjective =
+    formData.objective === CUSTOM_SENTINEL ? formData.customObjective.trim() : formData.objective;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,12 +74,16 @@ export const EditObjectiveBudgetModal: React.FC<EditObjectiveBudgetModalProps> =
       setError('Orçamento deve ser maior que R$ 0');
       return;
     }
+    if (!resolvedObjective) {
+      setError('Informe um nome para o objetivo personalizado');
+      return;
+    }
 
     try {
       await onSave({
         id: objective?.id,
         month,
-        objective: formData.objective,
+        objective: resolvedObjective,
         budget: formData.budget,
         channel: formData.channel || null,
       });
@@ -111,18 +120,29 @@ export const EditObjectiveBudgetModal: React.FC<EditObjectiveBudgetModalProps> =
             <label className="block text-sm font-medium text-slate-700 mb-1">Objetivo</label>
             <select
               value={formData.objective}
-              onChange={(e) => setFormData({ ...formData, objective: e.target.value as BudgetObjective })}
+              onChange={(e) => setFormData({ ...formData, objective: e.target.value, customObjective: '' })}
               disabled={!!objective || isLoading}
               className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:bg-slate-50 disabled:text-slate-500"
             >
-              {OBJECTIVES.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
+              {DEFAULT_OBJECTIVES.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
               ))}
+              <option value={CUSTOM_SENTINEL}>✏️ Personalizado...</option>
             </select>
             {!!objective && (
               <p className="text-xs text-slate-400 mt-1">Objetivo não pode ser alterado após criação</p>
+            )}
+            {/* Input livre para objetivo personalizado */}
+            {formData.objective === CUSTOM_SENTINEL && !objective && (
+              <input
+                type="text"
+                placeholder="ex: rentabilizacao"
+                value={formData.customObjective}
+                onChange={(e) => setFormData({ ...formData, customObjective: e.target.value })}
+                disabled={isLoading}
+                className="mt-2 w-full px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                autoFocus
+              />
             )}
           </div>
 

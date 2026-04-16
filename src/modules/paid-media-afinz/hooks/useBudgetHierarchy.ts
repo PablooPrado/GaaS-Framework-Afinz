@@ -2,14 +2,14 @@
  * useBudgetHierarchy Hook
  *
  * Aggregates budget data from three sources:
- * 1. ObjectiveBudget (from paid_media_budgets table, linked to Goals)
+ * 1. ObjectiveBudget (from paid_media_budgets table)
  * 2. CampaignBudget (from campaign_budgets table)
- * 3. paid_media_metrics (for realized spend calculations)
+ * 3. paid_media_metrics + paid_media_campaign_mappings (for realized spend)
  *
- * Computes derived metrics:
- * - realizedSpend per campaign and objective
- * - projectedSpend (linear projection to month-end)
- * - paceIndex and status (ontrack, atrisk, overspending, etc.)
+ * Realized spend strategy:
+ * - Primary: paid_media_metrics ↔ paid_media_campaign_mappings → grouped by objective
+ * - This works even when campaign_budgets is empty
+ * - Campaign-level budgets add planning granularity, not required for spend tracking
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -39,10 +39,9 @@ interface UseBudgetHierarchyResult {
 }
 
 /**
- * Calculate realized spend for a campaign from daily metrics
- * Filters paid_media_metrics where campaign_name matches
+ * Calculate realized spend for a specific campaign from daily metrics
  */
-const calculateRealizedSpend = (
+const calculateCampaignRealizedSpend = (
   metrics: any[],
   campaignName: string,
   month: string
@@ -56,39 +55,21 @@ const calculateRealizedSpend = (
 };
 
 /**
- * Calculate linear projection for a campaign
+ * Linear projection to month-end
  * Formula: (realized / daysPassed) * daysInMonth
  */
 const calculateProjection = (realizedSpend: number, month: string): number => {
   const now = new Date();
-  const monthDate = parseISO(`${month.split('/')[1]}-${month.split('/')[0]}-01`);
+  const [mm, yyyy] = month.split('/');
+  const monthDate = parseISO(`${yyyy}-${mm}-01`);
 
-  // Check if we're in the same month
   if (!isSameMonth(now, monthDate)) {
-    // If month is in the past, projection = realized spend
-    if (now > monthDate) {
-      return realizedSpend;
-    }
-    // If month is in the future, we can't project yet
-    return 0;
+    return now > monthDate ? realizedSpend : 0;
   }
 
-  // We're in the month, calculate projection
   const daysPassed = getDate(now);
-  const daysInMonth = getDaysInMonth(monthDate);
-
   if (daysPassed === 0) return 0;
-
-  return (realizedSpend / daysPassed) * daysInMonth;
-};
-
-/**
- * Calculate daily rate for a budget
- */
-const calculateDailyRate = (allocatedBudget: number, month: string): number => {
-  const monthDate = parseISO(`${month.split('/')[1]}-${month.split('/')[0]}-01`);
-  const daysInMonth = getDaysInMonth(monthDate);
-  return allocatedBudget / daysInMonth;
+  return (realizedSpend / daysPassed) * getDaysInMonth(monthDate);
 };
 
 export const useBudgetHierarchy = (
@@ -98,49 +79,70 @@ export const useBudgetHierarchy = (
   const [objectives, setObjectives] = useState<ObjectiveBudget[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignBudget[]>([]);
   const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
+  // Map: objective_key → realized spend (computed from metrics + campaign_mappings)
+  const [objectiveRealizedMap, setObjectiveRealizedMap] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Fetch all data
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // 1. Fetch ObjectiveBudgets (paid_media_budgets table)
+      // 1. Fetch ObjectiveBudgets
       const budgetsData = await dataService.fetchPaidMediaBudgets();
       const objectivesData: ObjectiveBudget[] = budgetsData
         .filter((b: any) => b.month === month)
         .map((b: any) => ({
           id: b.id,
           month: b.month,
-          objective: b.objective,
+          objective: b.objective as BudgetObjective,
           channel: b.channel || undefined,
-          totalBudget: b.budget || 0,  // DB column is "budget" not "value"
+          totalBudget: b.budget || 0,
           createdAt: b.created_at ? new Date(b.created_at) : undefined,
           updatedAt: b.updated_at ? new Date(b.updated_at) : undefined,
         }));
 
-      // 2. Fetch CampaignBudgets — map snake_case DB columns to camelCase TypeScript types
+      // 2. Fetch CampaignBudgets — map snake_case DB → camelCase TypeScript
       const campaignsRaw = await dataService.fetchCampaignBudgetsByMonth(month);
       const campaignsMapped: CampaignBudget[] = campaignsRaw.map((c: any) => ({
         id: c.id,
         month: c.month,
         objectiveBudgetId: c.objective_budget_id,
         campaignName: c.campaign_name,
-        objective: c.objective,
-        channel: c.channel,
+        objective: c.objective as BudgetObjective,
+        channel: c.channel as BudgetChannel,
         allocatedBudget: c.allocated_budget,
         notes: c.notes || undefined,
         createdAt: c.created_at ? new Date(c.created_at) : undefined,
         updatedAt: c.updated_at ? new Date(c.updated_at) : undefined,
       }));
 
-      // 3. Fetch paid_media_metrics for realized spend
-      const metricsData = await dataService.fetchPaidMediaByAd();
+      // 3. Fetch metrics + campaign mappings for realized spend
+      const [metricsData, mappingsData] = await Promise.all([
+        dataService.fetchPaidMediaByAd(),
+        dataService.fetchCampaignMappings(),
+      ]);
+
+      // Build campaign_name → objective lookup
+      const campaignToObjective = new Map<string, string>(
+        mappingsData.map((m: any) => [m.campaign_name, m.objective])
+      );
+
+      // Aggregate realized spend per objective (primary path — no campaign_budgets needed)
+      const realizedByObjective = new Map<string, number>();
+      metricsData.forEach((m: any) => {
+        if (!m.date || !m.campaign) return;
+        const metricMonth = format(new Date(m.date), 'MM/yyyy');
+        if (metricMonth !== month) return;
+        const obj = campaignToObjective.get(m.campaign);
+        if (!obj) return;
+        realizedByObjective.set(obj, (realizedByObjective.get(obj) || 0) + (m.spend || 0));
+      });
 
       setObjectives(objectivesData);
       setCampaigns(campaignsMapped);
       setDailyMetrics(metricsData);
+      setObjectiveRealizedMap(realizedByObjective);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch budget data'));
     } finally {
@@ -148,15 +150,14 @@ export const useBudgetHierarchy = (
     }
   }, [month]);
 
-  // Load data on mount and when month changes
   useEffect(() => {
     fetchData();
   }, [month, fetchData]);
 
-  // Compute enriched campaign budgets with realized/projected spend
+  // Enrich campaign budgets with per-campaign realized/projected spend
   const enrichedCampaigns = useMemo(() => {
     return campaigns.map((campaign) => {
-      const realizedSpend = calculateRealizedSpend(dailyMetrics, campaign.campaignName, month);
+      const realizedSpend = calculateCampaignRealizedSpend(dailyMetrics, campaign.campaignName, month);
       const projectedSpend = calculateProjection(realizedSpend, month);
       const paceIndex = campaign.allocatedBudget > 0 ? projectedSpend / campaign.allocatedBudget : 0;
 
@@ -172,30 +173,24 @@ export const useBudgetHierarchy = (
     });
   }, [campaigns, dailyMetrics, month]);
 
-  // Apply filters
+  // Apply filters to campaigns
   const filteredCampaigns = useMemo(() => {
     let filtered = enrichedCampaigns;
-
-    if (filters?.objectives && filters.objectives.length > 0) {
+    if (filters?.objectives?.length) {
       filtered = filtered.filter((c) => filters.objectives!.includes(c.objective));
     }
-
-    if (filters?.channels && filters.channels.length > 0) {
+    if (filters?.channels?.length) {
       filtered = filtered.filter((c) => filters.channels!.includes(c.channel));
     }
-
     return filtered;
   }, [enrichedCampaigns, filters]);
 
-  // Compute enriched objectives with aggregated metrics
+  // Enrich objectives using mapping-based realized spend (works with or without campaign_budgets)
   const enrichedObjectives = useMemo(() => {
     return objectives.map((objective) => {
-      const objectiveCampaigns = filteredCampaigns.filter(
-        (c) => c.objectiveBudgetId === objective.id
-      );
-
-      const realizedSpend = objectiveCampaigns.reduce((sum, c) => sum + (c.realizedSpend || 0), 0);
-      const projectedSpend = objectiveCampaigns.reduce((sum, c) => sum + (c.projectedSpend || 0), 0);
+      // Primary: spend from metrics+mappings (always populated when data exists)
+      const realizedSpend = objectiveRealizedMap.get(objective.objective) || 0;
+      const projectedSpend = calculateProjection(realizedSpend, month);
       const paceIndex = objective.totalBudget > 0 ? projectedSpend / objective.totalBudget : 0;
 
       return {
@@ -206,27 +201,28 @@ export const useBudgetHierarchy = (
         paceStatus: getPaceStatus(paceIndex),
       };
     });
-  }, [objectives, filteredCampaigns]);
+  }, [objectives, objectiveRealizedMap, month]);
 
-  // Compute overall budget status
-  const status = useMemo(() => {
-    const totalAllocated = enrichedObjectives.reduce((sum, o) => sum + o.totalBudget, 0);
-    const totalRealizedSpend = enrichedObjectives.reduce((sum, o) => sum + o.realizedSpend, 0);
-    const totalProjectedSpend = enrichedObjectives.reduce((sum, o) => sum + o.projectedSpend, 0);
+  // Overall budget status
+  const status = useMemo<BudgetStatus>(() => {
+    const totalAllocated = enrichedObjectives.reduce((s, o) => s + o.totalBudget, 0);
+    const totalRealized = enrichedObjectives.reduce((s, o) => s + (o.realizedSpend || 0), 0);
+    const totalProjected = enrichedObjectives.reduce((s, o) => s + (o.projectedSpend || 0), 0);
 
-    const monthDate = parseISO(`${month.split('/')[1]}-${month.split('/')[0]}-01`);
+    const [mm, yyyy] = month.split('/');
+    const monthDate = parseISO(`${yyyy}-${mm}-01`);
     const daysPassed = getDate(new Date());
     const daysInMonth = getDaysInMonth(monthDate);
     const dailyProjected = totalAllocated / daysInMonth;
 
     return {
-      dailyActual: daysPassed > 0 ? totalRealizedSpend / daysPassed : 0,
+      dailyActual: daysPassed > 0 ? totalRealized / daysPassed : 0,
       dailyProjected,
-      cumulativeActual: totalRealizedSpend,
-      cumulativeProjected: (totalAllocated / daysInMonth) * daysPassed,
-      projectionFull: totalProjectedSpend,
-      paceIndex: totalAllocated > 0 ? totalProjectedSpend / totalAllocated : 0,
-      status: getPaceStatus(totalAllocated > 0 ? totalProjectedSpend / totalAllocated : 0),
+      cumulativeActual: totalRealized,
+      cumulativeProjected: dailyProjected * daysPassed,
+      projectionFull: totalProjected,
+      paceIndex: totalAllocated > 0 ? totalProjected / totalAllocated : 0,
+      status: getPaceStatus(totalAllocated > 0 ? totalProjected / totalAllocated : 0),
     };
   }, [enrichedObjectives, month]);
 

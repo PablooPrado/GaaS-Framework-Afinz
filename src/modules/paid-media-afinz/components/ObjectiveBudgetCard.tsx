@@ -11,15 +11,8 @@ import {
   ChevronDown, ChevronUp, TrendingDown, TrendingUp,
   CheckCircle, Edit2, Plus,
 } from 'lucide-react';
-import { ObjectiveBudget, formatPaceStatus, getPaceStatus } from '../types/budget';
+import { ObjectiveBudget, formatPaceStatus, getPaceStatus, getObjectiveLabel } from '../types/budget';
 import { getDate, getDaysInMonth } from 'date-fns';
-
-const OBJECTIVE_LABELS: Record<string, string> = {
-  marca: 'Marca (Branding)',
-  b2c: 'Performance (B2C)',
-  plurix: 'Plurix',
-  seguros: 'Seguros',
-};
 
 interface ObjectiveBudgetCardProps {
   objective: ObjectiveBudget;
@@ -67,7 +60,7 @@ export const ObjectiveBudgetCard: React.FC<ObjectiveBudgetCardProps> = ({
   else if (localStatus === 'severe') progressColor = 'bg-slate-400';
 
   const projectionDiff = projectedSpend - totalBudget;
-  const label = OBJECTIVE_LABELS[objective.objective] || objective.objective.toUpperCase();
+  const label = getObjectiveLabel(objective.objective);
   const channelLabel = objective.channel === 'meta' ? ' · Meta' : objective.channel === 'google' ? ' · Google' : '';
 
   return (
