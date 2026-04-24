@@ -24,8 +24,11 @@ export const BudgetTab: React.FC = () => {
         const end = endOfMonth(currentMonthDate);
         const days = eachDayOfInterval({ start, end });
 
-        // Filter data for this month only
-        const thisMonthData = rawData.filter(d => isSameMonth(new Date(d.date), currentMonthDate));
+        // Filter data for this month only - ensure proper date comparison
+        const thisMonthData = rawData.filter(d => {
+            const dateObj = new Date(d.date);
+            return isSameMonth(dateObj, currentMonthDate);
+        });
 
         return days.map(day => {
             const dayStr = format(day, 'yyyy-MM-dd');
@@ -33,11 +36,17 @@ export const BudgetTab: React.FC = () => {
             const isFutureDay = isFuture(day);
 
             const metaSpend = thisMonthData
-                .filter(d => String(d.date).startsWith(dayStr) && d.channel === 'meta')
+                .filter(d => {
+                    const dateStr = typeof d.date === 'string' ? d.date : format(new Date(d.date), 'yyyy-MM-dd');
+                    return dateStr.startsWith(dayStr) && d.channel === 'meta';
+                })
                 .reduce((sum, d) => sum + d.spend, 0);
 
             const googleSpend = thisMonthData
-                .filter(d => String(d.date).startsWith(dayStr) && d.channel === 'google')
+                .filter(d => {
+                    const dateStr = typeof d.date === 'string' ? d.date : format(new Date(d.date), 'yyyy-MM-dd');
+                    return dateStr.startsWith(dayStr) && d.channel === 'google';
+                })
                 .reduce((sum, d) => sum + d.spend, 0);
 
             return {
