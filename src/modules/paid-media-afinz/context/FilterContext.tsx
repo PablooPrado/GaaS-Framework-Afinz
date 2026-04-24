@@ -1,9 +1,38 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { DailyMetrics, FilterState, AdCreative, PaidMediaObjective } from '../types';
+import type { DailyMetrics, FilterState, AdCreative, PaidMediaObjectiveEntry } from '../types';
 import { endOfDay, format, startOfDay } from 'date-fns';
 import { usePeriod } from '../../../contexts/PeriodContext';
 import { dataService } from '../../../services/dataService';
+
+// ── Objective Registry (localStorage) ────────────────────────────────────────
+
+const OBJ_STORAGE_KEY = 'paid_media_objectives_v1';
+
+const OBJ_DEFAULTS: PaidMediaObjectiveEntry[] = [
+    { key: 'marca',   label: 'Branding (Marca)',   color: 'violet' },
+    { key: 'b2c',     label: 'Performance (B2C)',  color: 'blue'   },
+    { key: 'plurix',  label: 'Plurix',             color: 'purple' },
+    { key: 'seguros', label: 'Seguros',            color: 'orange' },
+];
+
+function loadObjectives(): PaidMediaObjectiveEntry[] {
+    try {
+        const raw = localStorage.getItem(OBJ_STORAGE_KEY);
+        if (!raw) return OBJ_DEFAULTS;
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        return OBJ_DEFAULTS;
+    } catch {
+        return OBJ_DEFAULTS;
+    }
+}
+
+function saveObjectives(list: PaidMediaObjectiveEntry[]) {
+    try { localStorage.setItem(OBJ_STORAGE_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+}
+
+// ── Context type ──────────────────────────────────────────────────────────────
 
 interface FilterContextType {
     rawData: DailyMetrics[];
@@ -13,7 +42,7 @@ interface FilterContextType {
     filters: FilterState;
     setFilters: {
         toggleChannel: (channel: 'meta' | 'google') => void;
-        toggleObjective: (obj: PaidMediaObjective) => void;
+        toggleObjective: (obj: string) => void;
         toggleCampaign: (campaign: string) => void;
         setSelectedCampaigns: (campaigns: string[]) => void;
         setSelectedAdsets: (adsets: string[]) => void;
@@ -24,6 +53,11 @@ interface FilterContextType {
     availableAds: string[];
     adCreatives: AdCreative[];
     refreshCreatives: () => Promise<void>;
+    // Objective registry
+    objectives: PaidMediaObjectiveEntry[];
+    addObjective: (entry: PaidMediaObjectiveEntry) => void;
+    updateObjective: (key: string, updates: Partial<Omit<PaidMediaObjectiveEntry, 'key'>>) => void;
+    removeObjective: (key: string) => void;
 }
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -39,17 +73,54 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const dateFrom = startOfDay(startDate);
     const dateTo = endOfDay(endDate);
 
+    // ── Objective registry state ──────────────────────────────────────────────
+    const [objectives, setObjectives] = useState<PaidMediaObjectiveEntry[]>(loadObjectives);
+
+    const addObjective = useCallback((entry: PaidMediaObjectiveEntry) => {
+        setObjectives(prev => {
+            if (prev.find(o => o.key === entry.key)) return prev;
+            const next = [...prev, entry];
+            saveObjectives(next);
+            return next;
+        });
+    }, []);
+
+    const updateObjective = useCallback((key: string, updates: Partial<Omit<PaidMediaObjectiveEntry, 'key'>>) => {
+        setObjectives(prev => {
+            const next = prev.map(o => o.key === key ? { ...o, ...updates } : o);
+            saveObjectives(next);
+            return next;
+        });
+    }, []);
+
+    const removeObjective = useCallback((key: string) => {
+        setObjectives(prev => {
+            const next = prev.filter(o => o.key !== key);
+            saveObjectives(next);
+            return next;
+        });
+        setSelectedObjectives(prev => prev.filter(k => k !== key));
+    }, []);
+
+    // ── Filter state ──────────────────────────────────────────────────────────
     const [selectedChannels, setSelectedChannels] = useState<('meta' | 'google')[]>(['meta', 'google']);
-    const [selectedObjectives, setSelectedObjectives] = useState<PaidMediaObjective[]>(['marca', 'b2c', 'plurix', 'seguros']);
+    const [selectedObjectives, setSelectedObjectives] = useState<string[]>(() => loadObjectives().map(o => o.key));
     const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
     const [selectedAdsets, setSelectedAdsets] = useState<string[]>([]);
     const [selectedAds, setSelectedAds] = useState<string[]>([]);
 
-    // Hierarchy fetched directly from DB filtered by current period — reliable source for dropdowns
+    // Auto-select newly added objectives
+    useEffect(() => {
+        setSelectedObjectives(prev => {
+            const newKeys = objectives.map(o => o.key).filter(k => !prev.includes(k));
+            if (newKeys.length === 0) return prev;
+            return [...prev, ...newKeys];
+        });
+    }, [objectives]);
+
+    // Hierarchy fetched directly from DB filtered by current period
     type HierarchyRow = { campaign: string; adset_name: string | null; ad_name: string | null };
     const [adHierarchy, setAdHierarchy] = useState<HierarchyRow[]>([]);
-
-    // Ad creatives (thumbnails, body, title from Meta API)
     const [adCreatives, setAdCreatives] = useState<AdCreative[]>([]);
 
     const refreshCreatives = async () => {
@@ -67,21 +138,19 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         dataService.fetchAdHierarchy(from, to).then(setAdHierarchy).catch(console.error);
     }, [dateFrom.getTime(), dateTo.getTime()]);
 
-    // Fetch creatives once on mount
     useEffect(() => { refreshCreatives(); }, []);
 
-    // Rows in period — used as base for filteredData
+    // ── Filtered data ─────────────────────────────────────────────────────────
     const rowsInPeriod = useMemo(() => {
         return rawData.filter(item => {
             const d = new Date(item.date);
             if (d < dateFrom || d > dateTo) return false;
             if (!selectedChannels.includes(item.channel as 'meta' | 'google')) return false;
-            if (item.objective && !selectedObjectives.includes(item.objective as PaidMediaObjective)) return false;
+            if (item.objective && !selectedObjectives.includes(item.objective)) return false;
             return true;
         });
     }, [rawData, dateFrom, dateTo, selectedChannels, selectedObjectives]);
 
-    // Fully filtered data used by all tabs
     const filteredData = useMemo(() => {
         return rowsInPeriod.filter(item => {
             if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return false;
@@ -92,7 +161,6 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }, [rowsInPeriod, selectedCampaigns, selectedAdsets, selectedAds]);
 
     const previousPeriodData = useMemo(() => {
-        // Always calculate previous period (used for vs período anterior KPIs)
         const duration = dateTo.getTime() - dateFrom.getTime();
         const prevTo = new Date(dateFrom.getTime() - 86400000);
         const prevFrom = new Date(prevTo.getTime() - duration);
@@ -100,7 +168,7 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             const d = new Date(item.date);
             if (d < prevFrom || d > prevTo) return false;
             if (!selectedChannels.includes(item.channel as 'meta' | 'google')) return false;
-            if (item.objective && !selectedObjectives.includes(item.objective as PaidMediaObjective)) return false;
+            if (item.objective && !selectedObjectives.includes(item.objective)) return false;
             if (selectedCampaigns.length > 0 && !selectedCampaigns.includes(item.campaign)) return false;
             if (selectedAdsets.length > 0 && (!item.adset_name || !selectedAdsets.includes(item.adset_name))) return false;
             if (selectedAds.length > 0 && (!item.ad_name || !selectedAds.includes(item.ad_name))) return false;
@@ -108,15 +176,13 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         });
     }, [rawData, dateFrom, dateTo, selectedChannels, selectedObjectives, selectedCampaigns, selectedAdsets, selectedAds]);
 
-    // --- Dropdown options ---
-    // Campaigns: from rowsInPeriod (fast, already in memory)
+    // ── Dropdown options ──────────────────────────────────────────────────────
     const availableCampaigns = useMemo(() => {
         const set = new Set<string>();
         rowsInPeriod.forEach(item => set.add(item.campaign));
         return Array.from(set).sort();
     }, [rowsInPeriod]);
 
-    // Adsets & Ads: from adHierarchy (DB query scoped to period — handles pagination gaps)
     const availableAdsets = useMemo(() => {
         const set = new Set<string>();
         adHierarchy.forEach(row => {
@@ -136,9 +202,10 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         return Array.from(set).sort();
     }, [adHierarchy, selectedCampaigns, selectedAdsets]);
 
+    // ── Toggle helpers ────────────────────────────────────────────────────────
     const toggleChannel = (ch: 'meta' | 'google') =>
         setSelectedChannels(p => p.includes(ch) ? p.filter(c => c !== ch) : [...p, ch]);
-    const toggleObjective = (obj: PaidMediaObjective) =>
+    const toggleObjective = (obj: string) =>
         setSelectedObjectives(p => p.includes(obj) ? p.filter(o => o !== obj) : [...p, obj]);
     const toggleCampaign = (c: string) =>
         setSelectedCampaigns(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);
@@ -159,19 +226,16 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 selectedAds,
                 isCompareEnabled: compareEnabled
             },
-            setFilters: {
-                toggleChannel,
-                toggleObjective,
-                toggleCampaign,
-                setSelectedCampaigns,
-                setSelectedAdsets,
-                setSelectedAds,
-            },
+            setFilters: { toggleChannel, toggleObjective, toggleCampaign, setSelectedCampaigns, setSelectedAdsets, setSelectedAds },
             availableCampaigns,
             availableAdsets,
             availableAds,
             adCreatives,
-            refreshCreatives
+            refreshCreatives,
+            objectives,
+            addObjective,
+            updateObjective,
+            removeObjective,
         }}>
             {children}
         </FilterContext.Provider>

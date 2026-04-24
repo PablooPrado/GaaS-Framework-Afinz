@@ -83,8 +83,31 @@ export interface AdCreative {
     permalink_url?: string; // Built from effective_object_story_id
 }
 
-export type PaidMediaObjective = 'marca' | 'b2c' | 'plurix' | 'seguros';
+export type PaidMediaObjective = string;
 export const ALL_PAID_MEDIA_OBJECTIVES: PaidMediaObjective[] = ['marca', 'b2c', 'plurix', 'seguros'];
+
+export interface PaidMediaObjectiveEntry {
+    key: string;
+    label: string;
+    color: string;
+}
+
+export const OBJECTIVE_COLORS: { key: string; label: string; dot: string; chip: string; chipActive: string }[] = [
+    { key: 'violet', label: 'Violeta',  dot: 'bg-violet-400',  chip: 'bg-white border-slate-200 text-slate-500 hover:border-violet-200/70',  chipActive: 'bg-violet-50/40 border-violet-300/70 text-slate-700 shadow-sm' },
+    { key: 'blue',   label: 'Azul',     dot: 'bg-blue-400',    chip: 'bg-white border-slate-200 text-slate-500 hover:border-blue-200/70',    chipActive: 'bg-blue-50/40 border-blue-300/70 text-slate-700 shadow-sm' },
+    { key: 'purple', label: 'Roxo',     dot: 'bg-purple-400',  chip: 'bg-white border-slate-200 text-slate-500 hover:border-purple-200/70',  chipActive: 'bg-purple-50/40 border-purple-300/70 text-slate-700 shadow-sm' },
+    { key: 'orange', label: 'Laranja',  dot: 'bg-orange-400',  chip: 'bg-white border-slate-200 text-slate-500 hover:border-orange-200/70',  chipActive: 'bg-orange-50/40 border-orange-300/70 text-slate-700 shadow-sm' },
+    { key: 'emerald',label: 'Verde',    dot: 'bg-emerald-400', chip: 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200/70', chipActive: 'bg-emerald-50/40 border-emerald-300/70 text-slate-700 shadow-sm' },
+    { key: 'rose',   label: 'Rosa',     dot: 'bg-rose-400',    chip: 'bg-white border-slate-200 text-slate-500 hover:border-rose-200/70',    chipActive: 'bg-rose-50/40 border-rose-300/70 text-slate-700 shadow-sm' },
+    { key: 'amber',  label: 'Âmbar',   dot: 'bg-amber-400',   chip: 'bg-white border-slate-200 text-slate-500 hover:border-amber-200/70',   chipActive: 'bg-amber-50/40 border-amber-300/70 text-slate-700 shadow-sm' },
+    { key: 'teal',   label: 'Teal',     dot: 'bg-teal-400',    chip: 'bg-white border-slate-200 text-slate-500 hover:border-teal-200/70',    chipActive: 'bg-teal-50/40 border-teal-300/70 text-slate-700 shadow-sm' },
+    { key: 'indigo', label: 'Índigo',  dot: 'bg-indigo-400',  chip: 'bg-white border-slate-200 text-slate-500 hover:border-indigo-200/70',  chipActive: 'bg-indigo-50/40 border-indigo-300/70 text-slate-700 shadow-sm' },
+    { key: 'slate',  label: 'Cinza',    dot: 'bg-slate-400',   chip: 'bg-white border-slate-200 text-slate-500',                            chipActive: 'bg-slate-50/40 border-slate-300/70 text-slate-700 shadow-sm' },
+];
+
+export function getObjectiveColorClasses(colorKey: string) {
+    return OBJECTIVE_COLORS.find(c => c.key === colorKey) ?? OBJECTIVE_COLORS[9];
+}
 
 export interface FilterState {
     dateRange: DateRange;
