@@ -78,7 +78,7 @@ export const OverviewTab: React.FC = () => {
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 <KPICard
-                    title="Total Spend"
+                    title="Total Custo"
                     value={formatCurrency(currentMetrics.spend)}
                     trendValue={showComparison ? changes.spend : undefined}
                     trendLabel="vs período ant."
