@@ -387,8 +387,8 @@ export const BudgetTabV2: React.FC = () => {
       const previousRows = previousMonthRows.filter((row) => row.objective === objective.objective);
       const metric = metricsFor(objectiveRows, () => true);
       const previousMetric = metricsFor(previousRows, () => true);
-      const realized = objective.realizedSpend || metric.spend || 0;
-      const projection = objective.projectedSpend || (daysPassed > 0 ? (realized / daysPassed) * daysInMonth : 0);
+      const realized = metric.spend;
+      const projection = daysPassed > 0 ? (realized / daysPassed) * daysInMonth : 0;
       const totalBudget = objective.totalBudget || 0;
       return {
         ...objective,
@@ -414,8 +414,8 @@ export const BudgetTabV2: React.FC = () => {
         const metric = metricsFor(rows, () => true);
         const objective = objectives.find((item) => item.id === campaign.objectiveBudgetId);
         const budget = campaign.allocatedBudget || 0;
-        const realized = campaign.realizedSpend || metric.spend || 0;
-        const projection = campaign.projectedSpend || (daysPassed > 0 ? (realized / daysPassed) * daysInMonth : 0);
+        const realized = metric.spend;
+        const projection = daysPassed > 0 ? (realized / daysPassed) * daysInMonth : 0;
         const pace = budget > 0 ? safeDiv(projection, budget) : (campaign.paceIndex || 0);
         return {
           ...campaign,
