@@ -2,7 +2,7 @@ import React from 'react';
 import {
     User,
     Search,
-    Settings,
+    Settings2,
     Calendar,
     TrendingUp,
     BarChart3,
@@ -199,7 +199,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
                     className={`p-2 rounded-lg transition-all ${activeTab === 'configuracoes' ? 'text-slate-800 bg-slate-100' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
                     title="Configurações"
                 >
-                    <Settings size={18} />
+                    <Settings2 size={18} />
                 </button>
 
                 {/* Fullscreen */}

@@ -1,14 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { X, Search, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Search, CheckCircle2, AlertCircle, Loader2, UploadCloud } from 'lucide-react';
 import { useCampaignMappings } from '../../hooks/useCampaignMappings';
 import { useFilters } from '../../context/FilterContext';
 
 interface CampaignMapperModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onNewFile?: () => void;
 }
 
-export const CampaignMapperModal: React.FC<CampaignMapperModalProps> = ({ isOpen, onClose }) => {
+export const CampaignMapperModal: React.FC<CampaignMapperModalProps> = ({ isOpen, onClose, onNewFile }) => {
     const { rawData } = useFilters();
     const { mappings, isLoading, error, updateMapping } = useCampaignMappings();
     const [searchTerm, setSearchTerm] = useState('');
@@ -71,6 +72,15 @@ export const CampaignMapperModal: React.FC<CampaignMapperModalProps> = ({ isOpen
                             <AlertCircle size={16} />
                             <span>{allCampaigns.length - mappings.length} Pendentes</span>
                         </div>
+                        {onNewFile && (
+                            <button
+                                onClick={() => { onNewFile(); onClose(); }}
+                                className="flex items-center gap-1.5 text-slate-600 hover:text-red-500 bg-slate-100 hover:bg-red-50 px-3 py-1.5 rounded-full font-medium transition-colors ml-2"
+                            >
+                                <UploadCloud size={15} />
+                                <span>Novo Arquivo</span>
+                            </button>
+                        )}
                     </div>
                 </div>
 
