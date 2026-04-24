@@ -46,10 +46,12 @@ const calculateCampaignRealizedSpend = (
   campaignName: string,
   month: string
 ): number => {
+  const [mm, yyyy] = month.split('/');
+  const targetMonth = `${yyyy}-${mm}`;
   return metrics
     .filter((m) => {
-      const metricMonth = format(new Date(m.date), 'MM/yyyy');
-      return m.campaign === campaignName && metricMonth === month;
+      const dateStr = typeof m.date === 'string' ? m.date.slice(0, 7) : format(new Date(m.date), 'yyyy-MM');
+      return m.campaign === campaignName && dateStr === targetMonth;
     })
     .reduce((sum, m) => sum + (m.spend || 0), 0);
 };
@@ -128,19 +130,54 @@ export const useBudgetHierarchy = (
         mappingsData.map((m: any) => [m.campaign_name, m.objective])
       );
 
+      // String-based month matching to avoid timezone issues with ISO date strings
+      const [mm, yyyy] = month.split('/');
+      const targetMonthStr = `${yyyy}-${mm}`;
+      const isCurrentMonth = (date: any): boolean => {
+        const dateStr = typeof date === 'string' ? date.slice(0, 7) : format(new Date(date), 'yyyy-MM');
+        return dateStr === targetMonthStr;
+      };
+
       // Aggregate realized spend per objective (primary path — no campaign_budgets needed)
       const realizedByObjective = new Map<string, number>();
       metricsData.forEach((m: any) => {
         if (!m.date || !m.campaign) return;
-        const metricMonth = format(new Date(m.date), 'MM/yyyy');
-        if (metricMonth !== month) return;
+        if (!isCurrentMonth(m.date)) return;
         const obj = campaignToObjective.get(m.campaign);
         if (!obj) return;
         realizedByObjective.set(obj, (realizedByObjective.get(obj) || 0) + (m.spend || 0));
       });
 
+      // Auto-include campaigns with spend that have a mapping but no budget entry
+      const campaignNamesInBudget = new Set(campaignsMapped.map((c: any) => c.campaignName));
+      const unbudgetedMap = new Map<string, { objective: string; channel: string }>();
+      metricsData.forEach((m: any) => {
+        if (!m.date || !m.campaign) return;
+        if (!isCurrentMonth(m.date)) return;
+        if (campaignNamesInBudget.has(m.campaign)) return;
+        if (unbudgetedMap.has(m.campaign)) return;
+        const obj = campaignToObjective.get(m.campaign);
+        if (!obj) return;
+        unbudgetedMap.set(m.campaign, { objective: obj, channel: m.channel || 'google' });
+      });
+
+      const unbudgetedCampaigns: CampaignBudget[] = [];
+      unbudgetedMap.forEach((info, campaignName) => {
+        const matchingObjective = objectivesData.find((o: any) => o.objective === info.objective);
+        if (!matchingObjective) return;
+        unbudgetedCampaigns.push({
+          id: `unbudgeted-${campaignName}`,
+          month,
+          objectiveBudgetId: matchingObjective.id,
+          campaignName,
+          objective: info.objective as BudgetObjective,
+          channel: info.channel as BudgetChannel,
+          allocatedBudget: 0,
+        });
+      });
+
       setObjectives(objectivesData);
-      setCampaigns(campaignsMapped);
+      setCampaigns([...campaignsMapped, ...unbudgetedCampaigns]);
       setDailyMetrics(metricsData);
       setObjectiveRealizedMap(realizedByObjective);
     } catch (err) {

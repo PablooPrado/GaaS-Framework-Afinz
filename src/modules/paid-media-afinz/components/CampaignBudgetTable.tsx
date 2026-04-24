@@ -123,7 +123,6 @@ export const CampaignBudgetTable: React.FC<CampaignBudgetTableProps> = ({
                   Orçado {sortBy === 'allocated' && '↓'}
                 </button>
               </th>
-              <th className="px-6 py-3 text-right font-semibold text-slate-700">% Obj</th>
               <th className="px-6 py-3 text-right font-semibold text-slate-700">
                 <button
                   onClick={() => setSortBy('realized')}
@@ -132,7 +131,7 @@ export const CampaignBudgetTable: React.FC<CampaignBudgetTableProps> = ({
                   Realizado {sortBy === 'realized' && '↓'}
                 </button>
               </th>
-              <th className="px-6 py-3 text-right font-semibold text-slate-700">% Alocado</th>
+              <th className="px-6 py-3 text-right font-semibold text-slate-700">% Real</th>
               <th className="px-6 py-3 text-right font-semibold text-slate-700 text-xs">Média Atual/dia</th>
               <th className="px-6 py-3 text-right font-semibold text-slate-700 text-xs">Ideal/dia</th>
               <th className="px-6 py-3 text-right font-semibold text-slate-700">Projeção</th>
@@ -166,12 +165,9 @@ export const CampaignBudgetTable: React.FC<CampaignBudgetTableProps> = ({
 
                   {/* Orçado */}
                   <td className="px-6 py-4 text-right">
-                    <p className="font-semibold text-slate-800">{formatCurrency(campaign.allocatedBudget)}</p>
-                  </td>
-
-                  {/* % do Objetivo */}
-                  <td className="px-6 py-4 text-right text-slate-600">
-                    {formatPercentage(campaign.percentOfObjective)}
+                    <p className="font-semibold text-slate-800">
+                      {campaign.allocatedBudget > 0 ? formatCurrency(campaign.allocatedBudget) : '—'}
+                    </p>
                   </td>
 
                   {/* Realizado */}
@@ -179,9 +175,9 @@ export const CampaignBudgetTable: React.FC<CampaignBudgetTableProps> = ({
                     <p className="font-medium text-blue-600">{formatCurrency(campaign.realizedSpend || 0)}</p>
                   </td>
 
-                  {/* % do Orçado */}
+                  {/* % Real (realizado / alocado) */}
                   <td className="px-6 py-4 text-right text-slate-600">
-                    {formatPercentage(campaign.percentOfAllocated)}
+                    {campaign.allocatedBudget > 0 ? formatPercentage(campaign.percentOfAllocated) : '—'}
                   </td>
 
                   {/* Média Atual/dia */}
