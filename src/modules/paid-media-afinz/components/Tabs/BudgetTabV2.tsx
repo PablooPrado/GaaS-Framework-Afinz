@@ -329,7 +329,8 @@ export const BudgetTabV2: React.FC = () => {
   const now = new Date();
   const isCurrentMonth = isSameMonth(now, monthDate);
   const daysInMonth = getDaysInMonth(monthDate);
-  const daysPassed = isCurrentMonth ? getDate(now) : now > monthDate ? daysInMonth : 0;
+  const dataLagDays = 1;
+  const daysPassed = isCurrentMonth ? Math.max(0, getDate(now) - dataLagDays) : now > monthDate ? daysInMonth : 0;
   const monthProgress = daysInMonth > 0 ? daysPassed / daysInMonth : 0;
 
   const { objectives, campaigns, loading, error, refetch } = useBudgetHierarchy(currentMonth);
