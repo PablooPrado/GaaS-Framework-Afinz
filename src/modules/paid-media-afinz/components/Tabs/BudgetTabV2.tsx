@@ -18,15 +18,49 @@ import { EditObjectiveBudgetModal } from '../Modals/EditObjectiveBudgetModal';
 import { CampaignMappingsModal } from '../Modals/CampaignMappingsModal';
 import { RealocateBudgetOrchestrator } from '../Modals/RealocateBudgetOrchestrator';
 import { CampaignBudget, ObjectiveBudget, BudgetObjective } from '../../types/budget';
-import { format, getDate, getDaysInMonth, parseISO } from 'date-fns';
+import { format, getDate, getDaysInMonth, isSameMonth, parseISO } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 
 export const BudgetTabV2: React.FC = () => {
-  const { filters } = useFilters();
+  const { filters, rawData } = useFilters();
   const currentMonth = format(filters.dateRange.to || new Date(), 'MM/yyyy');
 
   // Data fetching
   const { objectives, campaigns, status, loading, error, refetch } = useBudgetHierarchy(currentMonth);
+
+  // Realizado Total: directly from rawData, string month comparison (no timezone bug, no mapping dependency)
+  const realizedTotal = useMemo(() => {
+    const [mm, yyyy] = currentMonth.split('/');
+    const targetMonth = `${yyyy}-${mm}`;
+    return rawData
+      .filter(d => {
+        const dateStr = typeof d.date === 'string' ? d.date.slice(0, 7) : format(new Date(d.date), 'yyyy-MM');
+        if (dateStr !== targetMonth) return false;
+        if (filters.selectedChannels.length > 0 && !filters.selectedChannels.includes(d.channel as 'meta' | 'google')) return false;
+        return true;
+      })
+      .reduce((sum, d) => sum + (d.spend || 0), 0);
+  }, [rawData, currentMonth, filters.selectedChannels]);
+
+  // Linear projection to month-end based on realizedTotal
+  const projectionTotal = useMemo(() => {
+    const [mm, yyyy] = currentMonth.split('/');
+    const monthDate = parseISO(`${yyyy}-${mm}-01`);
+    const now = new Date();
+    if (!isSameMonth(now, monthDate)) {
+      return now > monthDate ? realizedTotal : 0;
+    }
+    const daysPassed = getDate(now);
+    if (daysPassed === 0) return 0;
+    return (realizedTotal / daysPassed) * getDaysInMonth(monthDate);
+  }, [realizedTotal, currentMonth]);
+
+  const totalPlanned = useMemo(
+    () => filteredObjectives.reduce((s, o) => s + o.totalBudget, 0),
+    [filteredObjectives]
+  );
+
+  const paceIndexTotal = totalPlanned > 0 ? projectionTotal / totalPlanned : 0;
 
   // Filter objectives by the global objective filter (Branding / B2C / Plurix / Seguros)
   const filteredObjectives = useMemo(() => {
@@ -201,7 +235,6 @@ export const BudgetTabV2: React.FC = () => {
         const daysInMonth_ = getDaysInMonth(monthDate);
         const daysRemaining = Math.max(0, daysInMonth_ - daysPassed);
         const pctMonth = Math.round((daysPassed / daysInMonth_) * 100);
-        const totalPlanned = filteredObjectives.reduce((s, o) => s + o.totalBudget, 0);
         const idealBurnToday = totalPlanned > 0
           ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(totalPlanned / daysInMonth_)
           : null;
@@ -256,27 +289,27 @@ export const BudgetTabV2: React.FC = () => {
         {[
           {
             label: 'Planejado Total',
-            value: filteredObjectives.reduce((s, o) => s + o.totalBudget, 0),
+            value: totalPlanned,
             color: 'text-slate-800',
           },
           {
             label: 'Realizado Total',
-            value: status.cumulativeActual,
+            value: realizedTotal,
             color: 'text-blue-600',
           },
           {
             label: 'Projeção',
-            value: status.projectionFull,
+            value: projectionTotal,
             color:
-              status.status === 'overspending'
+              paceIndexTotal > 1.05
                 ? 'text-red-600'
-                : status.status === 'underspending'
+                : paceIndexTotal < 0.95
                   ? 'text-amber-600'
                   : 'text-slate-800',
           },
           {
             label: 'Ritmo Geral',
-            value: `${status.paceIndex.toFixed(2)}x`,
+            value: `${paceIndexTotal.toFixed(2)}x`,
             color: 'text-slate-800',
           },
         ].map((kpi, idx) => (
