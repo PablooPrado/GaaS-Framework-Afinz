@@ -23,11 +23,12 @@ export const BudgetTab: React.FC = () => {
         const start = startOfMonth(currentMonthDate);
         const end = endOfMonth(currentMonthDate);
         const days = eachDayOfInterval({ start, end });
+        const targetMonth = format(currentMonthDate, 'yyyy-MM');
 
-        // Filter data for this month only - ensure proper date comparison
+        // Filter data for this month only - use string comparison for reliability
         const thisMonthData = rawData.filter(d => {
-            const dateObj = new Date(d.date);
-            return isSameMonth(dateObj, currentMonthDate);
+            const dateStr = typeof d.date === 'string' ? d.date : format(new Date(d.date), 'yyyy-MM-dd');
+            return dateStr.startsWith(targetMonth);
         });
 
         return days.map(day => {
@@ -38,14 +39,14 @@ export const BudgetTab: React.FC = () => {
             const metaSpend = thisMonthData
                 .filter(d => {
                     const dateStr = typeof d.date === 'string' ? d.date : format(new Date(d.date), 'yyyy-MM-dd');
-                    return dateStr.startsWith(dayStr) && d.channel === 'meta';
+                    return dateStr === dayStr && d.channel === 'meta';
                 })
                 .reduce((sum, d) => sum + d.spend, 0);
 
             const googleSpend = thisMonthData
                 .filter(d => {
                     const dateStr = typeof d.date === 'string' ? d.date : format(new Date(d.date), 'yyyy-MM-dd');
-                    return dateStr.startsWith(dayStr) && d.channel === 'google';
+                    return dateStr === dayStr && d.channel === 'google';
                 })
                 .reduce((sum, d) => sum + d.spend, 0);
 
@@ -66,7 +67,9 @@ export const BudgetTab: React.FC = () => {
             .reduce((sum, b) => sum + b.value, 0);
     }, [budgets, currentMonthStr]);
 
-    const realizedTotal = dailySpendData.reduce((acc, day) => acc + day.total, 0);
+    const realizedTotal = useMemo(() => {
+        return dailySpendData.reduce((acc, day) => acc + day.total, 0);
+    }, [dailySpendData]);
 
     // Projection Logic (Simple Linear)
     const daysPassed = getDate(currentMonthDate); // 1-31
