@@ -15,6 +15,9 @@ interface CampaignBudgetTableProps {
   onDelete: (id: string) => void;
   onRelocate: () => void;
   onAdd?: () => void;
+  objectiveLabel?: string;
+  totalObjectiveBudget?: number;
+  daysInMonth?: number;
 }
 
 const formatCurrency = (value: number) =>
@@ -33,9 +36,13 @@ export const CampaignBudgetTable: React.FC<CampaignBudgetTableProps> = ({
   onDelete,
   onRelocate,
   onAdd,
+  objectiveLabel = 'Objetivo',
+  totalObjectiveBudget = 0,
+  daysInMonth = 30,
 }) => {
   const [sortBy, setSortBy] = useState<'name' | 'allocated' | 'realized' | 'pace'>('name');
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const idealDailyBudget = totalObjectiveBudget > 0 ? totalObjectiveBudget / daysInMonth : 0;
 
   const sortedCampaigns = [...campaigns].sort((a, b) => {
     switch (sortBy) {
@@ -71,8 +78,11 @@ export const CampaignBudgetTable: React.FC<CampaignBudgetTableProps> = ({
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       {/* Header with action buttons */}
-      <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-        <h4 className="font-bold text-slate-800">Detalhamento por Campanha</h4>
+      <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+        <div>
+          <h4 className="font-bold text-slate-800">Detalhamento por Campanha</h4>
+          <p className="text-xs text-slate-500 mt-1">{objectiveLabel}</p>
+        </div>
         <div className="flex items-center gap-2">
           {onAdd && (
             <button
@@ -123,6 +133,8 @@ export const CampaignBudgetTable: React.FC<CampaignBudgetTableProps> = ({
                 </button>
               </th>
               <th className="px-6 py-3 text-right font-semibold text-slate-700">% Alocado</th>
+              <th className="px-6 py-3 text-right font-semibold text-slate-700 text-xs">Média Atual/dia</th>
+              <th className="px-6 py-3 text-right font-semibold text-slate-700 text-xs">Ideal/dia</th>
               <th className="px-6 py-3 text-right font-semibold text-slate-700">Projeção</th>
               <th className="px-6 py-3 text-right font-semibold text-slate-700">
                 <button
@@ -170,6 +182,16 @@ export const CampaignBudgetTable: React.FC<CampaignBudgetTableProps> = ({
                   {/* % do Orçado */}
                   <td className="px-6 py-4 text-right text-slate-600">
                     {formatPercentage(campaign.percentOfAllocated)}
+                  </td>
+
+                  {/* Média Atual/dia */}
+                  <td className="px-6 py-4 text-right text-slate-600 text-sm">
+                    <p className="font-medium text-slate-700">{formatCurrency((campaign.realizedSpend || 0) / Math.max(1, daysInMonth))}</p>
+                  </td>
+
+                  {/* Ideal/dia */}
+                  <td className="px-6 py-4 text-right text-slate-600 text-sm">
+                    <p className="font-medium text-slate-500">{formatCurrency(campaign.allocatedBudget / Math.max(1, daysInMonth))}</p>
                   </td>
 
                   {/* Projeção */}

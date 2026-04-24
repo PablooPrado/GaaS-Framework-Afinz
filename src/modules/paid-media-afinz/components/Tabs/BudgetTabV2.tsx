@@ -28,6 +28,13 @@ export const BudgetTabV2: React.FC = () => {
   // Data fetching
   const { objectives, campaigns, status, loading, error, refetch } = useBudgetHierarchy(currentMonth);
 
+  // Filter objectives by the global objective filter (Branding / B2C / Plurix / Seguros)
+  const filteredObjectives = useMemo(() => {
+    const selected = filters.selectedObjectives;
+    if (!selected || selected.length === 0) return objectives;
+    return objectives.filter((obj) => selected.includes(obj.objective as any));
+  }, [objectives, filters.selectedObjectives]);
+
   // Objective modal state
   const [editingObjective, setEditingObjective] = useState<ObjectiveBudget | undefined>();
   const [isObjectiveModalOpen, setIsObjectiveModalOpen] = useState(false);
@@ -194,7 +201,7 @@ export const BudgetTabV2: React.FC = () => {
         const daysInMonth_ = getDaysInMonth(monthDate);
         const daysRemaining = Math.max(0, daysInMonth_ - daysPassed);
         const pctMonth = Math.round((daysPassed / daysInMonth_) * 100);
-        const totalPlanned = objectives.reduce((s, o) => s + o.totalBudget, 0);
+        const totalPlanned = filteredObjectives.reduce((s, o) => s + o.totalBudget, 0);
         const idealBurnToday = totalPlanned > 0
           ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(totalPlanned / daysInMonth_)
           : null;
@@ -249,7 +256,7 @@ export const BudgetTabV2: React.FC = () => {
         {[
           {
             label: 'Planejado Total',
-            value: objectives.reduce((s, o) => s + o.totalBudget, 0),
+            value: filteredObjectives.reduce((s, o) => s + o.totalBudget, 0),
             color: 'text-slate-800',
           },
           {
@@ -324,8 +331,13 @@ export const BudgetTabV2: React.FC = () => {
               Criar Primeiro Orçamento
             </button>
           </div>
+        ) : filteredObjectives.length === 0 ? (
+          <div className="bg-slate-50 rounded-xl border border-dashed border-slate-300 p-8 text-center">
+            <p className="text-slate-500 font-medium">Nenhum objetivo corresponde ao filtro selecionado.</p>
+            <p className="text-slate-400 text-sm mt-1">Ajuste os filtros de Objetivo na barra superior.</p>
+          </div>
         ) : (
-          objectives.map((objective) => (
+          filteredObjectives.map((objective) => (
             <div key={objective.id}>
               <ObjectiveBudgetCard
                 objective={objective}
@@ -364,6 +376,13 @@ export const BudgetTabV2: React.FC = () => {
                       setNewCampaignObjectiveId(objective.id);
                       setIsEditModalOpen(true);
                     }}
+                    objectiveLabel={objective.objective}
+                    totalObjectiveBudget={objective.totalBudget}
+                    daysInMonth={(() => {
+                      const [mm, yyyy] = currentMonth.split('/');
+                      const monthDate = parseISO(`${yyyy}-${mm}-01`);
+                      return getDaysInMonth(monthDate);
+                    })()}
                   />
                 </div>
               )}
