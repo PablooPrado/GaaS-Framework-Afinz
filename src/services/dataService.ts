@@ -825,5 +825,31 @@ export const dataService = {
                 .eq('id', update.id);
             if (error) throw error;
         }
-    }
+    },
+
+    // ─── Paid Media Objectives ─────────────────────────────────────────────
+
+    async fetchObjectives(): Promise<Array<{ key: string; label: string; color: string; sort_order: number }>> {
+        const { data, error } = await supabase
+            .from('paid_media_objectives')
+            .select('key, label, color, sort_order')
+            .order('sort_order', { ascending: true });
+        if (error) throw error;
+        return data || [];
+    },
+
+    async upsertObjective(obj: { key: string; label: string; color: string; sort_order?: number }): Promise<void> {
+        const { error } = await supabase
+            .from('paid_media_objectives')
+            .upsert({ ...obj, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+        if (error) throw error;
+    },
+
+    async deleteObjective(key: string): Promise<void> {
+        const { error } = await supabase
+            .from('paid_media_objectives')
+            .delete()
+            .eq('key', key);
+        if (error) throw error;
+    },
 };

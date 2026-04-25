@@ -1,13 +1,13 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { DailyMetrics, FilterState, AdCreative, PaidMediaObjectiveEntry } from '../types';
 import { endOfDay, format, startOfDay } from 'date-fns';
 import { usePeriod } from '../../../contexts/PeriodContext';
 import { dataService } from '../../../services/dataService';
 
-// ── Objective Registry (localStorage) ────────────────────────────────────────
+// ── Objective Registry (Supabase + localStorage cache) ───────────────────────
 
-const OBJ_STORAGE_KEY = 'paid_media_objectives_v1';
+const OBJ_CACHE_KEY = 'paid_media_objectives_cache_v2';
 
 const OBJ_DEFAULTS: PaidMediaObjectiveEntry[] = [
     { key: 'marca',   label: 'Branding (Marca)',   color: 'violet' },
@@ -16,9 +16,9 @@ const OBJ_DEFAULTS: PaidMediaObjectiveEntry[] = [
     { key: 'seguros', label: 'Seguros',            color: 'orange' },
 ];
 
-function loadObjectives(): PaidMediaObjectiveEntry[] {
+function loadCachedObjectives(): PaidMediaObjectiveEntry[] {
     try {
-        const raw = localStorage.getItem(OBJ_STORAGE_KEY);
+        const raw = localStorage.getItem(OBJ_CACHE_KEY);
         if (!raw) return OBJ_DEFAULTS;
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -28,8 +28,8 @@ function loadObjectives(): PaidMediaObjectiveEntry[] {
     }
 }
 
-function saveObjectives(list: PaidMediaObjectiveEntry[]) {
-    try { localStorage.setItem(OBJ_STORAGE_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+function cacheObjectives(list: PaidMediaObjectiveEntry[]) {
+    try { localStorage.setItem(OBJ_CACHE_KEY, JSON.stringify(list)); } catch { /* ignore */ }
 }
 
 // ── Context type ──────────────────────────────────────────────────────────────
@@ -73,14 +73,32 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const dateFrom = startOfDay(startDate);
     const dateTo = endOfDay(endDate);
 
-    // ── Objective registry state ──────────────────────────────────────────────
-    const [objectives, setObjectives] = useState<PaidMediaObjectiveEntry[]>(loadObjectives);
+    // ── Objective registry (Supabase-backed, localStorage cache) ─────────────
+    const [objectives, setObjectives] = useState<PaidMediaObjectiveEntry[]>(loadCachedObjectives);
+    const sortOrderRef = useRef<number>(0); // tracks max sort_order for new entries
+
+    // Fetch from Supabase on mount
+    useEffect(() => {
+        dataService.fetchObjectives()
+            .then(rows => {
+                if (rows.length > 0) {
+                    const list = rows.map(r => ({ key: r.key, label: r.label, color: r.color }));
+                    setObjectives(list);
+                    cacheObjectives(list);
+                    sortOrderRef.current = Math.max(...rows.map(r => r.sort_order ?? 0));
+                }
+            })
+            .catch(err => console.warn('Could not fetch objectives from Supabase:', err));
+    }, []);
 
     const addObjective = useCallback((entry: PaidMediaObjectiveEntry) => {
         setObjectives(prev => {
             if (prev.find(o => o.key === entry.key)) return prev;
             const next = [...prev, entry];
-            saveObjectives(next);
+            cacheObjectives(next);
+            sortOrderRef.current += 1;
+            dataService.upsertObjective({ ...entry, sort_order: sortOrderRef.current })
+                .catch(err => console.error('Failed to save objective:', err));
             return next;
         });
     }, []);
@@ -88,7 +106,12 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const updateObjective = useCallback((key: string, updates: Partial<Omit<PaidMediaObjectiveEntry, 'key'>>) => {
         setObjectives(prev => {
             const next = prev.map(o => o.key === key ? { ...o, ...updates } : o);
-            saveObjectives(next);
+            cacheObjectives(next);
+            const updated = next.find(o => o.key === key);
+            if (updated) {
+                dataService.upsertObjective(updated)
+                    .catch(err => console.error('Failed to update objective:', err));
+            }
             return next;
         });
     }, []);
@@ -96,7 +119,9 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const removeObjective = useCallback((key: string) => {
         setObjectives(prev => {
             const next = prev.filter(o => o.key !== key);
-            saveObjectives(next);
+            cacheObjectives(next);
+            dataService.deleteObjective(key)
+                .catch(err => console.error('Failed to delete objective:', err));
             return next;
         });
         setSelectedObjectives(prev => prev.filter(k => k !== key));
@@ -104,7 +129,7 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     // ── Filter state ──────────────────────────────────────────────────────────
     const [selectedChannels, setSelectedChannels] = useState<('meta' | 'google')[]>(['meta', 'google']);
-    const [selectedObjectives, setSelectedObjectives] = useState<string[]>(() => loadObjectives().map(o => o.key));
+    const [selectedObjectives, setSelectedObjectives] = useState<string[]>(() => loadCachedObjectives().map(o => o.key));
     const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
     const [selectedAdsets, setSelectedAdsets] = useState<string[]>([]);
     const [selectedAds, setSelectedAds] = useState<string[]>([]);
