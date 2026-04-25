@@ -24,7 +24,7 @@ import { useBU, BU } from '../../contexts/BUContext';
 import { useUserRole } from '../../context/UserRoleContext';
 import { FullscreenButton } from '../ui/FullscreenButton';
 import { useGlobalSearch, GlobalSearchResult, GlobalSearchResultType } from '../../hooks/useGlobalSearch';
-import { useExplorerStore } from '../../store/explorerStore';
+import { useExplorerStore, PendingNavigation } from '../../store/explorerStore';
 
 interface GlobalHeaderProps {
     onMouseEnter?: () => void;
@@ -55,7 +55,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
     const activeTab = viewSettings.abaAtual;
     const { toggleBU, isBUSelected, isBULocked } = useBU();
     const { canSeeTab } = useUserRole();
-    const setSearchQuery = useExplorerStore((s) => s.setSearchQuery);
+    const setPendingNavigation = useExplorerStore((s) => s.setPendingNavigation);
 
     const [searchInput, setSearchInput] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -71,11 +71,16 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({ onMouseEnter }) => {
     })).filter((g) => g.items.length > 0);
 
     const handleSelectResult = useCallback((result: GlobalSearchResult) => {
-        setSearchQuery(result.label);
+        const nav: PendingNavigation = {
+            label: result.label,
+            type: result.type,
+            bu: result.bu,
+        };
+        setPendingNavigation(nav);
         setTab('explorador');
         setSearchInput('');
         setIsSearchOpen(false);
-    }, [setSearchQuery, setTab]);
+    }, [setPendingNavigation, setTab]);
 
     const handleClear = useCallback(() => {
         setSearchInput('');

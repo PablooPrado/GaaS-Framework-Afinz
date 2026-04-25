@@ -17,6 +17,12 @@ const defaultFilters: ExplorerFilters = {
   status: [],
 };
 
+export interface PendingNavigation {
+  label: string;
+  type: 'segmento' | 'jornada' | 'activity';
+  bu?: string;
+}
+
 interface ExplorerStore {
   // UI State
   expandedNodeIds: string[];
@@ -31,6 +37,9 @@ interface ExplorerStore {
 
   // Search
   searchQuery: string;
+
+  // Global navigation (from header search)
+  pendingNavigation: PendingNavigation | null;
 
   // Actions
   toggleNode: (nodeId: string) => void;
@@ -49,6 +58,7 @@ interface ExplorerStore {
   setTemporalMetric: (metric: ExplorerMetric) => void;
   setFilters: (filters: Partial<ExplorerFilters>) => void;
   setSearchQuery: (query: string) => void;
+  setPendingNavigation: (nav: PendingNavigation | null) => void;
 }
 
 export const useExplorerStore = create<ExplorerStore>()(
@@ -62,6 +72,7 @@ export const useExplorerStore = create<ExplorerStore>()(
       temporalMetric: 'disparos',
       filters: defaultFilters,
       searchQuery: '',
+      pendingNavigation: null,
 
       toggleNode: (nodeId) =>
         set((state) => {
@@ -138,6 +149,9 @@ export const useExplorerStore = create<ExplorerStore>()(
 
       setSearchQuery: (query) =>
         set({ searchQuery: query }),
+
+      setPendingNavigation: (nav) =>
+        set({ pendingNavigation: nav }),
     }),
     {
       name: 'gaas-explorer-state',

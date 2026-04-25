@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Loader2 } from 'lucide-react';
@@ -109,6 +109,7 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
     selectedNodeIds,
     comparisonFocusNodeId,
     detailsPaneNodeId,
+    pendingNavigation,
     setFilters,
     setMetric,
     setTemporalMetric,
@@ -118,6 +119,7 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
     resetComparisonFocus,
     deselectAll,
     setDetailsPaneNode,
+    setPendingNavigation,
   } = useExplorerStore();
 
   useEffect(() => {
@@ -172,6 +174,53 @@ export const DisparoExplorer: React.FC<DisparoExplorerProps> = ({ onNavigateToFr
   );
 
   const searchResults = useExplorerSearch(nodeMap, searchQuery);
+
+  // Results for pending global navigation (from header search)
+  const pendingResults = useExplorerSearch(nodeMap, pendingNavigation?.label ?? '');
+  const pendingResultsRef = useRef(pendingResults);
+  pendingResultsRef.current = pendingResults;
+
+  // Auto-select the node when arriving from global search
+  useEffect(() => {
+    if (!pendingNavigation || nodeMap.size === 0) return;
+
+    if (pendingNavigation.type === 'jornada') {
+      setFilters({ jornadas: [pendingNavigation.label] });
+      setPendingNavigation(null);
+      return;
+    }
+
+    const results = pendingResultsRef.current;
+    if (results.length === 0) {
+      setPendingNavigation(null);
+      return;
+    }
+
+    // Pick the most relevant result: prefer exact type match (segmento→segmento, activity→disparo)
+    const targetType = pendingNavigation.type === 'segmento' ? 'segmento' : 'disparo';
+    const best = results.find((r) => r.node.type === targetType) ?? results[0];
+
+    handleExpandToNode(best.node.id);
+
+    const buNode = best.path.length >= 1 ? best.path[0] : undefined;
+    const segNode = best.path.length >= 2 ? best.path[1] : undefined;
+    const canalNode = best.path.length >= 3 ? best.path[2] : undefined;
+
+    let focusId: string | null = null;
+    if (best.node.type === 'bu') focusId = explorerFocus.build({ bu: best.node.label });
+    else if (best.node.type === 'segmento' && buNode) focusId = explorerFocus.build({ bu: buNode, segmento: best.node.label });
+    else if (best.node.type === 'canal' && buNode && segNode) focusId = explorerFocus.build({ bu: buNode, segmento: segNode, canal: best.node.label });
+    else if (buNode && segNode && canalNode) focusId = explorerFocus.build({ bu: buNode, segmento: segNode, canal: canalNode });
+
+    setComparisonFocusNode(focusId);
+    setDetailsPaneNode(best.node.id);
+    // Only highlight non-disparo nodes in the tree (disparo opens modal on click — skip here)
+    if (best.node.type !== 'disparo') {
+      handleSelect(best.node.id, false);
+    }
+    setPendingNavigation(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingNavigation, nodeMap.size]);
 
   const toFocusFromNode = React.useCallback((nodeId: string): string | null => {
     const node = nodeMap.get(nodeId);
