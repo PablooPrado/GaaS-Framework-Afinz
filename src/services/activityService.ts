@@ -172,7 +172,7 @@ export const syncFrameworkActivities = async (
             "SIGLA_Parceiro": activity.raw?.['SIGLA'],
             "Segmento": activity.segmento,
             "SIGLA_Segmento": activity.raw?.['SIGLA.1'],
-            "Subgrupos": activity.raw?.['Subgrupos'],
+            "Subgrupos": activity.subgrupo ?? activity.raw?.['Subgrupos'],
             "Etapa de aquisição": activity.raw?.['Etapa de aquisição'],
             "Perfil de Crédito": activity.raw?.['Perfil de Crédito'],
             "Produto": activity.raw?.['Produto'],

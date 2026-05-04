@@ -113,6 +113,7 @@ export const FrameworkView: React.FC = () => {
                     'BU': a.bu,
                     'Canal': a.canal,
                     'Segmento': a.segmento,
+                    'Subgrupos': a.subgrupo,
                     'Jornada': a.jornada,
                     'Parceiro': a.parceiro,
                     'Oferta': a.oferta,

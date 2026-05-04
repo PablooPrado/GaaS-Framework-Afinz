@@ -87,7 +87,7 @@ export const DataMigration = () => {
                     canal: a.canal,
                     segmento: a.segmento,
                     segmento_sigla: a.raw?.['SIGLA.1'],
-                    subgrupo: a.raw?.['Subgrupos'],
+                    subgrupo: a.subgrupo ?? a.raw?.['Subgrupos'],
 
                     jornada: a.jornada,
                     etapa_aquisicao: a.raw?.['Etapa de aquisição'],
