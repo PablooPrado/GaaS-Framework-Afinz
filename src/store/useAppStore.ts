@@ -160,6 +160,14 @@ export const useAppStore = create<AppState>()(
         }),
         {
             name: 'app-storage', // unique name
+            version: 2,
+            migrate: (persisted: any, version: number) => {
+                if (version < 2) {
+                    const fg = persisted?.viewSettings?.filtrosGlobais;
+                    if (fg && !fg.subgrupos) fg.subgrupos = [];
+                }
+                return persisted;
+            },
             storage: createJSONStorage(() => storage), // use IDB
             partialize: (state) => ({
                 // Select fields to persist (ONLY UI STATE)

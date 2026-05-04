@@ -58,7 +58,8 @@ export const useAdvancedFilters = (data: CalendarData, filters: FilterState) => 
       return false;
     }
 
-    if (!omit.includes('subgrupos') && filters.subgrupos.length > 0 && !filters.subgrupos.includes(activity.subgrupo ?? '')) {
+    const subgrupoFilter = filters.subgrupos ?? [];
+    if (!omit.includes('subgrupos') && subgrupoFilter.length > 0 && !subgrupoFilter.includes(activity.subgrupo ?? '')) {
       return false;
     }
 

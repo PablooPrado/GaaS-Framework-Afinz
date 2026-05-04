@@ -280,7 +280,7 @@ export const InlineFilterBar: React.FC<InlineFilterBarProps> = ({
         });
     };
 
-    const hasActiveFilters = filters.canais.length > 0 || filters.jornadas.length > 0 || filters.segmentos.length > 0 || filters.parceiros.length > 0 || filters.subgrupos.length > 0;
+    const hasActiveFilters = filters.canais.length > 0 || filters.jornadas.length > 0 || filters.segmentos.length > 0 || filters.parceiros.length > 0 || (filters.subgrupos ?? []).length > 0;
     const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
 
     const handleMenuOpenChange = React.useCallback((menuId: string, isOpen: boolean) => {
