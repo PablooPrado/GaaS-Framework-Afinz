@@ -126,37 +126,36 @@ export const MonthlyStackedBarChart: React.FC<MonthlyStackedBarChartProps> = ({ 
         </div>
       </div>
 
-      <div className="space-y-3">
-        {/* Series Totals */}
-        <div className="flex flex-wrap gap-2">
-          {Array.from(seriesTotals.entries())
-            .sort((a, b) => b[1] - a[1])
-            .map(([label, total]) => (
-              <button
-                key={label}
-                onClick={() => setFocusedSeries(focusedSeries === label ? null : label)}
-                className={`text-xs px-2 py-1 rounded-md font-medium transition-all ${
-                  focusedSeries === label
-                    ? 'bg-slate-900 text-white border border-slate-700'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
-                }`}
-                title={`Clique para focar em ${label}`}
-              >
-                <span className="inline-block w-2 h-2 rounded-full mr-1"
-                  style={{ backgroundColor: SERIES_COLORS[Array.from(seriesTotals.keys()).indexOf(label) % SERIES_COLORS.length] }}
-                />
-                {label}: {formatChartValue(total, metric)}
-              </button>
-            ))}
-          {focusedSeries && (
+      {/* Series Totals */}
+      <div className="mb-4 flex flex-wrap gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+        {Array.from(seriesTotals.entries())
+          .sort((a, b) => b[1] - a[1])
+          .map(([label, total], idx) => (
             <button
-              onClick={() => setFocusedSeries(null)}
-              className="text-xs px-2 py-1 rounded-md font-medium text-slate-500 hover:text-slate-700 underline"
+              key={label}
+              onClick={() => setFocusedSeries(focusedSeries === label ? null : label)}
+              className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                focusedSeries === label
+                  ? 'bg-slate-900 text-white border border-slate-700 shadow-md'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'
+              }`}
+              title={`Clique para focar em ${label}`}
             >
-              Limpar filtro
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: SERIES_COLORS[idx % SERIES_COLORS.length] }}
+              />
+              {label}: {formatChartValue(total, metric)}
             </button>
-          )}
-        </div>
+          ))}
+        {focusedSeries && (
+          <button
+            onClick={() => setFocusedSeries(null)}
+            className="text-xs px-3 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-300 hover:border-slate-400 transition-all"
+          >
+            ✕ Limpar
+          </button>
+        )}
       </div>
 
       <div className="h-[340px]">
