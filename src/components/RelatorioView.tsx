@@ -5,9 +5,12 @@ import { CalendarData, Activity } from '../types/framework';
 import { supabase } from '../services/supabaseClient';
 import { ActivityRow } from '../types/activity';
 import { useAppStore } from '../store/useAppStore';
+import { formatVariation } from '../utils/variationDisplay';
 
 interface RelatorioViewProps {
   data: CalendarData;
+  previousData?: CalendarData;
+  compareEnabled?: boolean;
   selectedBU?: string;
 }
 
@@ -90,6 +93,12 @@ function fmtBRL(n: number): string {
   return `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function calcVariation(current: number, previous: number): number {
+  if (!Number.isFinite(current) || !Number.isFinite(previous)) return 0;
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return ((current - previous) / previous) * 100;
+}
+
 const SEGMENT_PALETTE = [
   { bg: 'bg-pink-50', border: 'border-l-4 border-pink-400', text: 'text-pink-700' },
   { bg: 'bg-blue-50', border: 'border-l-4 border-blue-400', text: 'text-blue-700' },
@@ -137,12 +146,13 @@ const PARCEIRO_COLORS: Record<string, string> = {
   'Plurix': 'bg-purple-50 text-purple-500 border-purple-100',
 };
 
-export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }) => {
+export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData, compareEnabled = false, selectedBU }) => {
   const { viewSettings, setGlobalFilters } = useAppStore();
   const globalFilters = viewSettings.filtrosGlobais;
   const allActivities = useMemo(() => Object.values(data).flat(), [data]);
-  const reportActivities = useMemo(() => (
-    allActivities.filter((activity) => {
+  const previousAllActivities = useMemo(() => Object.values(previousData ?? {}).flat(), [previousData]);
+  const filterReportActivities = useCallback((activities: Activity[]) => (
+    activities.filter((activity) => {
       if (globalFilters.segmentos.length > 0 && !globalFilters.segmentos.includes(activity.segmento)) {
         return false;
       }
@@ -157,7 +167,10 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
       }
       return true;
     })
-  ), [allActivities, globalFilters]);
+  ), [globalFilters]);
+  const reportActivities = useMemo(() => filterReportActivities(allActivities), [allActivities, filterReportActivities]);
+  const previousReportActivities = useMemo(() => filterReportActivities(previousAllActivities), [filterReportActivities, previousAllActivities]);
+  const shouldShowComparison = compareEnabled && previousData !== undefined;
 
   // ── Descrições por disparo ──
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
@@ -239,6 +252,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
   }, [reportActivities]);
 
   const segmentoTotal = useMemo(() => computeRow(reportActivities, 'Total Geral'), [reportActivities]);
+  const previousSegmentoTotal = useMemo(() => computeRow(previousReportActivities, 'Total Geral'), [previousReportActivities]);
 
   const canalRows = useMemo(() => {
     const groups = new Map<string, Activity[]>();
@@ -253,6 +267,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
   }, [reportActivities]);
 
   const canalTotal = useMemo(() => computeRow(reportActivities, 'Total Geral'), [reportActivities]);
+  const previousCanalTotal = useMemo(() => computeRow(previousReportActivities, 'Total Geral'), [previousReportActivities]);
   const totalCanalEmissoes = canalTotal.emissoes;
 
   // d-3 cutoff: dates from today minus 3 days may still be consolidating
@@ -541,6 +556,49 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
     downloadBlob(blob, `relatorio_completo_${format(new Date(), 'yyyyMMdd')}.csv`);
   }, [segmentoRows, segmentoTotal, canalRows, canalTotal, totalCanalEmissoes, detailRows]);
 
+  const ComparisonBadge = ({
+    current,
+    previous,
+    invertPositive = false,
+    className = '',
+  }: {
+    current: number;
+    previous: number;
+    invertPositive?: boolean;
+    className?: string;
+  }) => {
+    if (!shouldShowComparison) return null;
+
+    const display = formatVariation(calcVariation(current, previous), invertPositive);
+    return (
+      <span
+        className={`inline-flex items-center justify-center rounded-full border px-1.5 py-0.5 text-[10px] font-bold leading-none ${display.bg} ${display.border} ${display.color} ${className}`}
+        title={`Periodo anterior: ${previous.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`}
+      >
+        {display.label}
+      </span>
+    );
+  };
+
+  const MetricValue = ({
+    value,
+    current,
+    previous,
+    invertPositive = false,
+    strong = false,
+  }: {
+    value: string;
+    current: number;
+    previous: number;
+    invertPositive?: boolean;
+    strong?: boolean;
+  }) => (
+    <div className="flex flex-col items-end gap-1">
+      <span className={strong ? 'font-bold text-slate-900' : ''}>{value}</span>
+      <ComparisonBadge current={current} previous={previous} invertPositive={invertPositive} />
+    </div>
+  );
+
   if (reportActivities.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-400">
@@ -586,14 +644,15 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
         {/* KPI Summary Strip */}
         <div className="grid grid-cols-4 divide-x divide-slate-200 bg-white border-x border-b border-slate-200">
           {[
-            { label: 'Base Enviada', value: fmtN(segmentoTotal.baseEnviada) },
-            { label: 'Propostas', value: fmtN(segmentoTotal.propostas) },
-            { label: 'Aprovados', value: fmtN(segmentoTotal.aprovados) },
-            { label: 'Emissões', value: fmtN(segmentoTotal.emissoes) },
+            { label: 'Base Enviada', value: fmtN(segmentoTotal.baseEnviada), current: segmentoTotal.baseEnviada, previous: previousSegmentoTotal.baseEnviada },
+            { label: 'Propostas', value: fmtN(segmentoTotal.propostas), current: segmentoTotal.propostas, previous: previousSegmentoTotal.propostas },
+            { label: 'Aprovados', value: fmtN(segmentoTotal.aprovados), current: segmentoTotal.aprovados, previous: previousSegmentoTotal.aprovados },
+            { label: 'Emissões', value: fmtN(segmentoTotal.emissoes), current: segmentoTotal.emissoes, previous: previousSegmentoTotal.emissoes },
           ].map(kpi => (
             <div key={kpi.label} className="px-6 py-3 text-center">
               <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">{kpi.label}</p>
               <p className="text-xl font-bold text-slate-800 mt-0.5">{kpi.value}</p>
+              <ComparisonBadge current={kpi.current} previous={kpi.previous} className="mt-1" />
             </div>
           ))}
         </div>
@@ -708,33 +767,57 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                 {/* Total row */}
                 <tr className="border-t-2 border-amber-300" style={{ background: '#FFFBCC' }}>
                   <td className="px-4 py-2.5 font-bold text-slate-900 whitespace-nowrap border-l-4 border-amber-400">Total Geral</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtN(segmentoTotal.baseEnviada)}</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtN(segmentoTotal.baseEntregue)}</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtPct(segmentoTotal.taxaEntrega)}</td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtN(segmentoTotal.baseEnviada)} current={segmentoTotal.baseEnviada} previous={previousSegmentoTotal.baseEnviada} strong />
+                  </td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtN(segmentoTotal.baseEntregue)} current={segmentoTotal.baseEntregue} previous={previousSegmentoTotal.baseEntregue} strong />
+                  </td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtPct(segmentoTotal.taxaEntrega)} current={segmentoTotal.taxaEntrega} previous={previousSegmentoTotal.taxaEntrega} strong />
+                  </td>
                   <td
                     className="text-right px-3 py-2.5 font-bold text-slate-900"
                     style={{ background: HIGHLIGHT_TOTAL, borderLeft: `2px solid ${HIGHLIGHT_BORDER}`, borderRight: `1px solid ${HIGHLIGHT_BORDER}` }}
-                  >{fmtN(segmentoTotal.propostas)}</td>
+                  >
+                    <MetricValue value={fmtN(segmentoTotal.propostas)} current={segmentoTotal.propostas} previous={previousSegmentoTotal.propostas} strong />
+                  </td>
                   <td
                     className="text-right px-3 py-2.5 font-bold text-slate-900"
                     style={{ background: HIGHLIGHT_TOTAL, borderRight: `2px solid ${HIGHLIGHT_BORDER}` }}
-                  >{fmtPct(segmentoTotal.taxaProposta)}</td>
+                  >
+                    <MetricValue value={fmtPct(segmentoTotal.taxaProposta)} current={segmentoTotal.taxaProposta} previous={previousSegmentoTotal.taxaProposta} strong />
+                  </td>
                   <td
                     className="text-right px-3 py-2.5 font-bold text-slate-900"
                     style={{ background: HIGHLIGHT_TOTAL, borderLeft: `2px solid ${HIGHLIGHT_BORDER}`, borderRight: `1px solid ${HIGHLIGHT_BORDER}` }}
-                  >{fmtN(segmentoTotal.aprovados)}</td>
+                  >
+                    <MetricValue value={fmtN(segmentoTotal.aprovados)} current={segmentoTotal.aprovados} previous={previousSegmentoTotal.aprovados} strong />
+                  </td>
                   <td
                     className="text-right px-3 py-2.5 font-bold text-slate-900"
                     style={{ background: HIGHLIGHT_TOTAL, borderRight: `2px solid ${HIGHLIGHT_BORDER}` }}
-                  >{fmtPct(segmentoTotal.taxaAprovacao)}</td>
+                  >
+                    <MetricValue value={fmtPct(segmentoTotal.taxaAprovacao)} current={segmentoTotal.taxaAprovacao} previous={previousSegmentoTotal.taxaAprovacao} strong />
+                  </td>
                   <td
                     className="text-right px-3 py-2.5 font-bold text-slate-900"
                     style={{ background: HIGHLIGHT_TOTAL, borderLeft: `2px solid ${HIGHLIGHT_BORDER}`, borderRight: `2px solid ${HIGHLIGHT_BORDER}` }}
-                  >{fmtN(segmentoTotal.emissoes)}</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtPct(segmentoTotal.taxaFinalizacao)}</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtBRL(segmentoTotal.custoPorCartao)}</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtBRL(segmentoTotal.custoTotal)}</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtPct4(segmentoTotal.taxaConversaoBase)}</td>
+                  >
+                    <MetricValue value={fmtN(segmentoTotal.emissoes)} current={segmentoTotal.emissoes} previous={previousSegmentoTotal.emissoes} strong />
+                  </td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtPct(segmentoTotal.taxaFinalizacao)} current={segmentoTotal.taxaFinalizacao} previous={previousSegmentoTotal.taxaFinalizacao} strong />
+                  </td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtBRL(segmentoTotal.custoPorCartao)} current={segmentoTotal.custoPorCartao} previous={previousSegmentoTotal.custoPorCartao} invertPositive strong />
+                  </td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtBRL(segmentoTotal.custoTotal)} current={segmentoTotal.custoTotal} previous={previousSegmentoTotal.custoTotal} invertPositive strong />
+                  </td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtPct4(segmentoTotal.taxaConversaoBase)} current={segmentoTotal.taxaConversaoBase} previous={previousSegmentoTotal.taxaConversaoBase} strong />
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -854,33 +937,57 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
                 {/* Total row */}
                 <tr className="border-t-2 border-amber-300" style={{ background: '#FFFBCC' }}>
                   <td className="px-4 py-2.5 font-bold text-slate-900 whitespace-nowrap border-l-4 border-amber-400">Total Geral</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtN(canalTotal.baseEnviada)}</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtN(canalTotal.baseEntregue)}</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtPct(canalTotal.taxaEntrega)}</td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtN(canalTotal.baseEnviada)} current={canalTotal.baseEnviada} previous={previousCanalTotal.baseEnviada} strong />
+                  </td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtN(canalTotal.baseEntregue)} current={canalTotal.baseEntregue} previous={previousCanalTotal.baseEntregue} strong />
+                  </td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtPct(canalTotal.taxaEntrega)} current={canalTotal.taxaEntrega} previous={previousCanalTotal.taxaEntrega} strong />
+                  </td>
                   <td
                     className="text-right px-3 py-2.5 font-bold text-slate-900"
                     style={{ background: HIGHLIGHT_TOTAL, borderLeft: `2px solid ${HIGHLIGHT_BORDER}`, borderRight: `1px solid ${HIGHLIGHT_BORDER}` }}
-                  >{fmtN(canalTotal.propostas)}</td>
+                  >
+                    <MetricValue value={fmtN(canalTotal.propostas)} current={canalTotal.propostas} previous={previousCanalTotal.propostas} strong />
+                  </td>
                   <td
                     className="text-right px-3 py-2.5 font-bold text-slate-900"
                     style={{ background: HIGHLIGHT_TOTAL, borderRight: `2px solid ${HIGHLIGHT_BORDER}` }}
-                  >{fmtPct(canalTotal.taxaProposta)}</td>
+                  >
+                    <MetricValue value={fmtPct(canalTotal.taxaProposta)} current={canalTotal.taxaProposta} previous={previousCanalTotal.taxaProposta} strong />
+                  </td>
                   <td
                     className="text-right px-3 py-2.5 font-bold text-slate-900"
                     style={{ background: HIGHLIGHT_TOTAL, borderLeft: `2px solid ${HIGHLIGHT_BORDER}`, borderRight: `1px solid ${HIGHLIGHT_BORDER}` }}
-                  >{fmtN(canalTotal.aprovados)}</td>
+                  >
+                    <MetricValue value={fmtN(canalTotal.aprovados)} current={canalTotal.aprovados} previous={previousCanalTotal.aprovados} strong />
+                  </td>
                   <td
                     className="text-right px-3 py-2.5 font-bold text-slate-900"
                     style={{ background: HIGHLIGHT_TOTAL, borderRight: `2px solid ${HIGHLIGHT_BORDER}` }}
-                  >{fmtPct(canalTotal.taxaAprovacao)}</td>
+                  >
+                    <MetricValue value={fmtPct(canalTotal.taxaAprovacao)} current={canalTotal.taxaAprovacao} previous={previousCanalTotal.taxaAprovacao} strong />
+                  </td>
                   <td
                     className="text-right px-3 py-2.5 font-bold text-slate-900"
                     style={{ background: HIGHLIGHT_TOTAL, borderLeft: `2px solid ${HIGHLIGHT_BORDER}`, borderRight: `2px solid ${HIGHLIGHT_BORDER}` }}
-                  >{fmtN(canalTotal.emissoes)}</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtPct(canalTotal.taxaFinalizacao)}</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtBRL(canalTotal.custoPorCartao)}</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtBRL(canalTotal.custoTotal)}</td>
-                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">{fmtPct4(canalTotal.taxaConversaoBase)}</td>
+                  >
+                    <MetricValue value={fmtN(canalTotal.emissoes)} current={canalTotal.emissoes} previous={previousCanalTotal.emissoes} strong />
+                  </td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtPct(canalTotal.taxaFinalizacao)} current={canalTotal.taxaFinalizacao} previous={previousCanalTotal.taxaFinalizacao} strong />
+                  </td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtBRL(canalTotal.custoPorCartao)} current={canalTotal.custoPorCartao} previous={previousCanalTotal.custoPorCartao} invertPositive strong />
+                  </td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtBRL(canalTotal.custoTotal)} current={canalTotal.custoTotal} previous={previousCanalTotal.custoTotal} invertPositive strong />
+                  </td>
+                  <td className="text-right px-4 py-2.5 font-bold text-slate-900">
+                    <MetricValue value={fmtPct4(canalTotal.taxaConversaoBase)} current={canalTotal.taxaConversaoBase} previous={previousCanalTotal.taxaConversaoBase} strong />
+                  </td>
                   <td className="text-right px-4 py-2.5 font-bold text-slate-900">100%</td>
                 </tr>
               </tbody>
@@ -1438,4 +1545,3 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, selectedBU }
     </>
   );
 };
-

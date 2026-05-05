@@ -21,7 +21,7 @@ import { useResultadosMetrics } from './hooks/useResultadosMetrics';
 import { useAppStore } from './store/useAppStore';
 import { usePeriod } from './contexts/PeriodContext';
 import { useBU } from './contexts/BUContext';
-import { format } from 'date-fns';
+import { endOfMonth, format, startOfMonth, subDays, subMonths } from 'date-fns';
 import { MainLayout } from './components/layout/MainLayout';
 import { LaunchPlanner } from './components/launch-planner/LaunchPlanner';
 import PaidMediaAfinzApp from './modules/paid-media-afinz/PaidMediaAfinzApp';
@@ -140,7 +140,7 @@ function App() {
   const storeFilters = viewSettings.filtrosGlobais;
   const activeTab = viewSettings.abaAtual;
 
-  const { startDate, endDate } = usePeriod();
+  const { startDate, endDate, compareEnabled } = usePeriod();
   const { selectedBUs } = useBU();
 
   const { data, loading, error, totalActivities, processCSV, loadSimulatedData } = useFrameworkData();
@@ -177,14 +177,16 @@ function App() {
   const { filteredData } = useCalendarFilter(advancedFilteredData, filters);
 
   const previousFilters = useMemo(() => {
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const isFullMonth =
+      format(startDate, 'yyyy-MM-dd') === format(startOfMonth(startDate), 'yyyy-MM-dd') &&
+      format(endDate, 'yyyy-MM-dd') === format(endOfMonth(startDate), 'yyyy-MM-dd');
 
-    const prevEnd = new Date(startDate);
-    prevEnd.setDate(prevEnd.getDate() - 1);
-
-    const prevStart = new Date(prevEnd);
-    prevStart.setDate(prevStart.getDate() - diffDays);
+    const prevStart = isFullMonth
+      ? startOfMonth(subMonths(startDate, 1))
+      : subDays(startDate, Math.abs(Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))) + 1);
+    const prevEnd = isFullMonth
+      ? endOfMonth(subMonths(startDate, 1))
+      : subDays(startDate, 1);
 
     return {
       ...filters,
@@ -207,8 +209,13 @@ function App() {
     launchPlannerFilters
   );
 
+  const { filteredData: previousAdvancedFilteredData } = useAdvancedFilters(
+    shouldRunFilters ? data : {},
+    previousFilters
+  );
+
   const { filteredData: previousFilteredData } = useCalendarFilter(
-    shouldRunFilters ? advancedFilteredData : {},
+    shouldRunFilters ? previousAdvancedFilteredData : {},
     previousFilters
   );
 
@@ -377,6 +384,8 @@ function App() {
                 <PageTransition>
                   <RelatorioView
                     data={advancedFilteredData}
+                    previousData={previousAdvancedFilteredData}
+                    compareEnabled={compareEnabled}
                     selectedBU={selectedBUs.length === 1 ? selectedBUs[0] : undefined}
                   />
                 </PageTransition>

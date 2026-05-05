@@ -13,10 +13,10 @@ export function formatVariation(value: number, invertPositive = false) {
   }
 
   const isPositive = invertPositive ? normalizedValue < 0 : normalizedValue > 0;
-  const symbol = normalizedValue > 0 ? '▲' : '▼';
+  const symbol = normalizedValue > 0 ? '+' : '-';
 
   return {
-    label: `${symbol} ${Math.abs(normalizedValue).toLocaleString('pt-BR', {
+    label: `${symbol}${Math.abs(normalizedValue).toLocaleString('pt-BR', {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     })}%`,
