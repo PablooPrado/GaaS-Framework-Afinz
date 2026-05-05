@@ -6,6 +6,7 @@ import { supabase } from '../services/supabaseClient';
 import { ActivityRow } from '../types/activity';
 import { useAppStore } from '../store/useAppStore';
 import { formatVariation } from '../utils/variationDisplay';
+import { MonthlyReportView } from './relatorio/MonthlyReportView';
 
 interface RelatorioViewProps {
   data: CalendarData;
@@ -149,6 +150,7 @@ const PARCEIRO_COLORS: Record<string, string> = {
 export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData, compareEnabled = false, selectedBU }) => {
   const { viewSettings, setGlobalFilters } = useAppStore();
   const globalFilters = viewSettings.filtrosGlobais;
+  const [reportMode, setReportMode] = useState<'performance' | 'monthly'>('performance');
   const allActivities = useMemo(() => Object.values(data).flat(), [data]);
   const previousAllActivities = useMemo(() => Object.values(previousData ?? {}).flat(), [previousData]);
   const filterReportActivities = useCallback((activities: Activity[]) => (
@@ -675,6 +677,25 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
                 <span className="text-[11px] font-semibold bg-white/20 text-white border border-white/30 rounded-full px-2.5 py-0.5 tracking-wide uppercase">
                   Histórico Completo
                 </span>
+                <div className="ml-2 flex rounded-xl border border-white/30 bg-white/15 p-1">
+                  {[
+                    { key: 'performance' as const, label: 'Performance' },
+                    { key: 'monthly' as const, label: 'Mensal' },
+                  ].map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => setReportMode(option.key)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+                        reportMode === option.key
+                          ? 'bg-white text-slate-900 shadow-sm'
+                          : 'text-white/80 hover:bg-white/15 hover:text-white'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <p className="text-cyan-100 text-sm">
                 {reportActivities.length} disparos analisados
@@ -694,7 +715,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
           </div>
         </div>
         {/* KPI Summary Strip */}
-        <div className="grid grid-cols-4 divide-x divide-slate-200 bg-white border-x border-b border-slate-200">
+        {reportMode === 'performance' && <div className="grid grid-cols-4 divide-x divide-slate-200 bg-white border-x border-b border-slate-200">
           {[
             { label: 'Base Enviada', value: fmtN(segmentoTotal.baseEnviada), current: segmentoTotal.baseEnviada, previous: previousSegmentoTotal.baseEnviada },
             { label: 'Propostas', value: fmtN(segmentoTotal.propostas), current: segmentoTotal.propostas, previous: previousSegmentoTotal.propostas },
@@ -716,9 +737,13 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
               </div>
             </div>
           ))}
-        </div>
+        </div>}
       </div>
 
+      {reportMode === 'monthly' ? (
+        <MonthlyReportView data={data} selectedBU={selectedBU} />
+      ) : (
+      <>
       {/* ── PERFORMANCE CAMPANHAS ── */}
       <section>
         <div className="flex items-center justify-between mb-3">
@@ -1656,6 +1681,8 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
         </div>}
       </section>
 
+      </>
+      )}
     </div>
     </>
   );
