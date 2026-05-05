@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Download, FileSpreadsheet, FileText, Save, ArrowLeft, TrendingUp, DollarSign, BarChart2, Info, ChevronUp, ChevronDown, Search, PanelRightClose, PanelRightOpen, FilterX } from 'lucide-react';
+import { FileSpreadsheet, FileText, Save, ArrowLeft, TrendingUp, DollarSign, BarChart2, Info, ChevronUp, ChevronDown, Search, PanelRightClose, PanelRightOpen, FilterX } from 'lucide-react';
 import { CalendarData, Activity } from '../types/framework';
 import { supabase } from '../services/supabaseClient';
 import { ActivityRow } from '../types/activity';
@@ -678,8 +678,8 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
                   Histórico Completo
                 </span>
                 <div className="ml-2 flex rounded-xl border border-white/30 bg-white/15 p-1">
-                  {[
-                    { key: 'performance' as const, label: 'Performance' },
+                  {[ 
+                    { key: 'performance' as const, label: 'Overview' },
                     { key: 'monthly' as const, label: 'Mensal' },
                   ].map((option) => (
                     <button
@@ -705,13 +705,6 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
                 <span className="ml-2 opacity-70">· sem filtro de período</span>
               </p>
             </div>
-            <button
-              onClick={exportAll}
-              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 active:bg-white/40 text-white border border-white/40 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all shadow-sm shrink-0"
-            >
-              <Download size={15} />
-              Exportar Tudo
-            </button>
           </div>
         </div>
         {/* KPI Summary Strip */}
