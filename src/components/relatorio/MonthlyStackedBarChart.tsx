@@ -69,7 +69,8 @@ export const MonthlyStackedBarChart: React.FC<MonthlyStackedBarChartProps> = ({ 
 
     const totalsBySeries = new Map<string, number>();
     rows.forEach((row) => {
-      totalsBySeries.set(row.label, (totalsBySeries.get(row.label) ?? 0) + getMonthlyMetricValue(row, metric));
+      const value = getMonthlyMetricValue(row, metric);
+      totalsBySeries.set(row.label, (totalsBySeries.get(row.label) ?? 0) + value);
     });
 
     const sortedSeries = Array.from(totalsBySeries.entries())
@@ -126,37 +127,42 @@ export const MonthlyStackedBarChart: React.FC<MonthlyStackedBarChartProps> = ({ 
         </div>
       </div>
 
-      {/* Series Totals */}
-      <div className="mb-4 flex flex-wrap gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
-        {Array.from(seriesTotals.entries())
-          .sort((a, b) => b[1] - a[1])
-          .map(([label, total], idx) => (
+      {/* Series Totals - Filter Buttons */}
+      {seriesTotals.size > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+          {Array.from(seriesTotals.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(([label, total], idx) => (
+              <button
+                key={`filter-${label}`}
+                type="button"
+                onClick={() => setFocusedSeries(focusedSeries === label ? null : label)}
+                className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  focusedSeries === label
+                    ? 'bg-slate-900 text-white border border-slate-700 shadow-md'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'
+                }`}
+                title={`Clique para focar em ${label}`}
+              >
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: SERIES_COLORS[idx % SERIES_COLORS.length] }}
+                />
+                <span className="truncate">{label}</span>
+                <span className="text-[11px] opacity-75">({formatChartValue(total, metric)})</span>
+              </button>
+            ))}
+          {focusedSeries && (
             <button
-              key={label}
-              onClick={() => setFocusedSeries(focusedSeries === label ? null : label)}
-              className={`text-xs px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                focusedSeries === label
-                  ? 'bg-slate-900 text-white border border-slate-700 shadow-md'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'
-              }`}
-              title={`Clique para focar em ${label}`}
+              type="button"
+              onClick={() => setFocusedSeries(null)}
+              className="text-xs px-3 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-300 hover:border-slate-400 transition-all"
             >
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: SERIES_COLORS[idx % SERIES_COLORS.length] }}
-              />
-              {label}: {formatChartValue(total, metric)}
+              ✕ Limpar filtro
             </button>
-          ))}
-        {focusedSeries && (
-          <button
-            onClick={() => setFocusedSeries(null)}
-            className="text-xs px-3 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 bg-white border border-slate-300 hover:border-slate-400 transition-all"
-          >
-            ✕ Limpar
-          </button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       <div className="h-[340px]">
         <ResponsiveContainer width="100%" height="100%">
