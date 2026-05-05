@@ -4,7 +4,9 @@ import { DistributionAnalysis } from './DistributionAnalysis';
 import { GoalsVisualization } from './GoalsVisualization';
 import { GoalsModal } from './GoalsModal';
 import { ProjectionsSection } from './resultados/ProjectionsSection';
+import { PeriodComparisonBanner } from './resultados/PeriodComparisonBanner';
 import { useGoals } from '../hooks/useGoals';
+import { useMonthComparison } from '../hooks/useMonthComparison';
 import { CalendarData, Activity } from '../types/framework';
 import { Target } from 'lucide-react';
 import { DailyDetailsModal } from './jornada/DailyDetailsModal';
@@ -37,6 +39,16 @@ export const ResultadosView: React.FC<ResultadosViewProps> = ({ resultados, data
 
   // Determinar mês atual baseado nos dados (pega o mês mais recente com dados)
   const currentMonthKey = Object.keys(data).sort().pop()?.substring(0, 7) || new Date().toISOString().substring(0, 7);
+  const comparisonMonth = useMemo(() => {
+    const [yearValue, monthValue] = currentMonthKey.split('-').map(Number);
+    const fallbackDate = new Date();
+
+    return {
+      year: Number.isFinite(yearValue) ? yearValue : fallbackDate.getFullYear(),
+      month: Number.isFinite(monthValue) ? monthValue - 1 : fallbackDate.getMonth(),
+    };
+  }, [currentMonthKey]);
+  const { aggregatedComparison } = useMonthComparison(data, true, comparisonMonth);
   const fullGoal = getGoal(currentMonthKey);
 
   // Determine active goal based on selection
@@ -75,6 +87,11 @@ export const ResultadosView: React.FC<ResultadosViewProps> = ({ resultados, data
 
   return (
     <div className="space-y-6">
+      <PeriodComparisonBanner
+        comparison={aggregatedComparison}
+        year={comparisonMonth.year}
+        month={comparisonMonth.month}
+      />
       {/* 1. Análise de Distribuição */}
       <DistributionAnalysis data={data} />
 
