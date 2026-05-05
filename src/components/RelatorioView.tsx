@@ -596,8 +596,8 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
     const display = formatVariation(calcVariation(current, previous), invertPositive);
     return (
       <span
-        className={`inline-flex items-center justify-center rounded-full border px-1.5 py-0.5 text-[10px] font-bold leading-none ${display.bg} ${display.border} ${display.color} ${className}`}
-        title={`Periodo anterior: ${previous.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`}
+        className={`inline-flex shrink-0 items-center justify-center rounded-full border px-1.5 py-0.5 text-[10px] font-bold leading-none tabular-nums ${display.bg} ${display.border} ${display.color} ${className}`}
+        title={`Período anterior: ${previous.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}`}
       >
         {display.label}
       </span>
@@ -624,17 +624,32 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
     valueClassName?: string;
   }) => (
     <div className={`flex flex-col gap-1 leading-tight ${align === 'center' ? 'items-center text-center' : 'items-end text-right'}`}>
-      <span className={`${strong ? 'font-bold text-slate-900' : ''} ${valueClassName}`}>{value}</span>
-      {shouldShowComparison && (
-        <div className={`flex flex-wrap items-center gap-1.5 ${align === 'center' ? 'justify-center' : 'justify-end'}`}>
-          <span className="text-[10px] font-medium text-slate-500 whitespace-nowrap">
-            ant: {previousValue ?? previous.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}
-          </span>
+      <div className={`flex max-w-full flex-wrap items-baseline gap-1.5 ${align === 'center' ? 'justify-center' : 'justify-end'}`}>
+        <span className={`whitespace-nowrap tabular-nums ${strong ? 'font-bold text-slate-900' : ''} ${valueClassName}`}>{value}</span>
+        {shouldShowComparison && (
           <ComparisonBadge current={current} previous={previous} invertPositive={invertPositive} />
-        </div>
+        )}
+      </div>
+      {shouldShowComparison && (
+        <span className="whitespace-nowrap text-[10px] font-medium text-slate-500">
+          <span className="text-slate-400">Anterior: </span>
+          <span className="tabular-nums text-slate-600">
+            {previousValue ?? previous.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}
+          </span>
+        </span>
       )}
     </div>
   );
+
+  const ComparisonModeBadge = () => {
+    if (!shouldShowComparison) return null;
+
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-semibold text-cyan-700">
+        Atual vs. período anterior
+      </span>
+    );
+  };
 
   if (reportActivities.length === 0) {
     return (
@@ -711,6 +726,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
             <div className="w-1 h-6 rounded-full" style={{ background: TEAL }} />
             <h2 className="text-base font-bold text-slate-800">Performance campanhas</h2>
             <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{segmentoRows.length} segmentos</span>
+            <ComparisonModeBadge />
           </div>
           <button
             onClick={exportSegmento}
@@ -781,13 +797,13 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
                       >
                         {row.label}
                       </td>
-                      <td className="text-right px-4 py-2.5 text-slate-600">
+                      <td className="text-right px-4 py-3 align-top text-slate-600">
                         <MetricValue value={fmtN(row.baseEnviada)} current={row.baseEnviada} previous={previousRow.baseEnviada} previousValue={fmtN(previousRow.baseEnviada)} />
                       </td>
-                      <td className="text-right px-4 py-2.5 text-slate-600">
+                      <td className="text-right px-4 py-3 align-top text-slate-600">
                         <MetricValue value={fmtN(row.baseEntregue)} current={row.baseEntregue} previous={previousRow.baseEntregue} previousValue={fmtN(previousRow.baseEntregue)} />
                       </td>
-                      <td className="text-right px-4 py-2.5 text-slate-600">
+                      <td className="text-right px-4 py-3 align-top text-slate-600">
                         <MetricValue value={fmtPct(row.taxaEntrega)} current={row.taxaEntrega} previous={previousRow.taxaEntrega} previousValue={fmtPct(previousRow.taxaEntrega)} />
                       </td>
                       <td
@@ -820,16 +836,16 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
                       >
                         <MetricValue value={fmtN(row.emissoes)} current={row.emissoes} previous={previousRow.emissoes} previousValue={fmtN(previousRow.emissoes)} strong />
                       </td>
-                      <td className="text-right px-4 py-2.5 text-slate-600">
+                      <td className="text-right px-4 py-3 align-top text-slate-600">
                         <MetricValue value={fmtPct(row.taxaFinalizacao)} current={row.taxaFinalizacao} previous={previousRow.taxaFinalizacao} previousValue={fmtPct(previousRow.taxaFinalizacao)} />
                       </td>
-                      <td className="text-right px-4 py-2.5 text-slate-600">
+                      <td className="text-right px-4 py-3 align-top text-slate-600">
                         <MetricValue value={fmtBRL(row.custoPorCartao)} current={row.custoPorCartao} previous={previousRow.custoPorCartao} previousValue={fmtBRL(previousRow.custoPorCartao)} invertPositive />
                       </td>
-                      <td className="text-right px-4 py-2.5 text-slate-600">
+                      <td className="text-right px-4 py-3 align-top text-slate-600">
                         <MetricValue value={fmtBRL(row.custoTotal)} current={row.custoTotal} previous={previousRow.custoTotal} previousValue={fmtBRL(previousRow.custoTotal)} invertPositive />
                       </td>
-                      <td className="text-right px-4 py-2.5 text-slate-600">
+                      <td className="text-right px-4 py-3 align-top text-slate-600">
                         <MetricValue value={fmtPct4(row.taxaConversaoBase)} current={row.taxaConversaoBase} previous={previousRow.taxaConversaoBase} previousValue={fmtPct4(previousRow.taxaConversaoBase)} />
                       </td>
                     </tr>
@@ -903,6 +919,7 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
             <div className="w-1 h-6 rounded-full" style={{ background: TEAL }} />
             <h2 className="text-base font-bold text-slate-800">Performance canais</h2>
             <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{canalRows.length} canais</span>
+            <ComparisonModeBadge />
           </div>
           <button
             onClick={exportCanal}
@@ -975,13 +992,13 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
                     >
                       {row.label}
                     </td>
-                    <td className="text-right px-4 py-2.5 text-slate-600">
+                    <td className="text-right px-4 py-3 align-top text-slate-600">
                       <MetricValue value={fmtN(row.baseEnviada)} current={row.baseEnviada} previous={previousRow.baseEnviada} previousValue={fmtN(previousRow.baseEnviada)} />
                     </td>
-                    <td className="text-right px-4 py-2.5 text-slate-600">
+                    <td className="text-right px-4 py-3 align-top text-slate-600">
                       <MetricValue value={fmtN(row.baseEntregue)} current={row.baseEntregue} previous={previousRow.baseEntregue} previousValue={fmtN(previousRow.baseEntregue)} />
                     </td>
-                    <td className="text-right px-4 py-2.5 text-slate-600">
+                    <td className="text-right px-4 py-3 align-top text-slate-600">
                       <MetricValue value={fmtPct(row.taxaEntrega)} current={row.taxaEntrega} previous={previousRow.taxaEntrega} previousValue={fmtPct(previousRow.taxaEntrega)} />
                     </td>
                     <td
@@ -1014,16 +1031,16 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
                     >
                       <MetricValue value={fmtN(row.emissoes)} current={row.emissoes} previous={previousRow.emissoes} previousValue={fmtN(previousRow.emissoes)} strong />
                     </td>
-                    <td className="text-right px-4 py-2.5 text-slate-600">
+                    <td className="text-right px-4 py-3 align-top text-slate-600">
                       <MetricValue value={fmtPct(row.taxaFinalizacao)} current={row.taxaFinalizacao} previous={previousRow.taxaFinalizacao} previousValue={fmtPct(previousRow.taxaFinalizacao)} />
                     </td>
-                    <td className="text-right px-4 py-2.5 text-slate-600">
+                    <td className="text-right px-4 py-3 align-top text-slate-600">
                       <MetricValue value={fmtBRL(row.custoPorCartao)} current={row.custoPorCartao} previous={previousRow.custoPorCartao} previousValue={fmtBRL(previousRow.custoPorCartao)} invertPositive />
                     </td>
-                    <td className="text-right px-4 py-2.5 text-slate-600">
+                    <td className="text-right px-4 py-3 align-top text-slate-600">
                       <MetricValue value={fmtBRL(row.custoTotal)} current={row.custoTotal} previous={previousRow.custoTotal} previousValue={fmtBRL(previousRow.custoTotal)} invertPositive />
                     </td>
-                    <td className="text-right px-4 py-2.5 text-slate-600">
+                    <td className="text-right px-4 py-3 align-top text-slate-600">
                       <MetricValue value={fmtPct4(row.taxaConversaoBase)} current={row.taxaConversaoBase} previous={previousRow.taxaConversaoBase} previousValue={fmtPct4(previousRow.taxaConversaoBase)} />
                     </td>
                     <td className="text-right px-4 py-2.5 font-bold text-cyan-700">
