@@ -60,9 +60,10 @@ function formatChartValue(value: number, metric: MonthlyMetricKey): string {
 
 export const MonthlyStackedBarChart: React.FC<MonthlyStackedBarChartProps> = ({ title, rows, dimension }) => {
   const [metric, setMetric] = useState<MonthlyMetricKey>('emissoes');
+  const [focusedSeries, setFocusedSeries] = useState<string | null>(null);
   const isStackable = !NON_STACKABLE_MONTHLY_METRICS.has(metric);
 
-  const { chartData, series } = useMemo(() => {
+  const { chartData, series, seriesTotals } = useMemo(() => {
     const months = Array.from(new Map(rows.map(row => [row.monthKey, row.monthLabel])).entries())
       .sort(([a], [b]) => a.localeCompare(b));
 
@@ -75,18 +76,21 @@ export const MonthlyStackedBarChart: React.FC<MonthlyStackedBarChartProps> = ({ 
       .sort((a, b) => b[1] - a[1])
       .map(([label]) => label);
 
+    // Filter series if focused
+    const visibleSeries = focusedSeries ? [focusedSeries] : sortedSeries;
+
     const data = months.map(([monthKey, monthLabel]) => {
       const item: Record<string, string | number> = { monthKey, monthLabel };
       rows
-        .filter(row => row.monthKey === monthKey)
+        .filter(row => row.monthKey === monthKey && (!focusedSeries || row.label === focusedSeries))
         .forEach((row) => {
           item[row.label] = getMonthlyMetricValue(row, metric);
         });
       return item;
     });
 
-    return { chartData: data, series: sortedSeries };
-  }, [metric, rows]);
+    return { chartData: data, series: visibleSeries, seriesTotals: totalsBySeries };
+  }, [metric, rows, focusedSeries]);
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -122,6 +126,39 @@ export const MonthlyStackedBarChart: React.FC<MonthlyStackedBarChartProps> = ({ 
         </div>
       </div>
 
+      <div className="space-y-3">
+        {/* Series Totals */}
+        <div className="flex flex-wrap gap-2">
+          {Array.from(seriesTotals.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(([label, total]) => (
+              <button
+                key={label}
+                onClick={() => setFocusedSeries(focusedSeries === label ? null : label)}
+                className={`text-xs px-2 py-1 rounded-md font-medium transition-all ${
+                  focusedSeries === label
+                    ? 'bg-slate-900 text-white border border-slate-700'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
+                }`}
+                title={`Clique para focar em ${label}`}
+              >
+                <span className="inline-block w-2 h-2 rounded-full mr-1"
+                  style={{ backgroundColor: SERIES_COLORS[Array.from(seriesTotals.keys()).indexOf(label) % SERIES_COLORS.length] }}
+                />
+                {label}: {formatChartValue(total, metric)}
+              </button>
+            ))}
+          {focusedSeries && (
+            <button
+              onClick={() => setFocusedSeries(null)}
+              className="text-xs px-2 py-1 rounded-md font-medium text-slate-500 hover:text-slate-700 underline"
+            >
+              Limpar filtro
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="h-[340px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 12, right: 16, left: 8, bottom: 4 }}>
@@ -139,7 +176,7 @@ export const MonthlyStackedBarChart: React.FC<MonthlyStackedBarChartProps> = ({ 
               labelFormatter={(label) => `Mês: ${label}`}
               contentStyle={{ borderColor: '#E2E8F0', borderRadius: 12, boxShadow: '0 12px 30px rgba(15, 23, 42, 0.12)' }}
             />
-            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12, cursor: 'pointer' }} />
             {series.map((label, index) => (
               <Bar
                 key={label}

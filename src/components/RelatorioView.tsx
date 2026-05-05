@@ -674,9 +674,6 @@ export const RelatorioView: React.FC<RelatorioViewProps> = ({ data, previousData
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <h1 className="text-2xl font-bold text-white tracking-tight">Relatório de Performance</h1>
-                <span className="text-[11px] font-semibold bg-white/20 text-white border border-white/30 rounded-full px-2.5 py-0.5 tracking-wide uppercase">
-                  Histórico Completo
-                </span>
                 <div className="ml-2 flex rounded-xl border border-white/30 bg-white/15 p-1">
                   {[ 
                     { key: 'performance' as const, label: 'Overview' },

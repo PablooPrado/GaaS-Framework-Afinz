@@ -76,6 +76,9 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     // ── Objective registry (Supabase-backed, localStorage cache) ─────────────
     const [objectives, setObjectives] = useState<PaidMediaObjectiveEntry[]>(loadCachedObjectives);
     const sortOrderRef = useRef<number>(0); // tracks max sort_order for new entries
+    // Mirror of objectives state — always up to date, safe to read inside useCallback with [] deps
+    const objectivesRef = useRef<PaidMediaObjectiveEntry[]>(objectives);
+    useEffect(() => { objectivesRef.current = objectives; }, [objectives]);
 
     // Fetch from Supabase on mount
     useEffect(() => {
@@ -92,39 +95,46 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }, []);
 
     const addObjective = useCallback((entry: PaidMediaObjectiveEntry) => {
+        // Duplicate guard using ref (avoids stale closure on objectives state)
+        if (objectivesRef.current.find(o => o.key === entry.key)) return;
+        // Optimistic UI update (pure state updater — no side effects)
         setObjectives(prev => {
-            if (prev.find(o => o.key === entry.key)) return prev;
             const next = [...prev, entry];
             cacheObjectives(next);
-            sortOrderRef.current += 1;
-            dataService.upsertObjective({ ...entry, sort_order: sortOrderRef.current })
-                .catch(err => console.error('Failed to save objective:', err));
             return next;
         });
+        // Persist to Supabase (side effect outside updater, fires exactly once)
+        sortOrderRef.current += 1;
+        dataService.upsertObjective({ ...entry, sort_order: sortOrderRef.current })
+            .catch(err => console.error('Failed to save objective:', err));
     }, []);
 
     const updateObjective = useCallback((key: string, updates: Partial<Omit<PaidMediaObjectiveEntry, 'key'>>) => {
+        // Optimistic UI update
         setObjectives(prev => {
             const next = prev.map(o => o.key === key ? { ...o, ...updates } : o);
             cacheObjectives(next);
-            const updated = next.find(o => o.key === key);
-            if (updated) {
-                dataService.upsertObjective(updated)
-                    .catch(err => console.error('Failed to update objective:', err));
-            }
             return next;
         });
+        // Build merged entry from ref (latest state) and send to Supabase
+        const current = objectivesRef.current.find(o => o.key === key);
+        if (current) {
+            dataService.upsertObjective({ ...current, ...updates })
+                .catch(err => console.error('Failed to update objective:', err));
+        }
     }, []);
 
     const removeObjective = useCallback((key: string) => {
+        // Optimistic UI update
         setObjectives(prev => {
             const next = prev.filter(o => o.key !== key);
             cacheObjectives(next);
-            dataService.deleteObjective(key)
-                .catch(err => console.error('Failed to delete objective:', err));
             return next;
         });
         setSelectedObjectives(prev => prev.filter(k => k !== key));
+        // Persist deletion to Supabase
+        dataService.deleteObjective(key)
+            .catch(err => console.error('Failed to delete objective:', err));
     }, []);
 
     // ── Filter state ──────────────────────────────────────────────────────────
